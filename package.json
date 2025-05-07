@@ -1,0 +1,20 @@
+{
+  "name": "chatbot-wysa-tailwind-ready",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.4",
+    "autoprefixer": "^10.4.14",
+    "next": "latest",
+    "next-auth": "^4.24.11",
+    "postcss": "^8.4.21",
+    "react": "latest",
+    "react-dom": "latest",
+    "tailwindcss": "^3.3.2"
+  }
+}
