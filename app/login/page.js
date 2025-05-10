@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
+import Link from 'next/link'
+import Image from 'next/image'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -25,13 +27,19 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white px-4">
       <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-lg">
+        {/* Logo centré cliquable */}
+        <div className="flex justify-center mb-6">
+          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition">
+            <Image src="/logo.png" alt="Zenora Logo" width={40} height={40} />
+            <span className="text-lg font-semibold text-gray-800">Zenora</span>
+          </Link>
+        </div>
+
         <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">Connexion Zenora</h1>
 
         <form className="space-y-6" onSubmit={handleLogin}>
           <div>
-            <label htmlFor="email" className="block text-gray-600 mb-1">
-              Adresse email
-            </label>
+            <label htmlFor="email" className="block text-gray-600 mb-1">Adresse email</label>
             <input
               type="email"
               id="email"
@@ -44,9 +52,7 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-gray-600 mb-1">
-              Mot de passe
-            </label>
+            <label htmlFor="password" className="block text-gray-600 mb-1">Mot de passe</label>
             <input
               type="password"
               id="password"
@@ -70,9 +76,9 @@ export default function LoginPage() {
 
         <p className="text-center text-gray-600 text-sm mt-6">
           Pas encore de compte ?{' '}
-          <a href="/register" className="text-blue-600 font-semibold hover:underline">
+          <Link href="/register" className="text-blue-600 font-semibold hover:underline">
             S'inscrire
-          </a>
+          </Link>
         </p>
       </div>
     </div>

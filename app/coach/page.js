@@ -1,24 +1,9 @@
 'use client'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase/client'
 import Header from '@/components/Header'
 import Link from 'next/link'
 
 export default function CoachPage() {
-  const router = useRouter()
-
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession()
-      if (!data.session) {
-        router.push('/login')
-      }
-    }
-    checkSession()
-  }, [])
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header />
@@ -34,6 +19,7 @@ export default function CoachPage() {
         </div>
 
         <div className="w-full max-w-4xl grid md:grid-cols-2 gap-8">
+          {/* Offre à la carte */}
           <div className="bg-white rounded-xl shadow-md p-6 border flex flex-col justify-between">
             <div>
               <h2 className="text-xl font-bold">Séance à la carte</h2>
@@ -51,6 +37,7 @@ export default function CoachPage() {
             </a>
           </div>
 
+          {/* Offre abonnement mensuel */}
           <div className="bg-white rounded-xl shadow-md p-6 border-2 border-blue-500 flex flex-col justify-between">
             <div>
               <span className="text-sm font-semibold bg-blue-100 text-blue-600 px-3 py-1 rounded-full inline-block mb-2">

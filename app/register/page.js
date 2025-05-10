@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabase/client'
 
 export default function RegisterPage() {
@@ -15,15 +16,11 @@ export default function RegisterPage() {
     e.preventDefault()
     setError(null)
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password
-    })
+    const { error } = await supabase.auth.signUp({ email, password })
 
     if (error) {
       setError(error.message)
     } else {
-      // Rediriger vers l’accueil après inscription réussie
       localStorage.setItem('isLoggedIn', 'true')
       router.push('/')
     }
@@ -32,6 +29,14 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white px-4">
       <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-lg">
+        {/* Logo centré cliquable */}
+        <div className="flex justify-center mb-6">
+          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition">
+            <Image src="/logo.png" alt="Zenora Logo" width={40} height={40} />
+            <span className="text-lg font-semibold text-gray-800">Zenora</span>
+          </Link>
+        </div>
+
         <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">Créer un compte Zenora</h1>
 
         <form onSubmit={handleRegister} className="space-y-6">
