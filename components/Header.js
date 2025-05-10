@@ -5,12 +5,12 @@ import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { Menu, X } from 'lucide-react'
+import { Menu } from 'lucide-react'
 
 export default function Header() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [userEmail, setUserEmail] = useState(null)
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -41,60 +41,23 @@ export default function Header() {
     <header className="w-full px-6 py-4 bg-white shadow-md">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center hover:opacity-80 transition">
-          <Image src="/logo.png" alt="Zenora Logo" width={40} height={40} />
-          <span className="ml-2 text-lg font-semibold text-gray-800">Zenora</span>
+        <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition">
+          <Image src="/logo.png" alt="Zenora Logo" width={36} height={36} />
+          <span className="text-lg font-semibold text-gray-800">Zenora</span>
         </Link>
 
-        {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-6">
-          <Link href="/#themes" className="text-gray-600 hover:text-blue-600 font-medium">
-            Nos Thèmes
-          </Link>
-          <Link href="/coach" className="text-gray-600 hover:text-blue-600 font-medium">
-            Nos abonnements de coaching
-          </Link>
-          <Link href="/coaching" className="text-gray-600 hover:text-blue-600 font-medium">
-            Le Coaching mental c'est quoi ?
-          </Link>
-          {isAuthenticated ? (
-            <>
-              <span className="text-sm text-gray-600">{userEmail}</span>
-              <button onClick={handleLogout} className="text-sm text-red-600 font-semibold hover:underline">
-                Se déconnecter
-              </button>
-            </>
-          ) : (
-            <Link href="/login" className="text-sm text-blue-600 font-semibold hover:underline">
-              S’identifier
-            </Link>
-          )}
+        {/* Desktop nav */}
+        <nav className="hidden md:flex gap-6">
+          <Link href="/#themes" className="text-gray-600 hover:text-blue-600 font-medium">Nos Thèmes</Link>
+          <Link href="/coach" className="text-gray-600 hover:text-blue-600 font-medium">Nos abonnements de coaching</Link>
+          <Link href="/coaching" className="text-gray-600 hover:text-blue-600 font-medium">Le Coaching mental c'est quoi ?</Link>
         </nav>
 
-        {/* Mobile menu button */}
-        <button
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="md:hidden text-gray-700 focus:outline-none"
-        >
-          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
-      </div>
-
-      {/* Mobile Nav */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden mt-4 space-y-3 px-2 pb-4 border-t pt-4">
-          <Link href="/#themes" className="block text-gray-700 hover:text-blue-600">
-            Nos Thèmes
-          </Link>
-          <Link href="/coach" className="block text-gray-700 hover:text-blue-600">
-            Nos abonnements de coaching
-          </Link>
-          <Link href="/coaching" className="block text-gray-700 hover:text-blue-600">
-            Le Coaching mental c'est quoi ?
-          </Link>
+        {/* Auth / Burger */}
+        <div className="flex items-center gap-4">
           {isAuthenticated ? (
             <>
-              <div className="text-sm text-gray-600">{userEmail}</div>
+              <span className="hidden sm:block text-sm text-gray-600">{userEmail}</span>
               <button onClick={handleLogout} className="text-sm text-red-600 font-semibold hover:underline">
                 Se déconnecter
               </button>
@@ -104,6 +67,20 @@ export default function Header() {
               S’identifier
             </Link>
           )}
+
+          {/* Mobile menu toggle */}
+          <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden ml-2">
+            <Menu className="w-6 h-6 text-gray-700" />
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile nav */}
+      {menuOpen && (
+        <div className="md:hidden mt-4 px-4 flex flex-col gap-3">
+          <Link href="/#themes" className="text-gray-700 font-medium">Nos Thèmes</Link>
+          <Link href="/coach" className="text-gray-700 font-medium">Nos abonnements de coaching</Link>
+          <Link href="/coaching" className="text-gray-700 font-medium">Le Coaching mental c'est quoi ?</Link>
         </div>
       )}
     </header>
