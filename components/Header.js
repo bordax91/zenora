@@ -38,22 +38,22 @@ export default function Header() {
   }
 
   return (
-    <header className="w-full px-6 py-4 bg-white shadow-md">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
+    <header className="w-full bg-white shadow-md">
+      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition">
           <Image src="/logo.png" alt="Zenora Logo" width={40} height={40} />
           <span className="text-lg font-semibold text-gray-800">Zenora</span>
         </Link>
 
-        {/* Desktop menu */}
-        <nav className="hidden md:flex gap-6 ml-8">
+        {/* Desktop Nav */}
+        <nav className="hidden md:flex gap-6">
           <Link href="/#themes" className="text-gray-600 hover:text-blue-600 font-medium">Nos Thèmes</Link>
           <Link href="/coach" className="text-gray-600 hover:text-blue-600 font-medium">Nos abonnements de coaching</Link>
           <Link href="/coaching" className="text-gray-600 hover:text-blue-600 font-medium">Le Coaching mental c'est quoi ?</Link>
         </nav>
 
-        {/* Auth */}
+        {/* Desktop Auth */}
         <div className="hidden md:flex items-center gap-4">
           {isAuthenticated ? (
             <>
@@ -69,15 +69,15 @@ export default function Header() {
           )}
         </div>
 
-        {/* Mobile menu toggle */}
-        <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden ml-4">
+        {/* Mobile toggle */}
+        <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
           <Menu size={24} />
         </button>
       </div>
 
-      {/* Mobile dropdown */}
+      {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="md:hidden mt-4 px-4 space-y-3">
+        <div className="md:hidden px-6 pb-4 space-y-3">
           <Link href="/#themes" className="block text-gray-700 font-medium">Nos Thèmes</Link>
           <Link href="/coach" className="block text-gray-700 font-medium">Nos abonnements de coaching</Link>
           <Link href="/coaching" className="block text-gray-700 font-medium">Le Coaching mental c'est quoi ?</Link>
