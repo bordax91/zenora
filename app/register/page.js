@@ -26,10 +26,17 @@ export default function RegisterPage() {
     }
   }
 
+  const handleGoogleSignup = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' })
+    if (error) {
+      setError(error.message)
+    }
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white px-4">
       <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-lg">
-        {/* Logo centré cliquable */}
+        {/* Logo Zenora */}
         <div className="flex justify-center mb-6">
           <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition">
             <Image src="/logo.png" alt="Zenora Logo" width={40} height={40} />
@@ -41,9 +48,7 @@ export default function RegisterPage() {
 
         <form onSubmit={handleRegister} className="space-y-6">
           <div>
-            <label htmlFor="email" className="block text-gray-600 mb-1">
-              Adresse email
-            </label>
+            <label htmlFor="email" className="block text-gray-600 mb-1">Adresse email</label>
             <input
               type="email"
               id="email"
@@ -56,9 +61,7 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-gray-600 mb-1">
-              Mot de passe
-            </label>
+            <label htmlFor="password" className="block text-gray-600 mb-1">Mot de passe</label>
             <input
               type="password"
               id="password"
@@ -79,6 +82,21 @@ export default function RegisterPage() {
             S'inscrire
           </button>
         </form>
+
+        {/* Séparateur */}
+        <div className="flex items-center my-6">
+          <div className="flex-grow h-px bg-gray-300" />
+          <span className="mx-4 text-sm text-gray-400">ou</span>
+          <div className="flex-grow h-px bg-gray-300" />
+        </div>
+
+        {/* Google Signup */}
+        <button
+          onClick={handleGoogleSignup}
+          className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition"
+        >
+          S’inscrire avec Google
+        </button>
 
         <p className="text-center text-gray-600 text-sm mt-6">
           Déjà inscrit ?{' '}
