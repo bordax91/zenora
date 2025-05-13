@@ -1,7 +1,7 @@
 import './globals.css'
 
 export const metadata = {
-  title: 'Coach IA Bienveillant',
+  title: 'Zenora',
   description: 'Discute librement avec une IA empathique',
 }
 
