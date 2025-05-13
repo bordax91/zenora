@@ -16,7 +16,7 @@ export default function Home() {
             <h1 className="text-4xl md:text-5xl font-bold text-gray-800 leading-tight">
               Le seul espace bienveillant pour exprimer vos 
               <span className="text-blue-500"> émotions</span> et 
-              <span className="text-blue-500"> prendre soin de votre santé mental</span>.
+              <span className="text-blue-500"> prendre soin de votre santé mentale</span>.
             </h1>
             <p className="text-gray-600 text-lg">
               Choisissez entre notre intelligence artificielle ou un accompagnement humain.
