@@ -2,9 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase/client'
 import Link from 'next/link'
 import Image from 'next/image'
+import { supabase } from '@/lib/supabase/client'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -14,26 +14,32 @@ export default function LoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault()
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    setError('')
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+
     if (error) {
       setError(error.message)
-    } else {
+    } else if (data?.user) {
+      const role = data.user.user_metadata?.role || 'client'
       localStorage.setItem('isLoggedIn', 'true')
-      router.push('/')
+      router.push(role === 'coach' ? '/coach/dashboard' : '/client/dashboard')
     }
   }
 
   const handleGoogleLogin = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' })
-    if (error) {
-      setError(error.message)
-    }
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`, // redirige vers la page callback
+      },
+    })
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white px-4">
       <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-lg">
-        {/* Logo Zenora cliquable */}
+        {/* Logo */}
         <div className="flex justify-center mb-6">
           <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition">
             <Image src="/logo.png" alt="Zenora Logo" width={40} height={40} />
@@ -43,8 +49,7 @@ export default function LoginPage() {
 
         <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">Connexion Zenora</h1>
 
-        {/* Formulaire email/mot de passe */}
-        <form className="space-y-6" onSubmit={handleLogin}>
+        <form onSubmit={handleLogin} className="space-y-6">
           <div>
             <label htmlFor="email" className="block text-gray-600 mb-1">Adresse email</label>
             <input
@@ -81,14 +86,14 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* OU */}
+        {/* Séparateur */}
         <div className="flex items-center my-6">
           <div className="flex-grow h-px bg-gray-300" />
           <span className="mx-4 text-sm text-gray-400">ou</span>
           <div className="flex-grow h-px bg-gray-300" />
         </div>
 
-        {/* Connexion avec Google */}
+        {/* Connexion Google */}
         <button
           onClick={handleGoogleLogin}
           className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition"
@@ -96,7 +101,6 @@ export default function LoginPage() {
           Se connecter avec Google
         </button>
 
-        {/* Lien vers l'inscription */}
         <p className="text-center text-gray-600 text-sm mt-6">
           Pas encore de compte ?{' '}
           <Link href="/register" className="text-blue-600 font-semibold hover:underline">

@@ -30,7 +30,7 @@ export default function RegisterPage() {
     if (error) {
       setError(error.message)
     } else if (data?.user) {
-      // Enregistrer dans la table 'users' personnalisée
+      // Ajoute dans ta table "users"
       await supabase.from('users').insert({
         id: data.user.id,
         email: data.user.email,
@@ -45,12 +45,12 @@ export default function RegisterPage() {
 
   const handleGoogleSignup = async () => {
     const role = isCoach ? 'coach' : 'client'
+    localStorage.setItem('pendingRole', role) // récupéré dans /auth/callback
 
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        data: { role }, // injecté dans user_metadata
-        redirectTo: `${location.origin}/auth/callback`, // crée une page callback si besoin
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     })
   }
@@ -116,14 +116,12 @@ export default function RegisterPage() {
           </button>
         </form>
 
-        {/* Séparateur */}
         <div className="flex items-center my-6">
           <div className="flex-grow h-px bg-gray-300" />
           <span className="mx-4 text-sm text-gray-400">ou</span>
           <div className="flex-grow h-px bg-gray-300" />
         </div>
 
-        {/* Google Signup */}
         <button
           onClick={handleGoogleSignup}
           className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition"
