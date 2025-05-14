@@ -10,27 +10,49 @@ export default function RegisterPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [isCoach, setIsCoach] = useState(false)
   const [error, setError] = useState(null)
 
   const handleRegister = async (e) => {
     e.preventDefault()
     setError(null)
 
-    const { error } = await supabase.auth.signUp({ email, password })
+    const role = isCoach ? 'coach' : 'client'
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { role }, // stocké dans user_metadata
+      },
+    })
 
     if (error) {
       setError(error.message)
-    } else {
+    } else if (data?.user) {
+      // Enregistrer dans la table 'users' personnalisée
+      await supabase.from('users').insert({
+        id: data.user.id,
+        email: data.user.email,
+        role,
+        created_at: new Date().toISOString(),
+      })
+
       localStorage.setItem('isLoggedIn', 'true')
-      router.push('/')
+      router.push(role === 'coach' ? '/coach/dashboard' : '/client/dashboard')
     }
   }
 
   const handleGoogleSignup = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' })
-    if (error) {
-      setError(error.message)
-    }
+    const role = isCoach ? 'coach' : 'client'
+
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        data: { role }, // injecté dans user_metadata
+        redirectTo: `${location.origin}/auth/callback`, // crée une page callback si besoin
+      },
+    })
   }
 
   return (
@@ -71,6 +93,17 @@ export default function RegisterPage() {
               className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
               placeholder="Créer un mot de passe"
             />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              id="isCoach"
+              type="checkbox"
+              checked={isCoach}
+              onChange={(e) => setIsCoach(e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label htmlFor="isCoach" className="text-sm text-gray-600">Vous êtes coach ?</label>
           </div>
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
