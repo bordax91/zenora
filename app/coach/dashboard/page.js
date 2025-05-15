@@ -29,7 +29,7 @@ export default function CoachDashboard() {
 
       setClients(clientList || [])
 
-      const { data: sessionList } = await supabase
+      const { data: sessionList, error } = await supabase
         .from('sessions')
         .select(`
           id,
@@ -38,11 +38,14 @@ export default function CoachDashboard() {
           note_coach,
           note_client,
           client:client_id (
+            id,
             email
           )
         `)
         .eq('coach_id', user.id)
         .order('date', { ascending: true })
+
+      if (error) console.error('Erreur chargement sessions:', error)
 
       setSessions(sessionList || [])
       setLoading(false)
@@ -109,7 +112,7 @@ export default function CoachDashboard() {
   }
 
   const handleNoteCoachChange = (id, value) => {
-    setNoteCoachEdit({ ...noteCoachEdit, [id]: value })
+    setNoteCoachEdit((prev) => ({ ...prev, [id]: value }))
   }
 
   const handleSaveNoteCoach = async (id) => {
@@ -197,7 +200,6 @@ export default function CoachDashboard() {
               <p><strong>Statut :</strong> {session.statut}</p>
               <p><strong>Note du client :</strong> {session.note_client || '—'}</p>
 
-              {/* Note coach éditable */}
               <div className="mt-3">
                 <label className="block text-sm mb-1"><strong>Note du coach :</strong></label>
                 <textarea
