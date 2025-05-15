@@ -1,17 +1,19 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 
 export default function AuthCallback() {
   const router = useRouter()
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     const processUser = async () => {
       const { data, error } = await supabase.auth.getUser()
 
-      if (error || !data.user) {
+      if (error || !data?.user) {
+        setError('Erreur de connexion. Veuillez réessayer.')
         router.push('/login')
         return
       }
@@ -19,20 +21,28 @@ export default function AuthCallback() {
       const user = data.user
       let role = user.user_metadata?.role
 
-      // Si pas de rôle enregistré (cas Google), on prend celui dans localStorage
+      // Si pas de rôle défini, on essaie localStorage
       if (!role) {
         role = localStorage.getItem('pendingRole') || 'client'
 
-        // On met à jour user_metadata dans Supabase
+        // 🔁 Mise à jour user_metadata
         await supabase.auth.updateUser({ data: { role } })
 
-        // On insère dans la table 'users'
-        await supabase.from('users').upsert({
-          id: user.id,
-          email: user.email,
-          role,
-          created_at: new Date().toISOString(),
-        })
+        // 🔎 Vérifie si déjà dans la table "users"
+        const { data: existing } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', user.id)
+          .maybeSingle()
+
+        if (!existing) {
+          await supabase.from('users').insert({
+            id: user.id,
+            email: user.email,
+            role,
+            created_at: new Date().toISOString(),
+          })
+        }
       }
 
       localStorage.removeItem('pendingRole')
@@ -46,7 +56,7 @@ export default function AuthCallback() {
 
   return (
     <div className="min-h-screen flex items-center justify-center text-gray-600">
-      Connexion en cours...
+      {error || 'Connexion en cours...'}
     </div>
   )
 }

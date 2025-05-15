@@ -20,7 +20,6 @@ export default function ClientDashboard() {
             statut,
             note_coach,
             coach:coach_id (
-              full_name,
               email
             )
           `)
@@ -58,7 +57,7 @@ export default function ClientDashboard() {
                   timeStyle: 'short',
                 })}
               </p>
-              <p><strong>Coach :</strong> {session.coach?.full_name || session.coach?.email || '—'}</p>
+              <p><strong>Coach :</strong> {session.coach?.email || '—'}</p>
               <p><strong>Statut :</strong> {session.statut}</p>
               {session.note_coach && (
                 <p><strong>Note du coach :</strong> {session.note_coach}</p>
