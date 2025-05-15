@@ -8,6 +8,7 @@ export default function ClientDashboard() {
   const [loading, setLoading] = useState(true)
   const [editingSession, setEditingSession] = useState(null)
   const [newDate, setNewDate] = useState('')
+  const [noteClient, setNoteClient] = useState('')
 
   useEffect(() => {
     const fetchSessions = async () => {
@@ -21,6 +22,7 @@ export default function ClientDashboard() {
           date,
           statut,
           note_coach,
+          note_client,
           coach:coach_id (
             email
           )
@@ -40,11 +42,13 @@ export default function ClientDashboard() {
   const handleEditClick = (session) => {
     setEditingSession(session)
     setNewDate(session.date)
+    setNoteClient(session.note_client || '')
   }
 
   const handleCancelEdit = () => {
     setEditingSession(null)
     setNewDate('')
+    setNoteClient('')
   }
 
   const handleSaveChanges = async () => {
@@ -52,7 +56,10 @@ export default function ClientDashboard() {
 
     const { error } = await supabase
       .from('sessions')
-      .update({ date: newDate })
+      .update({
+        date: newDate,
+        note_client: noteClient,
+      })
       .eq('id', editingSession.id)
 
     if (error) {
@@ -66,7 +73,10 @@ export default function ClientDashboard() {
   const handleCancelSession = async (id) => {
     const { error } = await supabase
       .from('sessions')
-      .update({ statut: 'annulé' })
+      .update({
+        statut: 'annulé',
+        note_client: noteClient,
+      })
       .eq('id', id)
 
     if (error) {
@@ -106,6 +116,9 @@ export default function ClientDashboard() {
                 {session.note_coach && (
                   <p><strong>Note du coach :</strong> {session.note_coach}</p>
                 )}
+                {session.note_client && !isEditing && (
+                  <p><strong>Votre note :</strong> {session.note_client}</p>
+                )}
 
                 {/* Actions */}
                 {!sessionIsPast && session.statut !== 'annulé' && (
@@ -118,6 +131,14 @@ export default function ClientDashboard() {
                           value={newDate}
                           onChange={(e) => setNewDate(e.target.value)}
                           className="w-full border px-2 py-2 rounded"
+                        />
+                        <label className="block text-sm mt-2">Votre note (facultatif)</label>
+                        <textarea
+                          rows={2}
+                          value={noteClient}
+                          onChange={(e) => setNoteClient(e.target.value)}
+                          className="w-full border px-2 py-2 rounded"
+                          placeholder="Pourquoi voulez-vous modifier la session ?"
                         />
                         <div className="flex gap-4 mt-3">
                           <button
@@ -133,6 +154,14 @@ export default function ClientDashboard() {
                             Annuler
                           </button>
                         </div>
+                        <div className="mt-2">
+                          <button
+                            onClick={() => handleCancelSession(session.id)}
+                            className="text-red-600 hover:underline text-sm"
+                          >
+                            Annuler la session
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <div className="flex gap-4 mt-4">
@@ -143,7 +172,10 @@ export default function ClientDashboard() {
                           Modifier
                         </button>
                         <button
-                          onClick={() => handleCancelSession(session.id)}
+                          onClick={() => {
+                            setEditingSession(session)
+                            setNoteClient('')
+                          }}
                           className="text-red-600 text-sm hover:underline"
                         >
                           Annuler
