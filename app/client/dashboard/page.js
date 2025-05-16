@@ -6,8 +6,9 @@ import { supabase } from '@/lib/supabase/client'
 export default function ClientDashboard() {
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
-  const [editingNoteId, setEditingNoteId] = useState(null)
+  const [editingSession, setEditingSession] = useState(null)
   const [noteClient, setNoteClient] = useState('')
+  const [newDate, setNewDate] = useState('')
 
   useEffect(() => {
     const fetchSessions = async () => {
@@ -38,95 +39,119 @@ export default function ClientDashboard() {
     fetchSessions()
   }, [])
 
-  const handleEditNoteClick = (session) => {
-    setEditingNoteId(session.id)
+  const handleEditClick = (session) => {
+    setEditingSession(session)
     setNoteClient(session.note_client || '')
+    setNewDate(session.date)
   }
 
-  const handleCancelNoteEdit = () => {
-    setEditingNoteId(null)
+  const handleCancelEdit = () => {
+    setEditingSession(null)
     setNoteClient('')
+    setNewDate('')
   }
 
-  const handleSaveNote = async () => {
-    if (!editingNoteId) return
+  const handleSaveChanges = async () => {
+    if (!editingSession) return
 
     const { error } = await supabase
       .from('sessions')
-      .update({ note_client: noteClient })
-      .eq('id', editingNoteId)
+      .update({
+        note_client: noteClient,
+        date: newDate
+      })
+      .eq('id', editingSession.id)
 
     if (error) {
-      alert('Erreur lors de la mise à jour de la note.')
+      alert("Erreur lors de la mise à jour")
     } else {
-      alert('Note enregistrée.')
+      alert("Modifications enregistrées")
       window.location.reload()
     }
   }
+
+  const isPast = (dateStr) => new Date(dateStr) < new Date()
 
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Vos rendez-vous</h1>
 
       {loading ? (
-        <p>Chargement des sessions...</p>
+        <p>Chargement...</p>
       ) : sessions.length === 0 ? (
         <p>Aucune session prévue.</p>
       ) : (
         <ul className="space-y-6">
-          {sessions.map((session) => (
-            <li key={session.id} className="bg-white p-4 rounded-xl shadow border">
-              <p><strong>Date :</strong>{' '}
-                {new Date(session.date).toLocaleString('fr-FR', {
-                  dateStyle: 'medium',
-                  timeStyle: 'short',
-                })}
-              </p>
-              <p><strong>Coach :</strong> {session.coach?.email || '—'}</p>
-              <p><strong>Statut :</strong> {session.statut}</p>
+          {sessions.map((session) => {
+            const isEditing = editingSession?.id === session.id
+            const isExpired = isPast(session.date)
 
-              {/* Affichage de la note du coach */}
-              <p><strong>Note du coach :</strong> {session.note_coach || '—'}</p>
+            return (
+              <li key={session.id} className="bg-white p-4 rounded-xl shadow border">
+                <p><strong>Date :</strong>{' '}
+                  {new Date(session.date).toLocaleString('fr-FR', {
+                    dateStyle: 'medium',
+                    timeStyle: 'short',
+                  })}
+                </p>
+                <p><strong>Coach :</strong> {session.coach?.email || '—'}</p>
+                <p><strong>Statut :</strong> {session.statut}</p>
+                {session.note_coach && (
+                  <p><strong>Note du coach :</strong> {session.note_coach}</p>
+                )}
 
-              {/* Bloc pour modifier ou ajouter une note client */}
-              {editingNoteId === session.id ? (
-                <div className="mt-4 space-y-2">
-                  <label className="block text-sm">Votre note</label>
-                  <textarea
-                    rows={2}
-                    value={noteClient}
-                    onChange={(e) => setNoteClient(e.target.value)}
-                    className="w-full border px-2 py-2 rounded"
-                    placeholder="Exprimez vos ressentis ou observations..."
-                  />
-                  <div className="flex gap-4">
-                    <button
-                      onClick={handleSaveNote}
-                      className="bg-blue-600 text-white px-4 py-2 rounded"
-                    >
-                      Enregistrer
-                    </button>
-                    <button
-                      onClick={handleCancelNoteEdit}
-                      className="text-gray-600 hover:underline text-sm"
-                    >
-                      Annuler
-                    </button>
+                {isEditing ? (
+                  <div className="mt-4 space-y-2">
+                    <label className="block text-sm">Nouvelle date et heure</label>
+                    <input
+                      type="datetime-local"
+                      value={newDate}
+                      onChange={(e) => setNewDate(e.target.value)}
+                      className="w-full border px-2 py-2 rounded"
+                    />
+
+                    <label className="block text-sm">Votre note</label>
+                    <textarea
+                      rows={2}
+                      value={noteClient}
+                      onChange={(e) => setNoteClient(e.target.value)}
+                      className="w-full border px-2 py-2 rounded"
+                      placeholder="Exprimez vos ressentis ou remarques..."
+                    />
+
+                    <div className="flex gap-4 mt-3">
+                      <button
+                        onClick={handleSaveChanges}
+                        className="bg-blue-600 text-white px-4 py-2 rounded"
+                      >
+                        Enregistrer
+                      </button>
+                      <button
+                        onClick={handleCancelEdit}
+                        className="text-gray-600 hover:underline text-sm"
+                      >
+                        Annuler
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <>
-                  <p><strong>Votre note :</strong> {session.note_client || '—'}</p>
-                  <button
-                    onClick={() => handleEditNoteClick(session)}
-                    className="mt-3 text-blue-600 text-sm hover:underline"
-                  >
-                    {session.note_client ? 'Modifier ma note' : 'Ajouter une note'}
-                  </button>
-                </>
-              )}
-            </li>
-          ))}
+                ) : (
+                  <>
+                    {session.note_client && (
+                      <p><strong>Votre note :</strong> {session.note_client}</p>
+                    )}
+                    {!isExpired && session.statut !== 'annulé' && (
+                      <button
+                        onClick={() => handleEditClick(session)}
+                        className="mt-3 text-blue-600 text-sm hover:underline"
+                      >
+                        {session.note_client ? 'Modifier ma note / la date' : 'Ajouter une note ou changer la date'}
+                      </button>
+                    )}
+                  </>
+                )}
+              </li>
+            )
+          })}
         </ul>
       )}
     </div>
