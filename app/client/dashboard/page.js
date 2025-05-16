@@ -84,10 +84,11 @@ export default function ClientDashboard() {
               </p>
               <p><strong>Coach :</strong> {session.coach?.email || '—'}</p>
               <p><strong>Statut :</strong> {session.statut}</p>
-              {session.note_coach && (
-                <p><strong>Note du coach :</strong> {session.note_coach}</p>
-              )}
 
+              {/* Affichage de la note du coach */}
+              <p><strong>Note du coach :</strong> {session.note_coach || '—'}</p>
+
+              {/* Bloc pour modifier ou ajouter une note client */}
               {editingNoteId === session.id ? (
                 <div className="mt-4 space-y-2">
                   <label className="block text-sm">Votre note</label>
@@ -115,9 +116,7 @@ export default function ClientDashboard() {
                 </div>
               ) : (
                 <>
-                  {session.note_client && (
-                    <p><strong>Votre note :</strong> {session.note_client}</p>
-                  )}
+                  <p><strong>Votre note :</strong> {session.note_client || '—'}</p>
                   <button
                     onClick={() => handleEditNoteClick(session)}
                     className="mt-3 text-blue-600 text-sm hover:underline"
