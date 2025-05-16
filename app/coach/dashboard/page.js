@@ -46,7 +46,6 @@ export default function CoachDashboard() {
         .order('date', { ascending: true })
 
       if (error) console.error('Erreur chargement sessions:', error)
-
       setSessions(sessionList || [])
       setLoading(false)
     }
@@ -134,7 +133,7 @@ export default function CoachDashboard() {
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Vos sessions</h1>
 
-      {/* Formulaire */}
+      {/* Formulaire création / édition */}
       <form onSubmit={handleCreateOrUpdateSession} className="mb-6 bg-gray-50 p-4 rounded-xl shadow">
         <div className="mb-4">
           <label className="block text-sm mb-1">Client</label>
@@ -186,7 +185,7 @@ export default function CoachDashboard() {
         )}
       </form>
 
-      {/* Liste des sessions */}
+      {/* Affichage des sessions */}
       {loading ? (
         <p>Chargement...</p>
       ) : sessions.length === 0 ? (
