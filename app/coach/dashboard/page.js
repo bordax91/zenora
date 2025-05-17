@@ -102,26 +102,26 @@ export default function CoachDashboard() {
   const isPast = (dateStr) => new Date(dateStr) < new Date()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white p-6">
-      <header className="flex items-center justify-between mb-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white p-4 sm:p-6">
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
         <Link href="/" className="flex items-center gap-3">
           <Image src="/logo.png" alt="Zenora Logo" width={40} height={40} />
           <span className="text-xl font-bold text-gray-800">Zenora</span>
         </Link>
-        <div className="flex gap-3">
-          <Link href="/chat" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Link href="/chat" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm text-center hover:bg-blue-700 transition">
             🧠 Discuter avec notre IA
           </Link>
-          <Link href="/coach" className="bg-white text-blue-700 px-4 py-2 rounded-lg text-sm shadow border hover:bg-blue-50 transition">
+          <Link href="/coach" className="bg-white text-blue-700 px-4 py-2 rounded-lg text-sm text-center shadow border hover:bg-blue-50 transition">
             👤 Discuter avec un coach mental
           </Link>
         </div>
       </header>
 
-      <h1 className="text-2xl font-bold mb-4">Vos sessions</h1>
+      <h1 className="text-2xl font-bold mb-4 text-center sm:text-left">Vos sessions</h1>
 
       {loading ? (
-        <p>Chargement...</p>
+        <p className="text-center">Chargement...</p>
       ) : (
         <ul className="space-y-6">
           {sessions.map((session) => {
@@ -176,7 +176,7 @@ export default function CoachDashboard() {
                       placeholder="Ajoutez une note pour cette session..."
                     />
 
-                    <div className="flex gap-4 mt-3">
+                    <div className="flex flex-col sm:flex-row gap-4 mt-3">
                       <button onClick={handleSaveChanges} className="bg-blue-600 text-white px-4 py-2 rounded">
                         Enregistrer
                       </button>
@@ -191,7 +191,7 @@ export default function CoachDashboard() {
                       <p><strong>Note du coach :</strong> {session.note_coach}</p>
                     )}
                     {!isExpired && (
-                      <div className="flex gap-4 mt-3">
+                      <div className="flex flex-col sm:flex-row gap-4 mt-3">
                         <button
                           onClick={() => handleEditClick(session)}
                           className="text-sm text-blue-600 hover:underline"
