@@ -3,8 +3,31 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import Header from '@/components/Header'
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase/client'
 
 export default function Home() {
+  const [userRole, setUserRole] = useState(null)
+
+  useEffect(() => {
+    const fetchRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data, error } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      if (!error && data?.role) {
+        setUserRole(data.role)
+      }
+    }
+
+    fetchRole()
+  }, [])
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex flex-col">
       <Header />
@@ -22,7 +45,6 @@ export default function Home() {
               Choisissez entre notre intelligence artificielle ou un accompagnement humain.
             </p>
 
-            {/* Boutons alignés à gauche */}
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-start gap-4">
               <Link
                 href="/chat"
@@ -92,6 +114,15 @@ export default function Home() {
               <span className="text-4xl mr-4">😰</span>
               <span className="text-xl font-semibold text-gray-800">Anxiété</span>
             </Link>
+            {userRole && (
+              <Link
+                href={userRole === 'coach' ? '/coach/dashboard' : '/client/dashboard'}
+                className="bg-gray-100 hover:bg-gray-200 transition p-6 rounded-2xl shadow-md flex items-center"
+              >
+                <span className="text-4xl mr-4">🔐</span>
+                <span className="text-xl font-semibold text-gray-800">Mon espace</span>
+              </Link>
+            )}
           </div>
         </section>
       </main>
@@ -109,3 +140,4 @@ export default function Home() {
     </div>
   )
 }
+
