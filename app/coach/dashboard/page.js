@@ -70,23 +70,42 @@ export default function CoachDashboard() {
   }
 
   const handleSaveChanges = async () => {
-    if (!editingSession || !newDate || !clientId) return
+    if (!newDate || !clientId) return
 
-    const { error } = await supabase
-      .from('sessions')
-      .update({
-        note_coach: noteCoach,
-        date: newDate,
-        client_id: clientId,
-        statut: statut
-      })
-      .eq('id', editingSession.id)
+    if (editingSession?.id) {
+      const { error } = await supabase
+        .from('sessions')
+        .update({
+          note_coach: noteCoach,
+          date: newDate,
+          client_id: clientId,
+          statut: statut
+        })
+        .eq('id', editingSession.id)
 
-    if (error) {
-      alert("Erreur lors de la mise à jour")
+      if (error) {
+        alert("Erreur lors de la mise à jour")
+      } else {
+        alert("Modifications enregistrées")
+        window.location.reload()
+      }
     } else {
-      alert("Modifications enregistrées")
-      window.location.reload()
+      const { error } = await supabase
+        .from('sessions')
+        .insert({
+          coach_id: userId,
+          client_id: clientId,
+          date: newDate,
+          statut: statut,
+          note_coach: noteCoach
+        })
+
+      if (error) {
+        alert("Erreur lors de la création")
+      } else {
+        alert("Session créée")
+        window.location.reload()
+      }
     }
   }
 
@@ -118,12 +137,75 @@ export default function CoachDashboard() {
         </div>
       </header>
 
+      <div className="mb-6">
+        {!editingSession && (
+          <button
+            onClick={() => setEditingSession({})}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+          >
+            ➕ Créer une session
+          </button>
+        )}
+      </div>
+
       <h1 className="text-2xl font-bold mb-4 text-center sm:text-left">Vos sessions</h1>
 
       {loading ? (
         <p className="text-center">Chargement...</p>
       ) : (
         <ul className="space-y-6">
+          {editingSession && (
+            <li className="bg-white p-4 rounded-xl shadow border">
+              <label className="block text-sm">Date et heure</label>
+              <input
+                type="datetime-local"
+                value={newDate}
+                onChange={(e) => setNewDate(e.target.value)}
+                className="w-full border px-2 py-2 rounded"
+              />
+
+              <label className="block text-sm mt-2">Client</label>
+              <select
+                className="w-full border px-3 py-2 rounded"
+                value={clientId}
+                onChange={(e) => setClientId(e.target.value)}
+              >
+                <option value="">— Choisir un client —</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>{c.email}</option>
+                ))}
+              </select>
+
+              <label className="block text-sm mt-2">Statut</label>
+              <select
+                className="w-full border px-3 py-2 rounded"
+                value={statut}
+                onChange={(e) => setStatut(e.target.value)}
+              >
+                <option value="prévu">prévu</option>
+                <option value="terminé">terminé</option>
+              </select>
+
+              <label className="block text-sm mt-2">Note du coach</label>
+              <textarea
+                rows={2}
+                value={noteCoach}
+                onChange={(e) => setNoteCoach(e.target.value)}
+                className="w-full border px-2 py-2 rounded"
+                placeholder="Ajoutez une note pour cette session..."
+              />
+
+              <div className="flex flex-col sm:flex-row gap-4 mt-3">
+                <button onClick={handleSaveChanges} className="bg-blue-600 text-white px-4 py-2 rounded">
+                  Enregistrer
+                </button>
+                <button onClick={handleCancelEdit} className="text-gray-600 hover:underline text-sm">
+                  Annuler
+                </button>
+              </div>
+            </li>
+          )}
+
           {sessions.map((session) => {
             const isEditing = editingSession?.id === session.id
             const isExpired = isPast(session.date)
@@ -134,79 +216,23 @@ export default function CoachDashboard() {
                 <p><strong>Client :</strong> {session.client?.email || '—'}</p>
                 <p><strong>Statut :</strong> {session.statut}</p>
                 {session.note_client && <p><strong>Note du client :</strong> {session.note_client}</p>}
+                {session.note_coach && <p><strong>Note du coach :</strong> {session.note_coach}</p>}
 
-                {isEditing ? (
-                  <div className="mt-4 space-y-2">
-                    <label className="block text-sm">Date et heure</label>
-                    <input
-                      type="datetime-local"
-                      value={newDate}
-                      onChange={(e) => setNewDate(e.target.value)}
-                      className="w-full border px-2 py-2 rounded"
-                    />
-
-                    <label className="block text-sm">Client</label>
-                    <select
-                      className="w-full border px-3 py-2 rounded"
-                      value={clientId}
-                      onChange={(e) => setClientId(e.target.value)}
+                {!isExpired && (
+                  <div className="flex flex-col sm:flex-row gap-4 mt-3">
+                    <button
+                      onClick={() => handleEditClick(session)}
+                      className="text-sm text-blue-600 hover:underline"
                     >
-                      <option value="">— Choisir un client —</option>
-                      {clients.map((c) => (
-                        <option key={c.id} value={c.id}>{c.email}</option>
-                      ))}
-                    </select>
-
-                    <label className="block text-sm">Statut</label>
-                    <select
-                      className="w-full border px-3 py-2 rounded"
-                      value={statut}
-                      onChange={(e) => setStatut(e.target.value)}
+                      Modifier
+                    </button>
+                    <button
+                      onClick={() => handleDeleteSession(session.id)}
+                      className="text-sm text-red-600 hover:underline"
                     >
-                      <option value="prévu">prévu</option>
-                      <option value="terminé">terminé</option>
-                    </select>
-
-                    <label className="block text-sm">Note du coach</label>
-                    <textarea
-                      rows={2}
-                      value={noteCoach}
-                      onChange={(e) => setNoteCoach(e.target.value)}
-                      className="w-full border px-2 py-2 rounded"
-                      placeholder="Ajoutez une note pour cette session..."
-                    />
-
-                    <div className="flex flex-col sm:flex-row gap-4 mt-3">
-                      <button onClick={handleSaveChanges} className="bg-blue-600 text-white px-4 py-2 rounded">
-                        Enregistrer
-                      </button>
-                      <button onClick={handleCancelEdit} className="text-gray-600 hover:underline text-sm">
-                        Annuler
-                      </button>
-                    </div>
+                      Supprimer
+                    </button>
                   </div>
-                ) : (
-                  <>
-                    {session.note_coach && (
-                      <p><strong>Note du coach :</strong> {session.note_coach}</p>
-                    )}
-                    {!isExpired && (
-                      <div className="flex flex-col sm:flex-row gap-4 mt-3">
-                        <button
-                          onClick={() => handleEditClick(session)}
-                          className="text-sm text-blue-600 hover:underline"
-                        >
-                          Modifier
-                        </button>
-                        <button
-                          onClick={() => handleDeleteSession(session.id)}
-                          className="text-sm text-red-600 hover:underline"
-                        >
-                          Supprimer
-                        </button>
-                      </div>
-                    )}
-                  </>
                 )}
               </li>
             )
