@@ -32,6 +32,21 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex flex-col">
       <Header />
 
+      {/* Navigation extra visible */}
+      <nav className="w-full bg-white border-b shadow-sm py-4 px-6 flex flex-wrap items-center justify-center gap-6 text-sm sm:text-base font-medium text-gray-700">
+        <Link href="#themes" className="hover:underline">Nos Thèmes</Link>
+        <Link href="#abonnements" className="hover:underline">Nos abonnements de coaching</Link>
+        <Link href="#coaching" className="hover:underline">Le Coaching mental c'est quoi ?</Link>
+        {userRole && (
+          <Link
+            href={userRole === 'coach' ? '/coach/dashboard' : '/client/dashboard'}
+            className="text-blue-600 hover:underline"
+          >
+            Mon espace
+          </Link>
+        )}
+      </nav>
+
       <main className="flex-1 px-6 py-12">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
           {/* Texte et boutons */}
@@ -114,15 +129,6 @@ export default function Home() {
               <span className="text-4xl mr-4">😰</span>
               <span className="text-xl font-semibold text-gray-800">Anxiété</span>
             </Link>
-            {userRole && (
-              <Link
-                href={userRole === 'coach' ? '/coach/dashboard' : '/client/dashboard'}
-                className="bg-gray-100 hover:bg-gray-200 transition p-6 rounded-2xl shadow-md flex items-center"
-              >
-                <span className="text-4xl mr-4">🔐</span>
-                <span className="text-xl font-semibold text-gray-800">Mon espace</span>
-              </Link>
-            )}
           </div>
         </section>
       </main>
