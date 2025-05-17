@@ -102,7 +102,7 @@ export default function CoachDashboard() {
   const isPast = (dateStr) => new Date(dateStr) < new Date()
 
   return (
-    <div className="p-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white p-6">
       <header className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Image src="/logo.png" alt="Zenora Logo" width={40} height={40} />
@@ -111,6 +111,9 @@ export default function CoachDashboard() {
         <div className="flex gap-3">
           <Link href="/chat" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition">
             🧠 Discuter avec notre IA
+          </Link>
+          <Link href="/coach" className="bg-white text-blue-700 px-4 py-2 rounded-lg text-sm shadow border hover:bg-blue-50 transition">
+            👤 Discuter avec un coach mental
           </Link>
           <Link href="/" className="text-blue-600 px-4 py-2 text-sm hover:underline">
             Accueil
@@ -216,3 +219,4 @@ export default function CoachDashboard() {
     </div>
   )
 }
+
