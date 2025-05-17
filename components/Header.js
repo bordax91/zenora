@@ -9,14 +9,27 @@ import { useRouter } from 'next/navigation'
 export default function Header() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [userEmail, setUserEmail] = useState(null)
+  const [userRole, setUserRole] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession()
-      setIsAuthenticated(!!data.session)
-      setUserEmail(data.session?.user?.email || null)
+      const session = data?.session
+      setIsAuthenticated(!!session)
+      setUserEmail(session?.user?.email || null)
+
+      if (session?.user?.id) {
+        const { data: userData, error } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', session.user.id)
+          .single()
+        if (!error && userData?.role) {
+          setUserRole(userData.role)
+        }
+      }
     }
 
     checkSession()
@@ -24,6 +37,17 @@ export default function Header() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsAuthenticated(!!session)
       setUserEmail(session?.user?.email || null)
+
+      if (session?.user?.id) {
+        supabase
+          .from('users')
+          .select('role')
+          .eq('id', session.user.id)
+          .single()
+          .then(({ data }) => {
+            if (data?.role) setUserRole(data.role)
+          })
+      }
     })
 
     return () => subscription.unsubscribe()
@@ -33,6 +57,7 @@ export default function Header() {
     await supabase.auth.signOut()
     setIsAuthenticated(false)
     setUserEmail(null)
+    setUserRole(null)
     router.push('/login')
   }
 
@@ -56,6 +81,16 @@ export default function Header() {
           <Link href="/coaching" className="text-gray-600 hover:text-blue-600 font-medium">
             Le Coaching mental c'est quoi ?
           </Link>
+
+          {userRole && (
+            <Link
+              href={userRole === 'coach' ? '/coach/dashboard' : '/client/dashboard'}
+              className="text-blue-600 font-medium hover:underline"
+            >
+              Mon espace
+            </Link>
+          )}
+
           {isAuthenticated ? (
             <>
               <span className="text-sm text-gray-600">{userEmail}</span>
@@ -96,6 +131,14 @@ export default function Header() {
           <Link href="/#themes" className="text-gray-700 hover:text-blue-600">Nos Thèmes</Link>
           <Link href="/coach" className="text-gray-700 hover:text-blue-600">Nos abonnements de coaching</Link>
           <Link href="/coaching" className="text-gray-700 hover:text-blue-600">Le Coaching mental c’est quoi ?</Link>
+          {userRole && (
+            <Link
+              href={userRole === 'coach' ? '/coach/dashboard' : '/client/dashboard'}
+              className="text-blue-600 hover:underline"
+            >
+              Mon espace
+            </Link>
+          )}
         </div>
       )}
     </header>
