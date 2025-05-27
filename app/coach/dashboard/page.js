@@ -208,36 +208,30 @@ export default function CoachDashboard() {
             </li>
           )}
 
-          {sessions.map((session) => {
-            const isExpired = isPast(session.date)
+          {sessions.map((session) => (
+            <li key={session.id} className="bg-white p-4 rounded-xl shadow border">
+              <p><strong>Date :</strong> {new Date(session.date).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+              <p><strong>Client :</strong> {session.client?.email || '—'}</p>
+              <p><strong>Statut :</strong> {session.statut}</p>
+              {session.note_client && <p><strong>Note du client :</strong> {session.note_client}</p>}
+              {session.note_coach && <p><strong>Note du coach :</strong> {session.note_coach}</p>}
 
-            return (
-              <li key={session.id} className="bg-white p-4 rounded-xl shadow border">
-                <p><strong>Date :</strong> {new Date(session.date).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })}</p>
-                <p><strong>Client :</strong> {session.client?.email || '—'}</p>
-                <p><strong>Statut :</strong> {session.statut}</p>
-                {session.note_client && <p><strong>Note du client :</strong> {session.note_client}</p>}
-                {session.note_coach && <p><strong>Note du coach :</strong> {session.note_coach}</p>}
-
-                {!isExpired && (
-                  <div className="flex flex-col sm:flex-row gap-4 mt-3">
-                    <button
-                      onClick={() => handleEditClick(session)}
-                      className="text-sm text-blue-600 hover:underline"
-                    >
-                      Modifier
-                    </button>
-                    <button
-                      onClick={() => handleDeleteSession(session.id)}
-                      className="text-sm text-red-600 hover:underline"
-                    >
-                      Supprimer
-                    </button>
-                  </div>
-                )}
-              </li>
-            )
-          })}
+              <div className="flex flex-col sm:flex-row gap-4 mt-3">
+                <button
+                  onClick={() => handleEditClick(session)}
+                  className="text-sm text-blue-600 hover:underline"
+                >
+                  Modifier
+                </button>
+                <button
+                  onClick={() => handleDeleteSession(session.id)}
+                  className="text-sm text-red-600 hover:underline"
+                >
+                  Supprimer
+                </button>
+              </div>
+            </li>
+          ))}
         </ul>
       )}
     </div>
