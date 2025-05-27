@@ -23,7 +23,7 @@ export default function CoachPage() {
           <div className="bg-white rounded-xl shadow-md p-6 border flex flex-col justify-between">
             <div>
               <h2 className="text-xl font-bold">Séance à la carte</h2>
-              <p className="text-gray-600 mt-2">30 € / session</p>
+              <p className="text-gray-600 mt-2">39,99 € / session</p>
               <ul className="mt-4 space-y-2 text-sm text-left">
                 <li>✅ Une séance unique de coaching</li>
                 <li>✅ Disponible selon vos besoins</li>
@@ -44,11 +44,12 @@ export default function CoachPage() {
                 RECOMMANDÉ
               </span>
               <h2 className="text-xl font-bold">Suivi mensuel</h2>
-              <p className="text-gray-600">90 € / mois</p>
+              <p className="text-gray-600">129,99 € / mois</p>
               <ul className="mt-4 space-y-2 text-sm text-left">
                 <li>✅ 1 session de coaching par semaine</li>
                 <li>✅ Support par message illimité entre les sessions</li>
                 <li>✅ Paiement automatique mensuel</li>
+                <li>✅ Sessions de coaching disponibles par message, appel et vidéo</li>
               </ul>
             </div>
             <a
