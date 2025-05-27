@@ -30,7 +30,7 @@ export default function CoachPage() {
               </ul>
             </div>
             <a
-              href="https://buy.stripe.com/14kdQZbsa1yo94Q000"
+              href="https://buy.stripe.com/bJefZied6a2E94l6xV5os04"
               className="mt-6 bg-blue-600 hover:bg-blue-700 text-white text-center font-semibold py-3 rounded-xl transition"
             >
               Réserver une séance
@@ -53,7 +53,7 @@ export default function CoachPage() {
               </ul>
             </div>
             <a
-              href="https://buy.stripe.com/8wM009gMu2Csdl6001"
+              href="https://buy.stripe.com/14AfZi7OIfmYbct9K75os03"
               className="mt-6 bg-blue-600 hover:bg-blue-700 text-white text-center font-semibold py-3 rounded-xl transition"
             >
               S’abonner maintenant
