@@ -88,8 +88,9 @@ export default function CoachDashboard() {
         })
         .eq('id', editingSession.id)
 
-      if (error) alert("Erreur lors de la mise à jour")
-      else {
+      if (error) {
+        alert("Erreur lors de la mise à jour")
+      } else {
         alert("Modifications enregistrées")
         window.location.reload()
       }
@@ -104,8 +105,9 @@ export default function CoachDashboard() {
           note_coach: noteCoach
         })
 
-      if (error) alert("Erreur lors de la création")
-      else {
+      if (error) {
+        alert("Erreur lors de la création")
+      } else {
         alert("Session créée")
         window.location.reload()
       }
@@ -114,8 +116,11 @@ export default function CoachDashboard() {
 
   const handleDeleteSession = async (id) => {
     const { error } = await supabase.from('sessions').delete().eq('id', id)
-    if (error) alert('Erreur suppression session')
-    else setSessions(sessions.filter((s) => s.id !== id))
+    if (error) {
+      alert('Erreur suppression session')
+    } else {
+      setSessions(sessions.filter((s) => s.id !== id))
+    }
   }
 
   const isPast = (dateStr) => new Date(dateStr) < new Date()
@@ -129,4 +134,112 @@ export default function CoachDashboard() {
         </Link>
         <div className="flex flex-col sm:flex-row gap-3">
           <Link href="/chat" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm text-center hover:bg-blue-700 transition">
-            
+            🧠 Discuter avec notre IA
+          </Link>
+          <Link href="/coach" className="bg-white text-blue-700 px-4 py-2 rounded-lg text-sm text-center shadow border hover:bg-blue-50 transition">
+            👤 Discuter avec un coach mental
+          </Link>
+        </div>
+      </header>
+
+      <div className="mb-6">
+        {!editingSession && (
+          <button
+            onClick={() => setEditingSession({})}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+          >
+            ➕ Créer une session
+          </button>
+        )}
+      </div>
+
+      <h1 className="text-2xl font-bold mb-4 text-center sm:text-left">Vos sessions</h1>
+
+      {loading ? (
+        <p className="text-center">Chargement...</p>
+      ) : (
+        <ul className="space-y-6">
+          {editingSession && (
+            <li className="bg-white p-4 rounded-xl shadow border">
+              <label className="block text-sm">Date et heure</label>
+              <input
+                type="datetime-local"
+                value={newDate}
+                onChange={(e) => setNewDate(e.target.value)}
+                className="w-full border px-2 py-2 rounded"
+              />
+
+              <label className="block text-sm mt-2">Email du client</label>
+              <input
+                type="email"
+                value={clientEmail}
+                onChange={(e) => setClientEmail(e.target.value)}
+                className="w-full border px-2 py-2 rounded"
+                placeholder="client@exemple.com"
+              />
+
+              <label className="block text-sm mt-2">Statut</label>
+              <select
+                className="w-full border px-3 py-2 rounded"
+                value={statut}
+                onChange={(e) => setStatut(e.target.value)}
+              >
+                <option value="prévu">prévu</option>
+                <option value="terminé">terminé</option>
+              </select>
+
+              <label className="block text-sm mt-2">Note du coach</label>
+              <textarea
+                rows={2}
+                value={noteCoach}
+                onChange={(e) => setNoteCoach(e.target.value)}
+                className="w-full border px-2 py-2 rounded"
+                placeholder="Ajoutez une note pour cette session..."
+              />
+
+              <div className="flex flex-col sm:flex-row gap-4 mt-3">
+                <button onClick={handleSaveChanges} className="bg-blue-600 text-white px-4 py-2 rounded">
+                  Enregistrer
+                </button>
+                <button onClick={handleCancelEdit} className="text-gray-600 hover:underline text-sm">
+                  Annuler
+                </button>
+              </div>
+            </li>
+          )}
+
+          {sessions.map((session) => {
+            const isExpired = isPast(session.date)
+
+            return (
+              <li key={session.id} className="bg-white p-4 rounded-xl shadow border">
+                <p><strong>Date :</strong> {new Date(session.date).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                <p><strong>Client :</strong> {session.client?.email || '—'}</p>
+                <p><strong>Statut :</strong> {session.statut}</p>
+                {session.note_client && <p><strong>Note du client :</strong> {session.note_client}</p>}
+                {session.note_coach && <p><strong>Note du coach :</strong> {session.note_coach}</p>}
+
+                {!isExpired && (
+                  <div className="flex flex-col sm:flex-row gap-4 mt-3">
+                    <button
+                      onClick={() => handleEditClick(session)}
+                      className="text-sm text-blue-600 hover:underline"
+                    >
+                      Modifier
+                    </button>
+                    <button
+                      onClick={() => handleDeleteSession(session.id)}
+                      className="text-sm text-red-600 hover:underline"
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                )}
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </div>
+  )
+}
