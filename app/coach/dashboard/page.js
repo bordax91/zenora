@@ -1,3 +1,4 @@
+Dashboard coach
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -8,10 +9,11 @@ import Image from 'next/image'
 export default function CoachDashboard() {
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
+  const [clients, setClients] = useState([])
   const [editingSession, setEditingSession] = useState(null)
   const [noteCoach, setNoteCoach] = useState('')
   const [newDate, setNewDate] = useState('')
-  const [clientEmail, setClientEmail] = useState('')
+  const [clientId, setClientId] = useState('')
   const [statut, setStatut] = useState('prévu')
   const [userId, setUserId] = useState('')
 
@@ -22,6 +24,13 @@ export default function CoachDashboard() {
       if (!user) return
 
       setUserId(user.id)
+
+      const { data: clientsData } = await supabase
+        .from('users')
+        .select('id, email')
+        .eq('role', 'client')
+
+      setClients(clientsData || [])
 
       const { data: sessionList, error } = await supabase
         .from('sessions')
@@ -49,7 +58,7 @@ export default function CoachDashboard() {
     setEditingSession(session)
     setNoteCoach(session.note_coach || '')
     setNewDate(session.date)
-    setClientEmail(session.client?.email || '')
+    setClientId(session.client?.id || '')
     setStatut(session.statut)
   }
 
@@ -57,25 +66,12 @@ export default function CoachDashboard() {
     setEditingSession(null)
     setNoteCoach('')
     setNewDate('')
-    setClientEmail('')
+    setClientId('')
     setStatut('prévu')
   }
 
   const handleSaveChanges = async () => {
-    if (!newDate || !clientEmail) return
-
-    const { data: client, error: lookupError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', clientEmail)
-      .single()
-
-    if (lookupError || !client) {
-      alert("Client introuvable avec cette adresse email")
-      return
-    }
-
-    const clientId = client.id
+    if (!newDate || !clientId) return
 
     if (editingSession?.id) {
       const { error } = await supabase
@@ -169,14 +165,17 @@ export default function CoachDashboard() {
                 className="w-full border px-2 py-2 rounded"
               />
 
-              <label className="block text-sm mt-2">Email du client</label>
-              <input
-                type="email"
-                value={clientEmail}
-                onChange={(e) => setClientEmail(e.target.value)}
-                className="w-full border px-2 py-2 rounded"
-                placeholder="client@exemple.com"
-              />
+              <label className="block text-sm mt-2">Client</label>
+              <select
+                className="w-full border px-3 py-2 rounded"
+                value={clientId}
+                onChange={(e) => setClientId(e.target.value)}
+              >
+                <option value="">— Choisir un client —</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>{c.email}</option>
+                ))}
+              </select>
 
               <label className="block text-sm mt-2">Statut</label>
               <select
@@ -209,6 +208,7 @@ export default function CoachDashboard() {
           )}
 
           {sessions.map((session) => {
+            const isEditing = editingSession?.id === session.id
             const isExpired = isPast(session.date)
 
             return (
@@ -243,3 +243,4 @@ export default function CoachDashboard() {
     </div>
   )
 }
+
