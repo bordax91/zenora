@@ -11,8 +11,8 @@ export async function POST(req) {
   }
 
   await resend.emails.send({
-    from: 'onboarding@resend.dev',',
-    to: 'contact@zenoraapp.com', // ou une autre adresse de réception
+    from: 'onboarding@resend.dev',
+    to: 'contact@zenoraapp.com', // <- ou une autre adresse
     subject: '🧠 Nouveau formulaire coaching Zenora',
     html: `
       <h3>Formulaire de coaching complété</h3>
