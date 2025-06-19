@@ -7,7 +7,7 @@ export default function MerciPage() {
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-white">
       <Header />
       <main className="flex-1 flex flex-col items-center justify-center text-center px-4 py-10">
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-6">Merci pour votre paiement ! 🎉</h1>
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-6">Merci ! 🎉</h1>
         <p className="text-gray-600 mb-10">Vous pouvez maintenant réserver votre séance de coaching.</p>
         
         {/* Calendly intégré ici */}
