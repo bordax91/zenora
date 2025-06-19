@@ -1,6 +1,7 @@
 import './globals.css'
 import { Analytics } from '@vercel/analytics/react'
 import Script from 'next/script'
+import CookieBanner from '@/components/CookieBanner'
 
 export const metadata = {
   title: 'Zenora',
@@ -59,6 +60,7 @@ export default function RootLayout({ children }) {
       <body>
         {children}
         <Analytics />
+        <CookieBanner />
       </body>
     </html>
   )
