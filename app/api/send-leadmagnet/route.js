@@ -14,14 +14,26 @@ export async function POST(req) {
       from: 'Zenora <contact@zenoraapp.com>',
       to: email,
       subject: 'Voici ton guide gratuit : Quel est ton profil après rupture ?',
+      headers: {
+        'List-Unsubscribe': '<mailto:unsubscribe@zenoraapp.com>',
+      },
       html: `
-        <p>Bonjour ${prenom || ''},</p>
-        <p>Voici le guide que tu as demandé : <strong>Quel est ton profil après une rupture ?</strong></p>
-        <p>👇 Télécharge-le ici :</p>
-        <p><a href="https://zenoraapp.com/leadmagnet-profil-post-rupture.pdf" target="_blank">📥 Télécharger le guide (PDF)</a></p>
-        <br />
-        <p>Si tu ne l’as pas demandé, ignore simplement ce message.</p>
-        <p>Avec bienveillance,<br>L’équipe Zenora</p>
+        <div style="font-family: Arial, sans-serif; font-size: 16px; color: #333;">
+          <p>Bonjour ${prenom ? prenom : 'à toi'},</p>
+
+          <p>Merci d’avoir demandé ton guide <strong>"Quel est ton profil après une rupture ?"</strong>.</p>
+
+          <p>📥 <a href="https://zenoraapp.com/leadmagnet-profil-post-rupture.pdf" target="_blank" style="color: #2563eb;">Clique ici pour le télécharger (PDF)</a></p>
+
+          <p>Si tu n’es pas à l’origine de cette demande, tu peux ignorer ce message en toute sécurité.</p>
+
+          <p style="margin-top: 30px;">Avec bienveillance,<br>L’équipe Zenora</p>
+          <hr style="margin-top: 40px; border: none; border-top: 1px solid #ccc;" />
+          <p style="font-size: 12px; color: #777;">
+            Tu reçois cet email parce que tu as demandé un guide sur zenoraapp.com.<br>
+            Si tu ne veux plus recevoir de message, tu peux <a href="mailto:unsubscribe@zenoraapp.com" style="color: #2563eb;">te désabonner ici</a>.
+          </p>
+        </div>
       `
     })
 
