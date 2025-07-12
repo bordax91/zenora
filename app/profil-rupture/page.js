@@ -25,27 +25,28 @@ export default function LandingPage() {
     <div className="bg-white text-gray-800">
       <Header />
 
-      {/* Hero Section */}
-      <section className="text-center py-20 px-6 bg-blue-50">
-        <h1 className="text-4xl sm:text-5xl font-bold leading-tight mb-4">
+      {/* Hero Section ajustée pour tenir dans l'écran */}
+      <section className="min-h-screen flex flex-col justify-center items-center text-center px-4 bg-blue-50">
+        <h1 className="text-3xl sm:text-4xl font-bold leading-snug mb-2 max-w-xl">
           Et si cette rupture était le début d’un renouveau ?
         </h1>
-        <p className="text-lg text-gray-700 mb-6 max-w-2xl mx-auto">
+
+        <p className="text-base sm:text-lg text-gray-700 mb-4 max-w-lg">
           Télécharge gratuitement notre guide pour découvrir ton profil émotionnel après une rupture et commencer un vrai chemin de reconstruction.
         </p>
 
         {/* IMAGE DU GUIDE */}
-        <div className="flex justify-center mb-8">
+        <div className="mb-4">
           <Image
             src="/imagepostrupture.png"
             alt="Guide profil après rupture"
-            width={300}
-            height={400}
-            className="rounded shadow-md"
+            width={180}
+            height={240}
+            className="rounded shadow-sm"
           />
         </div>
 
-        <form onSubmit={handleSubmit} className="max-w-md mx-auto mt-6">
+        <form onSubmit={handleSubmit} className="w-full max-w-sm">
           {sent ? (
             <p className="text-green-600">Merci ! Ton guide a été envoyé par e-mail.</p>
           ) : (
@@ -54,13 +55,13 @@ export default function LandingPage() {
                 type="email"
                 required
                 placeholder="Ton adresse e-mail"
-                className="w-full border px-4 py-3 rounded mb-3"
+                className="w-full border px-4 py-2 rounded mb-2"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
               <button
                 type="submit"
-                className="w-full bg-blue-600 text-white py-3 rounded hover:bg-blue-700"
+                className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
               >
                 Recevoir le guide gratuit
               </button>
