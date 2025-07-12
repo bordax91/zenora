@@ -48,7 +48,10 @@ export default function LandingPage() {
 
         <form onSubmit={handleSubmit} className="w-full max-w-sm">
           {sent ? (
-            <p className="text-green-600">Merci ! Ton guide a été envoyé par e-mail.</p>
+            <div className="bg-green-100 border border-green-300 text-green-800 p-4 rounded text-sm mb-2">
+              Merci ! Ton guide a été envoyé par e-mail. 📬<br />
+              <span className="text-gray-700">Pense à vérifier aussi tes spams ou l’onglet “Promotions”.</span>
+            </div>
           ) : (
             <>
               <input
@@ -122,7 +125,10 @@ export default function LandingPage() {
         <p className="text-sm text-gray-600 mb-4">Sans engagement – 100% confidentiel</p>
         <form onSubmit={handleSubmit} className="max-w-md mx-auto">
           {sent ? (
-            <p className="text-green-600">Merci ! Ton guide a été envoyé par e-mail.</p>
+            <div className="bg-green-100 border border-green-300 text-green-800 p-4 rounded text-sm mb-2">
+              Merci ! Ton guide a été envoyé par e-mail. 📬<br />
+              <span className="text-gray-700">Pense à vérifier aussi tes spams ou l’onglet “Promotions”.</span>
+            </div>
           ) : (
             <>
               <input
