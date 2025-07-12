@@ -13,7 +13,7 @@ export async function POST(req) {
     const data = await resend.emails.send({
       from: 'Zenora <contact@zenoraapp.com>',
       to: email,
-      subject: 'Voici ton guide gratuit : Quel est ton profil après rupture ?',
+      subject: 'Voici ton guide gratuit',
       headers: {
         'List-Unsubscribe': '<mailto:unsubscribe@zenoraapp.com>',
       },
