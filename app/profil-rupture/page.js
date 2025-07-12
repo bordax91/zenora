@@ -33,6 +33,18 @@ export default function LandingPage() {
         <p className="text-lg text-gray-700 mb-6 max-w-2xl mx-auto">
           Télécharge gratuitement notre guide pour découvrir ton profil émotionnel après une rupture et commencer un vrai chemin de reconstruction.
         </p>
+
+        {/* IMAGE DU GUIDE */}
+        <div className="flex justify-center mb-8">
+          <Image
+            src="/imagepostrupture.png"
+            alt="Guide profil après rupture"
+            width={300}
+            height={400}
+            className="rounded shadow-md"
+          />
+        </div>
+
         <form onSubmit={handleSubmit} className="max-w-md mx-auto mt-6">
           {sent ? (
             <p className="text-green-600">Merci ! Ton guide a été envoyé par e-mail.</p>
