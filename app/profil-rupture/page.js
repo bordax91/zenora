@@ -25,24 +25,24 @@ export default function LandingPage() {
     <div className="bg-white text-gray-800">
       <Header />
 
-      {/* Hero Section ajustée pour tenir dans l'écran */}
-      <section className="min-h-screen flex flex-col justify-center items-center text-center px-4 bg-blue-50">
+      {/* Hero Section optimisée mobile */}
+      <section className="min-h-screen max-h-screen flex flex-col justify-center items-center text-center px-4 bg-blue-50 overflow-y-auto pt-6 pb-4">
         <h1 className="text-3xl sm:text-4xl font-bold leading-snug mb-2 max-w-xl">
           Et si cette rupture était le début d’un renouveau ?
         </h1>
 
-        <p className="text-base sm:text-lg text-gray-700 mb-4 max-w-lg">
+        <p className="text-base sm:text-lg text-gray-700 mb-3 max-w-lg">
           Télécharge gratuitement notre guide pour découvrir ton profil émotionnel après une rupture et commencer un vrai chemin de reconstruction.
         </p>
 
         {/* IMAGE DU GUIDE */}
-        <div className="mb-4">
+        <div className="mb-3">
           <Image
             src="/imagepostrupture.png"
             alt="Guide profil après rupture"
+            className="w-32 sm:w-40 h-auto rounded shadow-sm"
             width={180}
             height={240}
-            className="rounded shadow-sm"
           />
         </div>
 
