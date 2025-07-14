@@ -18,6 +18,17 @@ export default function SalesPage() {
         >
           🎉 Je m’inscris maintenant à la formation (149€)
         </Link>
+
+        {/* IMAGE EN DESSOUS DU BOUTON */}
+        <div className="mt-4 flex justify-center">
+          <Image
+            src="/imagepagevente.png"
+            alt="Aperçu de la formation"
+            width={600}
+            height={400}
+            className="rounded shadow"
+          />
+        </div>
       </section>
 
       {/* HERO SECTION */}
@@ -34,7 +45,7 @@ export default function SalesPage() {
       <section className="py-12 px-6 max-w-4xl mx-auto">
         <h2 className="text-2xl font-bold mb-6">Ce que tu vas apprendre</h2>
 
-        {[...
+        {[
           {
             title: 'Module 1 — Comprendre ce que tu ressens',
             text: 'Pourquoi tu ressens ce vide, cette tristesse, cette obsession… Et comment mettre des mots sur ce que tu vis pour reprendre le contrôle.'
@@ -101,7 +112,7 @@ export default function SalesPage() {
       <section className="py-12 px-6 bg-blue-50 text-center">
         <h2 className="text-2xl font-bold mb-6">Elles en parlent mieux que nous</h2>
         <div className="flex flex-col sm:flex-row justify-center gap-6 max-w-4xl mx-auto">
-          {[...
+          {[
             '“Je me suis sentie comprise pour la première fois depuis des semaines.” – Élodie',
             '“Les exercices sont simples mais puissants. J’ai pleuré, mais j’ai aussi beaucoup guéri.” – Sarah',
             '“J’avais déjà testé plein de trucs. Là j’ai eu une vraie transformation.” – Inès'
