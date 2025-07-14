@@ -34,7 +34,7 @@ export default function SalesPage() {
       <section className="py-12 px-6 max-w-4xl mx-auto">
         <h2 className="text-2xl font-bold mb-6">Ce que tu vas apprendre</h2>
 
-        {[
+        {[...
           {
             title: 'Module 1 — Comprendre ce que tu ressens',
             text: 'Pourquoi tu ressens ce vide, cette tristesse, cette obsession… Et comment mettre des mots sur ce que tu vis pour reprendre le contrôle.'
@@ -101,7 +101,7 @@ export default function SalesPage() {
       <section className="py-12 px-6 bg-blue-50 text-center">
         <h2 className="text-2xl font-bold mb-6">Elles en parlent mieux que nous</h2>
         <div className="flex flex-col sm:flex-row justify-center gap-6 max-w-4xl mx-auto">
-          {[
+          {[...
             '“Je me suis sentie comprise pour la première fois depuis des semaines.” – Élodie',
             '“Les exercices sont simples mais puissants. J’ai pleuré, mais j’ai aussi beaucoup guéri.” – Sarah',
             '“J’avais déjà testé plein de trucs. Là j’ai eu une vraie transformation.” – Inès'
@@ -110,6 +110,19 @@ export default function SalesPage() {
               {t}
             </blockquote>
           ))}
+        </div>
+      </section>
+
+      {/* IMAGE FINALE */}
+      <section className="py-12 px-6 text-center">
+        <div className="max-w-sm mx-auto">
+          <Image
+            src="/visuel-formation-zenora.png"
+            alt="Formation Zenora"
+            width={400}
+            height={600}
+            className="rounded-lg shadow"
+          />
         </div>
       </section>
 
