@@ -4,7 +4,6 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import Script from 'next/script'
 import Image from 'next/image'
-import Link from 'next/link'
 import { useState } from 'react'
 
 export default function LandingPage() {
@@ -14,12 +13,12 @@ export default function LandingPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    // Déclenche l'événement Facebook
+    // Déclenche l'événement personnalisé Facebook
     if (typeof window !== 'undefined' && window.fbq) {
       window.fbq('trackCustom', 'DownloadGuideZenora')
     }
 
-    // Envoi vers l’API backend
+    // Appel API backend pour envoyer le guide
     await fetch('/api/send-leadmagnet', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -31,7 +30,7 @@ export default function LandingPage() {
 
   return (
     <div className="bg-white text-gray-800">
-      {/* Meta Pixel Script */}
+      {/* Meta Pixel Facebook */}
       <Script id="meta-pixel" strategy="afterInteractive">
         {`
           !function(f,b,e,v,n,t,s)
@@ -42,29 +41,30 @@ export default function LandingPage() {
           t.src=v;s=b.getElementsByTagName(e)[0];
           s.parentNode.insertBefore(t,s)}(window, document,'script',
           'https://connect.facebook.net/en_US/fbevents.js');
-          fbq('init', 'TON_PIXEL_ID_ICI'); 
+          fbq('init', '613243461182951'); 
           fbq('track', 'PageView');
         `}
       </Script>
 
       <noscript>
-        <img height="1" width="1" style={{ display: 'none' }}
-          src="https://www.facebook.com/tr?id=TON_PIXEL_ID_ICI&ev=PageView&noscript=1"
+        <img
+          height="1"
+          width="1"
+          style={{ display: 'none' }}
+          src="https://www.facebook.com/tr?id=613243461182951&ev=PageView&noscript=1"
         />
       </noscript>
 
       <Header />
 
-      {/* Hero Section optimisée mobile */}
+      {/* Hero Section */}
       <section className="min-h-screen max-h-screen flex flex-col justify-center items-center text-center px-4 bg-blue-50 overflow-y-auto pt-6 pb-4">
         <h1 className="text-3xl sm:text-4xl font-bold leading-snug mb-2 max-w-xl">
           Et si cette rupture était le début d’un renouveau ?
         </h1>
-
         <p className="text-base sm:text-lg text-gray-700 mb-3 max-w-lg">
           Télécharge gratuitement notre guide pour découvrir ton profil émotionnel après une rupture et commencer un vrai chemin de reconstruction.
         </p>
-
         <div className="mb-3">
           <Image
             src="/imagepostrupture.png"
@@ -125,18 +125,16 @@ export default function LandingPage() {
       <section className="py-12 px-6 max-w-5xl mx-auto text-center">
         <h2 className="text-2xl font-bold mb-6">Elles ont déjà transformé leur douleur en force</h2>
         <div className="mt-6 flex justify-center flex-wrap gap-6">
-          <div className="bg-white border p-4 rounded shadow w-60">
-            <p className="text-sm">"Je croyais que c’était la fin. En fait, c’était le début de moi-même."</p>
-            <p className="text-xs text-gray-500 mt-2">- Clara</p>
-          </div>
-          <div className="bg-white border p-4 rounded shadow w-60">
-            <p className="text-sm">"Le guide m’a mis une claque douce. Je me suis reconnue à chaque page."</p>
-            <p className="text-xs text-gray-500 mt-2">- Léa</p>
-          </div>
-          <div className="bg-white border p-4 rounded shadow w-60">
-            <p className="text-sm">"Ce que j’ai compris grâce à Zenora m’a changée durablement."</p>
-            <p className="text-xs text-gray-500 mt-2">- Mélanie</p>
-          </div>
+          {[
+            { text: "Je croyais que c’était la fin. En fait, c’était le début de moi-même.", author: "Clara" },
+            { text: "Le guide m’a mis une claque douce. Je me suis reconnue à chaque page.", author: "Léa" },
+            { text: "Ce que j’ai compris grâce à Zenora m’a changée durablement.", author: "Mélanie" }
+          ].map(({ text, author }, i) => (
+            <div key={i} className="bg-white border p-4 rounded shadow w-60">
+              <p className="text-sm">"{text}"</p>
+              <p className="text-xs text-gray-500 mt-2">- {author}</p>
+            </div>
+          ))}
         </div>
       </section>
 
