@@ -13,16 +13,46 @@ export default function LandingPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    // Déclenche l'événement Facebook
+    if (typeof window !== 'undefined' && window.fbq) {
+      window.fbq('trackCustom', 'DownloadGuideZenora')
+    }
+
+    // Envoi vers l’API backend
     await fetch('/api/send-leadmagnet', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email })
     })
+
     setSent(true)
   }
 
   return (
     <div className="bg-white text-gray-800">
+      {/* Meta Pixel Script */}
+      <Script id="meta-pixel" strategy="afterInteractive">
+        {`
+          !function(f,b,e,v,n,t,s)
+          {if(f.fbq)return;n=f.fbq=function(){n.callMethod ?
+          n.callMethod.apply(n,arguments) : n.queue.push(arguments)};
+          if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+          n.queue=[];t=b.createElement(e);t.async=!0;
+          t.src=v;s=b.getElementsByTagName(e)[0];
+          s.parentNode.insertBefore(t,s)}(window, document,'script',
+          'https://connect.facebook.net/en_US/fbevents.js');
+          fbq('init', 'TON_PIXEL_ID_ICI'); 
+          fbq('track', 'PageView');
+        `}
+      </Script>
+
+      <noscript>
+        <img height="1" width="1" style={{ display: 'none' }}
+          src="https://www.facebook.com/tr?id=TON_PIXEL_ID_ICI&ev=PageView&noscript=1"
+        />
+      </noscript>
+
       <Header />
 
       {/* Hero Section optimisée mobile */}
@@ -35,7 +65,6 @@ export default function LandingPage() {
           Télécharge gratuitement notre guide pour découvrir ton profil émotionnel après une rupture et commencer un vrai chemin de reconstruction.
         </p>
 
-        {/* IMAGE DU GUIDE */}
         <div className="mb-3">
           <Image
             src="/imagepostrupture.png"
