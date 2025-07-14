@@ -124,19 +124,6 @@ export default function SalesPage() {
         </div>
       </section>
 
-      {/* IMAGE FINALE */}
-      <section className="py-12 px-6 text-center">
-        <div className="max-w-sm mx-auto">
-          <Image
-            src="/visuel-formation-zenora.png"
-            alt="Formation Zenora"
-            width={400}
-            height={600}
-            className="rounded-lg shadow"
-          />
-        </div>
-      </section>
-
       <Footer />
     </div>
   );
