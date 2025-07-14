@@ -8,23 +8,26 @@ export default function SalesPage() {
     <div className="bg-white text-gray-800">
       <Header />
 
-      {/* HERO SECTION AVEC IMAGE */}
-      <section className="text-center py-16 px-4 bg-blue-50">
+      {/* CTA FIXE EN HAUT DE PAGE */}
+      <section className="bg-blue-50 py-4 px-4 text-center">
+        <Link
+          href="https://buy.stripe.com/00w3cw6KE0s480hbSf5os05"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block bg-blue-600 text-white font-semibold text-sm sm:text-base px-6 py-2 rounded shadow hover:bg-blue-700 transition"
+        >
+          🎉 Je m’inscris maintenant à la formation (149€)
+        </Link>
+      </section>
+
+      {/* HERO SECTION */}
+      <section className="text-center py-12 px-4 bg-blue-50">
         <h1 className="text-4xl sm:text-5xl font-bold mb-6">
           Se relever après une rupture
         </h1>
         <p className="text-lg max-w-2xl mx-auto mb-6">
           Une formation bienveillante pour guérir, se reconstruire, et retrouver confiance en soi après une séparation difficile.
         </p>
-        <div className="flex justify-center">
-          <Image
-            src="/imagepagevente.png"
-            alt="Affiche formation Zenora"
-            width={320}
-            height={480}
-            className="rounded shadow-md"
-          />
-        </div>
       </section>
 
       {/* MODULES */}
@@ -88,7 +91,7 @@ export default function SalesPage() {
           href="https://buy.stripe.com/00w3cw6KE0s480hbSf5os05"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-block bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700"
+          className="inline-block bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition"
         >
           Je m’inscris maintenant
         </Link>
