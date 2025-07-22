@@ -26,6 +26,12 @@ export default function LandingPage() {
     setSent(true)
   }
 
+  const handleViewSalesPage = () => {
+    if (typeof window !== 'undefined' && window.fbq) {
+      window.fbq('trackCustom', 'ViewSalesPageFromLeadMagnet')
+    }
+  }
+
   return (
     <div className="bg-white text-gray-800">
       {/* Meta Pixel Facebook */}
@@ -88,6 +94,7 @@ export default function LandingPage() {
                   href="https://zenoraapp.com/salespage"
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={handleViewSalesPage}
                   className="inline-block mt-2 bg-pink-600 text-white px-4 py-2 rounded hover:bg-pink-700 transition"
                 >
                   Découvre la formation Zenora
@@ -178,6 +185,7 @@ export default function LandingPage() {
                   href="https://zenoraapp.com/salespage"
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={handleViewSalesPage}
                   className="inline-block mt-2 bg-pink-600 text-white px-4 py-2 rounded hover:bg-pink-700 transition"
                 >
                   Voir la formation complète
