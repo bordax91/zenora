@@ -62,7 +62,7 @@ export default function LandingPage() {
       <Header />
 
       {/* Hero Section */}
-      <section className="min-h-screen max-h-screen flex flex-col justify-center items-center text-center px-4 bg-blue-50 overflow-y-auto pt-6 pb-4">
+      <section className="min-h-screen flex flex-col justify-center items-center text-center px-4 bg-blue-50 overflow-y-auto pt-6 pb-4">
         <h1 className="text-3xl sm:text-4xl font-bold leading-snug mb-2 max-w-xl">
           Et si cette rupture était le début d’un renouveau ?
         </h1>
