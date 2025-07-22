@@ -1,11 +1,36 @@
+'use client'
+
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Image from 'next/image';
 import Link from 'next/link';
+import Script from 'next/script';
 
 export default function SalesPage() {
+  const handleStripeClick = () => {
+    if (typeof window !== 'undefined' && window.fbq) {
+      window.fbq('trackCustom', 'ClickBuyStripeZenora');
+    }
+  };
+
   return (
     <div className="bg-white text-gray-800">
+      {/* Meta Pixel Script */}
+      <Script id="meta-pixel" strategy="afterInteractive">
+        {`
+          !function(f,b,e,v,n,t,s)
+          {if(f.fbq)return;n=f.fbq=function(){n.callMethod ?
+          n.callMethod.apply(n,arguments) : n.queue.push(arguments)};
+          if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+          n.queue=[];t=b.createElement(e);t.async=!0;
+          t.src=v;s=b.getElementsByTagName(e)[0];
+          s.parentNode.insertBefore(t,s)}(window, document,'script',
+          'https://connect.facebook.net/en_US/fbevents.js');
+          fbq('init', '613243461182951'); 
+          fbq('track', 'PageView');
+        `}
+      </Script>
+
       <Header />
 
       {/* ACCROCHE EMOTIONNELLE */}
@@ -24,6 +49,7 @@ export default function SalesPage() {
           href="https://buy.stripe.com/00w3cw6KE0s480hbSf5os05"
           target="_blank"
           rel="noopener noreferrer"
+          onClick={handleStripeClick}
           className="inline-block bg-blue-600 text-white font-semibold text-sm sm:text-base px-6 py-2 rounded shadow hover:bg-blue-700 transition"
         >
           🎉 Je m’inscris maintenant à la formation (149€)
@@ -58,26 +84,27 @@ export default function SalesPage() {
       <section className="py-12 px-6 max-w-4xl mx-auto">
         <h2 className="text-2xl font-bold mb-6">Ce que tu vas apprendre</h2>
 
-        {[...Array(6)].map((_, i) => {
-          const modules = [
-            ['Module 1 — Comprendre ce que tu ressens', 'Pourquoi tu ressens ce vide, cette tristesse, cette obsession… Et comment mettre des mots sur ce que tu vis pour reprendre le contrôle.'],
-            ['Module 2 — Se libérer du passé', 'Tu vas identifier les liens invisibles qui te retiennent à ton ex, et apprendre à les couper sans culpabilité.'],
-            ['Module 3 — Gérer les pensées obsessionnelles', 'Des techniques concrètes pour stopper les ruminations et retrouver un esprit plus calme.'],
-            ['Module 4 — Retrouver l’estime de soi', 'Reconnecte avec ta valeur personnelle, même après une rupture douloureuse.'],
-            ['Module 5 — Repenser l’amour', 'Ce que cette rupture t’enseigne sur toi, tes besoins, et tes limites.'],
-            ['Module 6 — Se projeter avec confiance', 'Redessine ton avenir avec clarté et positivité.'],
-          ];
-          return (
-            <div key={i} className="mb-6">
-              <h3 className="text-xl font-semibold mb-2">{modules[i][0]}</h3>
-              <p>{modules[i][1]}</p>
-            </div>
-          );
-        })}
+        {[
+          ['Module 1 — Comprendre ce que tu ressens', 'Pourquoi tu ressens ce vide, cette tristesse, cette obsession… Et comment mettre des mots sur ce que tu vis pour reprendre le contrôle.'],
+          ['Module 2 — Se libérer du passé', 'Tu vas identifier les liens invisibles qui te retiennent à ton ex, et apprendre à les couper sans culpabilité.'],
+          ['Module 3 — Gérer les pensées obsessionnelles', 'Des techniques concrètes pour stopper les ruminations et retrouver un esprit plus calme.'],
+          ['Module 4 — Retrouver l’estime de soi', 'Reconnecte avec ta valeur personnelle, même après une rupture douloureuse.'],
+          ['Module 5 — Repenser l’amour', 'Ce que cette rupture t’enseigne sur toi, tes besoins, et tes limites.'],
+          ['Module 6 — Se projeter avec confiance', 'Redessine ton avenir avec clarté et positivité.'],
+        ].map(([title, desc], i) => (
+          <div key={i} className="mb-6">
+            <h3 className="text-xl font-semibold mb-2">{title}</h3>
+            <p>{desc}</p>
+          </div>
+        ))}
 
-        {/* CTA intermédiaire */}
         <div className="text-center my-8">
-          <Link href="https://buy.stripe.com/00w3cw6KE0s480hbSf5os05" target="_blank" className="inline-block bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition">
+          <Link
+            href="https://buy.stripe.com/00w3cw6KE0s480hbSf5os05"
+            target="_blank"
+            onClick={handleStripeClick}
+            className="inline-block bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition"
+          >
             🎧 Je commence la formation maintenant
           </Link>
         </div>
@@ -98,13 +125,18 @@ export default function SalesPage() {
         </div>
 
         <div className="text-center mt-8">
-          <Link href="https://buy.stripe.com/00w3cw6KE0s480hbSf5os05" target="_blank" className="inline-block bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition">
+          <Link
+            href="https://buy.stripe.com/00w3cw6KE0s480hbSf5os05"
+            target="_blank"
+            onClick={handleStripeClick}
+            className="inline-block bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition"
+          >
             Je veux profiter de la formation + bonus
           </Link>
         </div>
       </section>
 
-      {/* CONTENU CONCRET */}
+      {/* CONTENU */}
       <section className="py-12 px-6 bg-white text-center">
         <h2 className="text-2xl font-bold mb-4">Tu reçois immédiatement :</h2>
         <ul className="list-disc list-inside max-w-2xl mx-auto text-left text-gray-700 space-y-2">
@@ -116,7 +148,7 @@ export default function SalesPage() {
         </ul>
       </section>
 
-      {/* TARIF + CTA */}
+      {/* TARIF FINAL */}
       <section className="py-12 px-6 text-center">
         <h2 className="text-2xl font-bold mb-4">Tarif</h2>
         <p className="text-xl mb-2">149€ TTC</p>
@@ -125,32 +157,35 @@ export default function SalesPage() {
           href="https://buy.stripe.com/00w3cw6KE0s480hbSf5os05"
           target="_blank"
           rel="noopener noreferrer"
+          onClick={handleStripeClick}
           className="inline-block bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition"
         >
           Je m’inscris maintenant
         </Link>
       </section>
 
-      {/* TEMOIGNAGES */}
+      {/* TÉMOIGNAGES */}
       <section className="py-12 px-6 bg-blue-50 text-center">
         <h2 className="text-2xl font-bold mb-6">Elles en parlent mieux que nous</h2>
         <div className="flex flex-col sm:flex-row justify-center gap-6 max-w-4xl mx-auto">
-          {[...Array(3)].map((_, i) => {
-            const t = [
-              '“Je me suis sentie comprise pour la première fois depuis des semaines.” – Élodie',
-              '“Les exercices sont simples mais puissants. J’ai pleuré, mais j’ai aussi beaucoup guéri.” – Sarah',
-              '“J’avais déjà testé plein de trucs. Là j’ai eu une vraie transformation.” – Inès'
-            ];
-            return (
-              <blockquote key={i} className="bg-white border rounded shadow p-4 text-sm">
-                {t[i]}
-              </blockquote>
-            );
-          })}
+          {[
+            '“Je me suis sentie comprise pour la première fois depuis des semaines.” – Élodie',
+            '“Les exercices sont simples mais puissants. J’ai pleuré, mais j’ai aussi beaucoup guéri.” – Sarah',
+            '“J’avais déjà testé plein de trucs. Là j’ai eu une vraie transformation.” – Inès',
+          ].map((t, i) => (
+            <blockquote key={i} className="bg-white border rounded shadow p-4 text-sm">
+              {t}
+            </blockquote>
+          ))}
         </div>
 
         <div className="text-center mt-8">
-          <Link href="https://buy.stripe.com/00w3cw6KE0s480hbSf5os05" target="_blank" className="inline-block bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition">
+          <Link
+            href="https://buy.stripe.com/00w3cw6KE0s480hbSf5os05"
+            target="_blank"
+            onClick={handleStripeClick}
+            className="inline-block bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition"
+          >
             Je veux vivre cette transformation moi aussi
           </Link>
         </div>
