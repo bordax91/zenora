@@ -13,12 +13,10 @@ export default function LandingPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    // Déclenche l'événement personnalisé Facebook
     if (typeof window !== 'undefined' && window.fbq) {
       window.fbq('trackCustom', 'DownloadGuideZenora')
     }
 
-    // Appel API backend pour envoyer le guide
     await fetch('/api/send-leadmagnet', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -77,9 +75,24 @@ export default function LandingPage() {
 
         <form onSubmit={handleSubmit} className="w-full max-w-sm">
           {sent ? (
-            <div className="bg-green-100 border border-green-300 text-green-800 p-4 rounded text-sm mb-2">
+            <div className="bg-green-100 border border-green-300 text-green-800 p-4 rounded text-sm mb-4 text-center">
               Merci ! Ton guide a été envoyé par e-mail. 📬<br />
-              <span className="text-gray-700">Pense à vérifier aussi tes spams ou l’onglet “Promotions”.</span>
+              <span className="text-gray-700 block mt-1">
+                Pense à vérifier aussi tes spams ou l’onglet “Promotions”.
+              </span>
+
+              <div className="mt-4">
+                💡 Envie d’aller plus loin ?
+                <br />
+                <a
+                  href="https://zenoraapp.com/salespage"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block mt-2 bg-pink-600 text-white px-4 py-2 rounded hover:bg-pink-700 transition"
+                >
+                  Découvre la formation Zenora
+                </a>
+              </div>
             </div>
           ) : (
             <>
@@ -152,9 +165,24 @@ export default function LandingPage() {
         <p className="text-sm text-gray-600 mb-4">Sans engagement – 100% confidentiel</p>
         <form onSubmit={handleSubmit} className="max-w-md mx-auto">
           {sent ? (
-            <div className="bg-green-100 border border-green-300 text-green-800 p-4 rounded text-sm mb-2">
+            <div className="bg-green-100 border border-green-300 text-green-800 p-4 rounded text-sm mb-4 text-center">
               Merci ! Ton guide a été envoyé par e-mail. 📬<br />
-              <span className="text-gray-700">Pense à vérifier aussi tes spams ou l’onglet “Promotions”.</span>
+              <span className="text-gray-700 block mt-1">
+                Pense à vérifier aussi tes spams ou l’onglet “Promotions”.
+              </span>
+
+              <div className="mt-4">
+                💙 Tu veux aller plus loin dès maintenant ?
+                <br />
+                <a
+                  href="https://zenoraapp.com/salespage"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block mt-2 bg-pink-600 text-white px-4 py-2 rounded hover:bg-pink-700 transition"
+                >
+                  Voir la formation complète
+                </a>
+              </div>
             </div>
           ) : (
             <>
