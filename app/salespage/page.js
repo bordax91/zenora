@@ -40,7 +40,7 @@ export default function SalesPage() {
         </div>
 
         <p className="text-sm text-red-600 mt-4">
-          📌 Tarif spécial valable jusqu’au 31 juillet
+          📌 Tarif spécial se terminant très bientôt
         </p>
       </section>
 
