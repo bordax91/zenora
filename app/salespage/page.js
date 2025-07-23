@@ -52,7 +52,7 @@ export default function SalesPage() {
           onClick={handleStripeClick}
           className="inline-block bg-blue-600 text-white font-semibold text-sm sm:text-base px-6 py-2 rounded shadow hover:bg-blue-700 transition"
         >
-          🎉 Je m’inscris maintenant à la formation (149€)
+          🎉 Je m’inscris maintenant à la formation
         </Link>
 
         <div className="mt-4 flex justify-center">
