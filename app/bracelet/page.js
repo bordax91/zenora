@@ -1,67 +1,59 @@
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Image from 'next/image';
-import { useState } from 'react';
 import Link from 'next/link';
 
 export default function BraceletPage() {
-  const [selectedImage, setSelectedImage] = useState('/bracelet.png');
-
   return (
-    <div className="bg-white text-gray-800">
+    <div className="bg-white text-gray-900">
       <Header />
 
-      <section className="max-w-5xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Image principale */}
-          <div className="flex flex-col items-center">
-            <Image
-              src={selectedImage}
-              alt="Bracelet Spirituel"
-              width={500}
-              height={500}
-              className="rounded shadow-lg object-contain"
-            />
+      <main className="max-w-6xl mx-auto px-4 py-10 grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
+        {/* Image principale du bracelet */}
+        <div className="w-full">
+          <Image
+            src="/bracelet.png"
+            alt="Bracelet Emotion & Sérénité"
+            width={600}
+            height={600}
+            className="rounded shadow w-full object-cover"
+          />
+        </div>
 
-            {/* Vignettes */}
-            <div className="flex gap-4 mt-4">
-              {['/bracelet.png', '/bracelet2.png', '/bracelet3.png'].map((img, i) => (
-                <button key={i} onClick={() => setSelectedImage(img)}>
-                  <Image
-                    src={img}
-                    alt={`Bracelet vue ${i + 1}`}
-                    width={100}
-                    height={100}
-                    className={`rounded border ${selectedImage === img ? 'border-blue-600' : 'border-gray-300'}`}
-                  />
-                </button>
-              ))}
-            </div>
-          </div>
+        {/* Infos produit */}
+        <div className="space-y-6">
+          <h1 className="text-3xl font-bold">Bracelet Emotion & Sérénité</h1>
+          <p className="text-gray-700">
+            Un bijou simple, symbolique et apaisant — idéal pour marquer un nouveau départ après une période difficile.
+          </p>
 
-          {/* Détails produit */}
-          <div className="flex flex-col justify-center">
-            <h1 className="text-3xl font-bold mb-4">Bracelet Énergie & Sérénité</h1>
-            <p className="text-gray-700 mb-4">
-              Ce bracelet spirituel favorise l'équilibre intérieur, la sérénité et la confiance en soi.
-              Fabriqué avec soin, il accompagne ton quotidien comme un rappel puissant de ta force intérieure.
-            </p>
-            <ul className="list-disc list-inside mb-4 text-gray-600">
-              <li>🌿 Ajustable et unisexe</li>
-              <li>🔮 Signification spirituelle forte</li>
-              <li>📦 Livraison gratuite</li>
-              <li>💳 Paiement sécurisé</li>
-            </ul>
-            <p className="text-2xl font-bold mb-4">39,99€</p>
-            <Link
-              href="https://buy.stripe.com/4gMaEY8SM2AceoFcWj5os06"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block bg-blue-600 text-white px-6 py-3 rounded shadow hover:bg-blue-700 transition"
-            >
-              Je commande maintenant
-            </Link>
-          </div>
+          <ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
+            <li>Design épuré et symbolique</li>
+            <li>Disponible en 3 finitions (visuellement)</li>
+            <li>Fermeture ajustable</li>
+            <li>Livré dans un écrin prêt à offrir</li>
+            <li>Garantie 30 jours</li>
+            <li>Livraison offerte</li>
+          </ul>
+
+          <p className="text-xl font-semibold">39,99€</p>
+
+          <Link
+            href="https://buy.stripe.com/4gMaEY8SM2AceoFcWj5os06"
+            target="_blank"
+            className="inline-block bg-black text-white px-6 py-3 rounded hover:bg-gray-800 transition"
+          >
+            Commander maintenant
+          </Link>
+        </div>
+      </main>
+
+      {/* Galerie secondaire */}
+      <section className="max-w-6xl mx-auto px-4 py-12">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <Image src="/bracelet.png" alt="Vue 1" width={400} height={400} className="rounded shadow object-cover w-full" />
+          <Image src="/bracelet2.png" alt="Vue 2" width={400} height={400} className="rounded shadow object-cover w-full" />
+          <Image src="/bracelet3.png" alt="Vue 3" width={400} height={400} className="rounded shadow object-cover w-full" />
         </div>
       </section>
 
