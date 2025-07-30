@@ -151,7 +151,7 @@ export default function SalesPage() {
       {/* TARIF FINAL */}
       <section className="py-12 px-6 text-center">
         <h2 className="text-2xl font-bold mb-4">Tarif</h2>
-        <p className="text-xl mb-2">149€ TTC</p>
+        <p className="text-xl mb-2">97€ TTC</p>
         <p className="text-sm text-gray-600 mb-6">Paiement sécurisé · Accès immédiat · À vie</p>
         <Link
           href="https://buy.stripe.com/00w3cw6KE0s480hbSf5os05"
