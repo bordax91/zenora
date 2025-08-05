@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
+import CoachCalendar from '@/components/CoachCalendar' // 📌 À créer dans components
 
 // 📌 Config Supabase
 const supabase = createClient(
@@ -73,27 +74,21 @@ export default function CoachProfilePage() {
         </ul>
       </div>
 
+      {/* 📅 Calendrier intégré */}
+      <div className="bg-gray-50 p-6 rounded-lg shadow mb-8">
+        <h2 className="text-xl font-semibold mb-4">Réserver une séance</h2>
+        <CoachCalendar coachId={coach.id} />
+      </div>
+
       {/* CTA Paiement Stripe */}
-      <div className="text-center mb-8">
+      <div className="text-center mt-6">
         <a
           href={coach.stripe_link}
           target="_blank"
           rel="noopener noreferrer"
           className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold"
         >
-          Réserver et payer ma séance
-        </a>
-      </div>
-
-      {/* Lien Google Calendar ou outil de RDV */}
-      <div className="text-center">
-        <a
-          href={coach.booking_link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline text-blue-500"
-        >
-          Voir mes disponibilités 📅
+          Payer et confirmer la réservation
         </a>
       </div>
     </div>
