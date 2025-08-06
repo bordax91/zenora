@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
-import CoachCalendar from '@/components/CoachCalendar' // 📌 À créer dans components
+import CoachCalendar from '@/components/CoachCalendar' // 📌 Assure-toi que ce composant existe
 
 // 📌 Config Supabase
 const supabase = createClient(
@@ -24,9 +24,10 @@ export default function CoachProfilePage() {
 
   const fetchCoach = async () => {
     const { data, error } = await supabase
-      .from('coaches')
+      .from('users') // ✅ On utilise la table "users"
       .select('*')
-      .eq('username', username)
+      .eq('username', username) // On filtre par username
+      .eq('role', 'coach') // On filtre pour ne récupérer que les coaches
       .single()
 
     if (error) {
