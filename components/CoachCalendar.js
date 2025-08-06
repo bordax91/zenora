@@ -11,7 +11,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
-export default function CoachCalendar({ coachId }) {
+export default function CoachCalendar({ coachId, clientId }) {
   const [sessions, setSessions] = useState([])
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [loading, setLoading] = useState(true)
@@ -22,13 +22,14 @@ export default function CoachCalendar({ coachId }) {
     }
   }, [coachId])
 
-  // 📌 Récupération des créneaux du coach
+  // 📌 Récupération des créneaux disponibles
   const fetchSessions = async () => {
     setLoading(true)
     const { data, error } = await supabase
       .from('sessions')
       .select('*')
       .eq('coach_id', coachId)
+      .eq('statut', 'disponible')
       .order('date', { ascending: true })
 
     if (error) {
@@ -39,18 +40,44 @@ export default function CoachCalendar({ coachId }) {
     setLoading(false)
   }
 
-  // 📌 Normalisation des dates dispo (sans fuseau)
-  const availableDates = sessions.map(s => {
-    const d = new Date(s.date)
-    return d.toISOString().split('T')[0] // format YYYY-MM-DD
-  })
+  // 📌 Dates dispos (format YYYY-MM-DD)
+  const availableDates = sessions.map(s =>
+    new Date(s.date).toISOString().split('T')[0]
+  )
 
   // 📌 Sessions du jour sélectionné
-  const filteredSessions = sessions.filter(s => {
-    const d1 = new Date(s.date).toISOString().split('T')[0]
-    const d2 = selectedDate.toISOString().split('T')[0]
-    return d1 === d2
-  })
+  const filteredSessions = sessions.filter(s =>
+    new Date(s.date).toISOString().split('T')[0] ===
+    selectedDate.toISOString().split('T')[0]
+  )
+
+  // 📌 Réserver un créneau
+  const handleReservation = async (session) => {
+    if (!clientId) {
+      alert('Vous devez être connecté pour réserver.')
+      return
+    }
+
+    const { error } = await supabase
+      .from('sessions')
+      .update({
+        client_id: clientId,
+        statut: 'réservé'
+      })
+      .eq('id', session.id)
+
+    if (error) {
+      console.error('❌ Erreur réservation :', error)
+      alert('Une erreur est survenue lors de la réservation.')
+    } else {
+      // Redirection vers Stripe
+      if (session.payment_link) {
+        window.location.href = session.payment_link
+      } else {
+        alert('Réservation confirmée !')
+      }
+    }
+  }
 
   if (loading) {
     return <p className="text-center py-4 text-gray-600">📅 Chargement du calendrier...</p>
@@ -65,12 +92,9 @@ export default function CoachCalendar({ coachId }) {
         onChange={setSelectedDate}
         value={selectedDate}
         minDate={new Date()}
-        tileClassName={({ date }) => {
-          const dateStr = date.toISOString().split('T')[0]
-          return availableDates.includes(dateStr)
-            ? 'bg-green-100' // date dispo
-            : 'text-gray-400' // date sans dispo (mais cliquable)
-        }}
+        tileDisabled={({ date }) =>
+          !availableDates.includes(date.toISOString().split('T')[0])
+        }
       />
 
       {/* ⏱ Liste des créneaux */}
@@ -92,21 +116,12 @@ export default function CoachCalendar({ coachId }) {
                     minute: '2-digit'
                   })}
                 </span>
-
-                {session.statut === 'réservé' ? (
-                  <span className="text-red-500 font-medium">Réservé</span>
-                ) : (
-                  session.payment_link && (
-                    <a
-                      href={session.payment_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded"
-                    >
-                      Réserver & Payer
-                    </a>
-                  )
-                )}
+                <button
+                  onClick={() => handleReservation(session)}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded"
+                >
+                  Réserver & Payer
+                </button>
               </li>
             ))}
           </ul>
