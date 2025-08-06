@@ -11,10 +11,20 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
-export default function CoachCalendar({ coachId, clientId }) {
+export default function CoachCalendar({ coachId }) {
   const [sessions, setSessions] = useState([])
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [loading, setLoading] = useState(true)
+  const [clientId, setClientId] = useState(null)
+
+  // 🔹 Récupère l'ID du client connecté
+  useEffect(() => {
+    const fetchClient = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) setClientId(user.id)
+    }
+    fetchClient()
+  }, [])
 
   useEffect(() => {
     if (coachId) {
@@ -40,21 +50,24 @@ export default function CoachCalendar({ coachId, clientId }) {
     setLoading(false)
   }
 
-  // 📌 Dates dispos (format YYYY-MM-DD)
-  const availableDates = sessions.map(s =>
-    new Date(s.date).toISOString().split('T')[0]
-  )
+  // 📌 Formatage de date
+  const formatDate = (date) => {
+    const d = new Date(date)
+    return d.toISOString().split('T')[0]
+  }
+
+  const availableDates = sessions.map(s => formatDate(s.date))
 
   // 📌 Sessions du jour sélectionné
-  const filteredSessions = sessions.filter(s =>
-    new Date(s.date).toISOString().split('T')[0] ===
-    selectedDate.toISOString().split('T')[0]
+  const filteredSessions = sessions.filter(
+    s => formatDate(s.date) === formatDate(selectedDate)
   )
 
-  // 📌 Réserver un créneau
+  // 📌 Réservation
   const handleReservation = async (session) => {
     if (!clientId) {
       alert('Vous devez être connecté pour réserver.')
+      window.location.href = '/login'
       return
     }
 
@@ -70,11 +83,11 @@ export default function CoachCalendar({ coachId, clientId }) {
       console.error('❌ Erreur réservation :', error)
       alert('Une erreur est survenue lors de la réservation.')
     } else {
-      // Redirection vers Stripe
       if (session.payment_link) {
         window.location.href = session.payment_link
       } else {
-        alert('Réservation confirmée !')
+        alert('Réservation confirmée ✅')
+        fetchSessions()
       }
     }
   }
@@ -87,17 +100,15 @@ export default function CoachCalendar({ coachId, clientId }) {
     <div className="bg-white p-6 rounded-lg shadow">
       <h3 className="text-lg font-semibold mb-4">Disponibilités</h3>
 
-      {/* 📆 Calendrier */}
       <Calendar
         onChange={setSelectedDate}
         value={selectedDate}
         minDate={new Date()}
         tileDisabled={({ date }) =>
-          !availableDates.includes(date.toISOString().split('T')[0])
+          !availableDates.includes(formatDate(date))
         }
       />
 
-      {/* ⏱ Liste des créneaux */}
       <div className="mt-6">
         <h4 className="font-semibold mb-2">
           Créneaux le {selectedDate.toLocaleDateString('fr-FR')}
