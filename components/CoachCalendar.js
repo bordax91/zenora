@@ -39,13 +39,18 @@ export default function CoachCalendar({ coachId }) {
     setLoading(false)
   }
 
-  // 📌 Liste des dates disponibles au format ISO pour éviter bugs fuseau horaire
-  const availableDates = sessions.map(s => new Date(s.date).toISOString().split('T')[0])
+  // 📌 Normalisation des dates dispo (sans fuseau)
+  const availableDates = sessions.map(s => {
+    const d = new Date(s.date)
+    return d.toISOString().split('T')[0] // format YYYY-MM-DD
+  })
 
-  // 📌 Créneaux filtrés pour la date sélectionnée
-  const filteredSessions = sessions.filter(
-    s => new Date(s.date).toISOString().split('T')[0] === selectedDate.toISOString().split('T')[0]
-  )
+  // 📌 Sessions du jour sélectionné
+  const filteredSessions = sessions.filter(s => {
+    const d1 = new Date(s.date).toISOString().split('T')[0]
+    const d2 = selectedDate.toISOString().split('T')[0]
+    return d1 === d2
+  })
 
   if (loading) {
     return <p className="text-center py-4 text-gray-600">📅 Chargement du calendrier...</p>
@@ -60,7 +65,12 @@ export default function CoachCalendar({ coachId }) {
         onChange={setSelectedDate}
         value={selectedDate}
         minDate={new Date()}
-        tileDisabled={({ date }) => !availableDates.includes(date.toISOString().split('T')[0])}
+        tileClassName={({ date }) => {
+          const dateStr = date.toISOString().split('T')[0]
+          return availableDates.includes(dateStr)
+            ? 'bg-green-100' // date dispo
+            : 'text-gray-400' // date sans dispo (mais cliquable)
+        }}
       />
 
       {/* ⏱ Liste des créneaux */}
