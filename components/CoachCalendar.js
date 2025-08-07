@@ -5,10 +5,9 @@ import { createClient } from '@supabase/supabase-js'
 import Calendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
 
-// 📌 Config Supabase
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
 export default function CoachCalendar({ coachId }) {
@@ -17,7 +16,7 @@ export default function CoachCalendar({ coachId }) {
   const [loading, setLoading] = useState(true)
   const [clientId, setClientId] = useState(null)
 
-  // 🔹 Récupère l'ID du client connecté
+  // 🔹 Récupération du client connecté
   useEffect(() => {
     const fetchClient = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -26,13 +25,13 @@ export default function CoachCalendar({ coachId }) {
     fetchClient()
   }, [])
 
+  // 🔹 Récupération des sessions
   useEffect(() => {
     if (coachId) {
       fetchSessions()
     }
   }, [coachId])
 
-  // 📌 Récupération des créneaux disponibles
   const fetchSessions = async () => {
     setLoading(true)
     const { data, error } = await supabase
@@ -50,20 +49,17 @@ export default function CoachCalendar({ coachId }) {
     setLoading(false)
   }
 
-  // 📌 Formatage de date
-  const formatDate = (date) => {
-    const d = new Date(date)
-    return d.toISOString().split('T')[0]
-  }
+  // 🔹 Format YYYY-MM-DD (compatible date locale)
+  const formatDate = (date) =>
+    new Date(date).toLocaleDateString('fr-CA') // ex: "2025-08-07"
 
   const availableDates = sessions.map(s => formatDate(s.date))
 
-  // 📌 Sessions du jour sélectionné
   const filteredSessions = sessions.filter(
     s => formatDate(s.date) === formatDate(selectedDate)
   )
 
-  // 📌 Réservation
+  // 🔹 Réservation
   const handleReservation = async (session) => {
     if (!clientId) {
       alert('Vous devez être connecté pour réserver.')
@@ -81,13 +77,13 @@ export default function CoachCalendar({ coachId }) {
 
     if (error) {
       console.error('❌ Erreur réservation :', error)
-      alert('Une erreur est survenue lors de la réservation.')
+      alert('Une erreur est survenue.')
     } else {
       if (session.payment_link) {
         window.location.href = session.payment_link
       } else {
         alert('Réservation confirmée ✅')
-        fetchSessions()
+        fetchSessions() // Refresh
       }
     }
   }
