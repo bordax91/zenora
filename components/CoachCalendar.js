@@ -49,13 +49,21 @@ export default function CoachCalendar({ coachId }) {
     setLoading(false)
   }
 
-  // ✅ Format YYYY-MM-DD en UTC (évite les bugs de timezone)
-  const formatDate = (date) => new Date(date).toISOString().slice(0, 10)
+  // 🔹 Compare 2 dates sans tenir compte de l'heure
+  const isSameUTCDate = (d1, d2) => {
+    return (
+      d1.getUTCFullYear() === d2.getUTCFullYear() &&
+      d1.getUTCMonth() === d2.getUTCMonth() &&
+      d1.getUTCDate() === d2.getUTCDate()
+    )
+  }
 
-  const availableDates = sessions.map(s => formatDate(s.date))
+  // 🔹 Dates disponibles (utilisé pour désactiver les jours)
+  const availableDates = sessions.map(s => new Date(s.date))
 
-  const filteredSessions = sessions.filter(
-    s => formatDate(s.date) === formatDate(selectedDate)
+  // 🔹 Créneaux du jour sélectionné
+  const filteredSessions = sessions.filter(s =>
+    isSameUTCDate(new Date(s.date), selectedDate)
   )
 
   // 🔹 Réservation
@@ -100,7 +108,7 @@ export default function CoachCalendar({ coachId }) {
         value={selectedDate}
         minDate={new Date()}
         tileDisabled={({ date }) =>
-          !availableDates.includes(formatDate(date))
+          !availableDates.some(d => isSameUTCDate(d, date))
         }
       />
 
