@@ -49,9 +49,8 @@ export default function CoachCalendar({ coachId }) {
     setLoading(false)
   }
 
-  // 🔹 Format YYYY-MM-DD (compatible date locale)
-  const formatDate = (date) =>
-    new Date(date).toLocaleDateString('fr-CA') // ex: "2025-08-07"
+  // ✅ Format YYYY-MM-DD en UTC (évite les bugs de timezone)
+  const formatDate = (date) => new Date(date).toISOString().slice(0, 10)
 
   const availableDates = sessions.map(s => formatDate(s.date))
 
@@ -83,7 +82,7 @@ export default function CoachCalendar({ coachId }) {
         window.location.href = session.payment_link
       } else {
         alert('Réservation confirmée ✅')
-        fetchSessions() // Refresh
+        fetchSessions()
       }
     }
   }
