@@ -49,19 +49,15 @@ export default function CoachCalendar({ coachId }) {
     setLoading(false)
   }
 
-  // 🔹 Compare 2 dates sans tenir compte de l'heure
+  // 🔹 Comparer deux dates uniquement sur le jour UTC
   const isSameUTCDate = (d1, d2) => {
-    return (
-      d1.getUTCFullYear() === d2.getUTCFullYear() &&
-      d1.getUTCMonth() === d2.getUTCMonth() &&
-      d1.getUTCDate() === d2.getUTCDate()
-    )
+    const d1utc = new Date(Date.UTC(d1.getUTCFullYear(), d1.getUTCMonth(), d1.getUTCDate()))
+    const d2utc = new Date(Date.UTC(d2.getUTCFullYear(), d2.getUTCMonth(), d2.getUTCDate()))
+    return d1utc.getTime() === d2utc.getTime()
   }
 
-  // 🔹 Dates disponibles (utilisé pour désactiver les jours)
   const availableDates = sessions.map(s => new Date(s.date))
 
-  // 🔹 Créneaux du jour sélectionné
   const filteredSessions = sessions.filter(s =>
     isSameUTCDate(new Date(s.date), selectedDate)
   )
@@ -127,7 +123,9 @@ export default function CoachCalendar({ coachId }) {
                 <span>
                   {new Date(session.date).toLocaleTimeString('fr-FR', {
                     hour: '2-digit',
-                    minute: '2-digit'
+                    minute: '2-digit',
+                    hour12: false,
+                    timeZone: 'UTC' // assure un affichage constant basé sur l'heure stockée
                   })}
                 </span>
                 <button
