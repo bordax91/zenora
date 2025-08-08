@@ -16,7 +16,7 @@ export default function CoachCalendar({ coachId }) {
   const [loading, setLoading] = useState(true)
   const [clientId, setClientId] = useState(null)
 
-  // 🔹 Récupération du client connecté
+  // 🔹 Récupération du client connecté (optionnel)
   useEffect(() => {
     const fetchClient = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -25,31 +25,29 @@ export default function CoachCalendar({ coachId }) {
     fetchClient()
   }, [])
 
-  // 🔹 Récupération des sessions
+  // 🔹 Récupération des sessions du coach
   useEffect(() => {
-    if (coachId) {
-      fetchSessions()
+    const fetchSessions = async () => {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('coach_id', coachId)
+        .eq('statut', 'disponible')
+        .order('date', { ascending: true })
+
+      if (error) {
+        console.error('❌ Erreur récupération sessions :', error)
+      } else {
+        setSessions(data || [])
+      }
+      setLoading(false)
     }
+
+    if (coachId) fetchSessions()
   }, [coachId])
 
-  const fetchSessions = async () => {
-    setLoading(true)
-    const { data, error } = await supabase
-      .from('sessions')
-      .select('*')
-      .eq('coach_id', coachId)
-      .eq('statut', 'disponible')
-      .order('date', { ascending: true })
-
-    if (error) {
-      console.error('❌ Erreur récupération sessions :', error)
-    } else {
-      setSessions(data || [])
-    }
-    setLoading(false)
-  }
-
-  // 🔹 Comparer deux dates (année, mois, jour UTC)
+  // 🔹 Comparaison des dates UTC (sans l’heure)
   const isSameUTCDate = (d1, d2) => {
     return (
       d1.getUTCFullYear() === d2.getUTCFullYear() &&
@@ -59,7 +57,6 @@ export default function CoachCalendar({ coachId }) {
   }
 
   const availableDates = sessions.map(s => new Date(s.date))
-
   const filteredSessions = sessions.filter(s =>
     isSameUTCDate(new Date(s.date), selectedDate)
   )
@@ -88,7 +85,10 @@ export default function CoachCalendar({ coachId }) {
         window.location.href = session.payment_link
       } else {
         alert('Réservation confirmée ✅')
-        fetchSessions()
+        // Refresh sessions après réservation
+        setSessions(prev =>
+          prev.map(s => s.id === session.id ? { ...s, statut: 'réservé' } : s)
+        )
       }
     }
   }
@@ -102,8 +102,8 @@ export default function CoachCalendar({ coachId }) {
       <h3 className="text-lg font-semibold mb-4">Disponibilités</h3>
 
       <Calendar
-        onChange={(date) => setSelectedDate(date || new Date())}
-        value={selectedDate || new Date()}
+        onChange={setSelectedDate}
+        value={selectedDate}
         minDate={new Date()}
         tileDisabled={({ date }) =>
           !availableDates.some(d => isSameUTCDate(d, date))
