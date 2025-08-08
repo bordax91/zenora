@@ -14,9 +14,7 @@ export default function CoachCalendar({ coachId }) {
   const [sessions, setSessions] = useState([])
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [loading, setLoading] = useState(true)
-  const [clientId, setClientId] = useState(null)
 
-  // 🔹 Récupérer les sessions visibles à tous
   useEffect(() => {
     if (coachId) fetchSessions()
   }, [coachId])
@@ -43,6 +41,8 @@ export default function CoachCalendar({ coachId }) {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
+      // 🔸 Sauvegarder temporairement la session
+      localStorage.setItem('pendingReservation', JSON.stringify(session))
       window.location.href = '/login'
       return
     }
@@ -68,16 +68,30 @@ export default function CoachCalendar({ coachId }) {
     }
   }
 
+  // 🔹 Exécution auto après connexion
+  useEffect(() => {
+    const tryAutoReservation = async () => {
+      const pending = localStorage.getItem('pendingReservation')
+      if (pending) {
+        const session = JSON.parse(pending)
+        localStorage.removeItem('pendingReservation')
+        await checkClientAndReserve(session)
+      }
+    }
+
+    tryAutoReservation()
+  }, [])
+
   // 🔹 Compare deux dates en UTC sans tenir compte de l'heure
   const isSameUTCDate = (d1, d2) =>
     d1.getUTCFullYear() === d2.getUTCFullYear() &&
     d1.getUTCMonth() === d2.getUTCMonth() &&
     d1.getUTCDate() === d2.getUTCDate()
 
-  // 🔹 Dates disponibles (à colorer dans le calendrier)
+  // 🔹 Dates disponibles
   const availableDates = sessions.map(s => new Date(s.date))
 
-  // 🔹 Créneaux pour le jour sélectionné
+  // 🔹 Créneaux du jour sélectionné
   const filteredSessions = sessions.filter(s =>
     isSameUTCDate(new Date(s.date), selectedDate)
   )
