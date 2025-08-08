@@ -16,55 +16,33 @@ export default function CoachCalendar({ coachId }) {
   const [loading, setLoading] = useState(true)
   const [clientId, setClientId] = useState(null)
 
-  // 🔹 Récupération du client connecté (optionnel)
+  // 🔹 Récupérer les sessions visibles à tous
   useEffect(() => {
-    const fetchClient = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) setClientId(user.id)
-    }
-    fetchClient()
-  }, [])
-
-  // 🔹 Récupération des sessions du coach
-  useEffect(() => {
-    const fetchSessions = async () => {
-      setLoading(true)
-      const { data, error } = await supabase
-        .from('sessions')
-        .select('*')
-        .eq('coach_id', coachId)
-        .eq('statut', 'disponible')
-        .order('date', { ascending: true })
-
-      if (error) {
-        console.error('❌ Erreur récupération sessions :', error)
-      } else {
-        setSessions(data || [])
-      }
-      setLoading(false)
-    }
-
     if (coachId) fetchSessions()
   }, [coachId])
 
-  // 🔹 Comparaison des dates UTC (sans l’heure)
-  const isSameUTCDate = (d1, d2) => {
-    return (
-      d1.getUTCFullYear() === d2.getUTCFullYear() &&
-      d1.getUTCMonth() === d2.getUTCMonth() &&
-      d1.getUTCDate() === d2.getUTCDate()
-    )
+  const fetchSessions = async () => {
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('coach_id', coachId)
+      .eq('statut', 'disponible')
+      .order('date', { ascending: true })
+
+    if (error) {
+      console.error('❌ Erreur récupération sessions :', error)
+    } else {
+      setSessions(data || [])
+    }
+    setLoading(false)
   }
 
-  const availableDates = sessions.map(s => new Date(s.date))
-  const filteredSessions = sessions.filter(s =>
-    isSameUTCDate(new Date(s.date), selectedDate)
-  )
+  // 🔹 Vérifie l'utilisateur au moment de cliquer
+  const checkClientAndReserve = async (session) => {
+    const { data: { user } } = await supabase.auth.getUser()
 
-  // 🔹 Réservation
-  const handleReservation = async (session) => {
-    if (!clientId) {
-      alert('Vous devez être connecté pour réserver.')
+    if (!user) {
       window.location.href = '/login'
       return
     }
@@ -72,7 +50,7 @@ export default function CoachCalendar({ coachId }) {
     const { error } = await supabase
       .from('sessions')
       .update({
-        client_id: clientId,
+        client_id: user.id,
         statut: 'réservé'
       })
       .eq('id', session.id)
@@ -85,13 +63,24 @@ export default function CoachCalendar({ coachId }) {
         window.location.href = session.payment_link
       } else {
         alert('Réservation confirmée ✅')
-        // Refresh sessions après réservation
-        setSessions(prev =>
-          prev.map(s => s.id === session.id ? { ...s, statut: 'réservé' } : s)
-        )
+        fetchSessions()
       }
     }
   }
+
+  // 🔹 Compare deux dates en UTC sans tenir compte de l'heure
+  const isSameUTCDate = (d1, d2) =>
+    d1.getUTCFullYear() === d2.getUTCFullYear() &&
+    d1.getUTCMonth() === d2.getUTCMonth() &&
+    d1.getUTCDate() === d2.getUTCDate()
+
+  // 🔹 Dates disponibles (à colorer dans le calendrier)
+  const availableDates = sessions.map(s => new Date(s.date))
+
+  // 🔹 Créneaux pour le jour sélectionné
+  const filteredSessions = sessions.filter(s =>
+    isSameUTCDate(new Date(s.date), selectedDate)
+  )
 
   if (loading) {
     return <p className="text-center py-4 text-gray-600">📅 Chargement du calendrier...</p>
@@ -131,7 +120,7 @@ export default function CoachCalendar({ coachId }) {
                   })}
                 </span>
                 <button
-                  onClick={() => handleReservation(session)}
+                  onClick={() => checkClientAndReserve(session)}
                   className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded"
                 >
                   Réserver & Payer
