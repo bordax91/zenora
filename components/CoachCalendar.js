@@ -49,11 +49,13 @@ export default function CoachCalendar({ coachId }) {
     setLoading(false)
   }
 
-  // 🔹 Comparer deux dates uniquement sur le jour UTC
+  // 🔹 Comparer deux dates (année, mois, jour UTC)
   const isSameUTCDate = (d1, d2) => {
-    const d1utc = new Date(Date.UTC(d1.getUTCFullYear(), d1.getUTCMonth(), d1.getUTCDate()))
-    const d2utc = new Date(Date.UTC(d2.getUTCFullYear(), d2.getUTCMonth(), d2.getUTCDate()))
-    return d1utc.getTime() === d2utc.getTime()
+    return (
+      d1.getUTCFullYear() === d2.getUTCFullYear() &&
+      d1.getUTCMonth() === d2.getUTCMonth() &&
+      d1.getUTCDate() === d2.getUTCDate()
+    )
   }
 
   const availableDates = sessions.map(s => new Date(s.date))
@@ -100,8 +102,8 @@ export default function CoachCalendar({ coachId }) {
       <h3 className="text-lg font-semibold mb-4">Disponibilités</h3>
 
       <Calendar
-        onChange={setSelectedDate}
-        value={selectedDate}
+        onChange={(date) => setSelectedDate(date || new Date())}
+        value={selectedDate || new Date()}
         minDate={new Date()}
         tileDisabled={({ date }) =>
           !availableDates.some(d => isSameUTCDate(d, date))
@@ -125,7 +127,7 @@ export default function CoachCalendar({ coachId }) {
                     hour: '2-digit',
                     minute: '2-digit',
                     hour12: false,
-                    timeZone: 'UTC' // assure un affichage constant basé sur l'heure stockée
+                    timeZone: 'UTC'
                   })}
                 </span>
                 <button
