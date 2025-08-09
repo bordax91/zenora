@@ -1,58 +1,68 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 
 export default function AuthCallback() {
   const router = useRouter()
-  const [error, setError] = useState(null)
+  const search = useSearchParams()
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const processUser = async () => {
-      const { data, error } = await supabase.auth.getUser()
+    const run = async () => {
+      try {
+        // 1) Gérer le retour OAuth (PKCE) : échanger le code contre une session
+        const code = search.get('code')
+        const nextParam = search.get('next') || ''
 
-      if (error || !data?.user) {
-        setError('Erreur de connexion. Veuillez réessayer.')
-        router.push('/login')
-        return
-      }
-
-      const user = data.user
-      let role = user.user_metadata?.role
-
-      // Si pas de rôle défini, on essaie localStorage
-      if (!role) {
-        role = localStorage.getItem('pendingRole') || 'client'
-
-        // 🔁 Mise à jour user_metadata
-        await supabase.auth.updateUser({ data: { role } })
-
-        // 🔎 Vérifie si déjà dans la table "users"
-        const { data: existing } = await supabase
-          .from('users')
-          .select('id')
-          .eq('id', user.id)
-          .maybeSingle()
-
-        if (!existing) {
-          await supabase.from('users').insert({
-            id: user.id,
-            email: user.email,
-            role,
-            created_at: new Date().toISOString(),
-          })
+        if (code) {
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(window.location.href)
+          if (exchangeError) throw exchangeError
         }
+
+        // 2) Récupérer l'utilisateur
+        const { data: userData, error: userErr } = await supabase.auth.getUser()
+        if (userErr || !userData?.user) {
+          throw new Error('Erreur de connexion. Veuillez réessayer.')
+        }
+
+        const user = userData.user
+
+        // 3) S’assurer que le rôle est bien défini (par défaut "client")
+        let role = user.user_metadata?.role as string | undefined
+        if (!role) {
+          role = localStorage.getItem('pendingRole') || 'client'
+          await supabase.auth.updateUser({ data: { role } })
+        }
+
+        // 4) Upsert dans la table "users" (idempotent)
+        await supabase.from('users').upsert({
+          id: user.id,
+          email: user.email,
+          role,
+          // si created_at géré par défaut, on peut l’omettre
+        }, { onConflict: 'id' })
+
+        localStorage.removeItem('pendingRole')
+        localStorage.setItem('isLoggedIn', 'true')
+
+        // 5) Redirection : priorité à `next=...`, sinon dashboard par rôle
+        if (nextParam && nextParam.startsWith('/')) {
+          router.replace(nextParam)
+        } else {
+          router.replace(role === 'coach' ? '/coach/dashboard' : '/client/dashboard')
+        }
+      } catch (e: any) {
+        console.error(e)
+        setError(e?.message || 'Erreur de connexion. Veuillez réessayer.')
+        router.replace('/login')
       }
-
-      localStorage.removeItem('pendingRole')
-      localStorage.setItem('isLoggedIn', 'true')
-
-      router.push(role === 'coach' ? '/coach/dashboard' : '/client/dashboard')
     }
 
-    processUser()
-  }, [router])
+    run()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div className="min-h-screen flex items-center justify-center text-gray-600">

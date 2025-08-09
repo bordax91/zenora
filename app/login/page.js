@@ -1,38 +1,57 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase/client'
 
 export default function LoginPage() {
+  const router = useRouter()
+  const search = useSearchParams()
+  const nextParam = search.get('next') || '' // ex: /reserve?session=...
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const router = useRouter()
+  const [loading, setLoading] = useState(false)
+
+  const afterLoginRedirect = async () => {
+    // si on a une cible explicite -> on y va
+    if (nextParam) {
+      router.replace(nextParam)
+      return
+    }
+    // sinon, on route par rôle
+    const { data } = await supabase.auth.getUser()
+    const role = data?.user?.user_metadata?.role || 'client'
+    router.replace(role === 'coach' ? '/coach/dashboard' : '/client/dashboard')
+  }
 
   const handleLogin = async (e) => {
     e.preventDefault()
     setError('')
+    setLoading(true)
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    setLoading(false)
 
     if (error) {
-      setError(error.message)
-    } else if (data?.user) {
-      const role = data.user.user_metadata?.role || 'client'
+      setError(error.message || "Connexion impossible")
+      return
+    }
+    if (data?.user) {
       localStorage.setItem('isLoggedIn', 'true')
-      router.push(role === 'coach' ? '/coach/dashboard' : '/client/dashboard')
+      afterLoginRedirect()
     }
   }
 
   const handleGoogleLogin = async () => {
+    const base = `${window.location.origin}/auth/callback`
+    const redirectTo = nextParam ? `${base}?next=${encodeURIComponent(nextParam)}` : base
+
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`, // redirige vers la page callback
-      },
+      options: { redirectTo }
     })
   }
 
@@ -60,6 +79,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
               placeholder="prenom@email.com"
+              autoComplete="email"
             />
           </div>
 
@@ -73,6 +93,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
               placeholder="Votre mot de passe"
+              autoComplete="current-password"
             />
           </div>
 
@@ -80,9 +101,10 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-semibold py-3 rounded-lg transition"
           >
-            Se connecter
+            {loading ? 'Connexion…' : 'Se connecter'}
           </button>
         </form>
 
@@ -103,7 +125,7 @@ export default function LoginPage() {
 
         <p className="text-center text-gray-600 text-sm mt-6">
           Pas encore de compte ?{' '}
-          <Link href="/register" className="text-blue-600 font-semibold hover:underline">
+          <Link href={`/register${nextParam ? `?next=${encodeURIComponent(nextParam)}` : ''}`} className="text-blue-600 font-semibold hover:underline">
             S'inscrire
           </Link>
         </p>

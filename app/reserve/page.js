@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 
@@ -10,64 +10,70 @@ const supabase = createClient(
 )
 
 export default function ReservePage() {
+  const search = useSearchParams()
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const sessionId = useMemo(() => searchParams.get('sessionId'), [searchParams])
-  const [status, setStatus] = useState('Vérification…')
+  const sessionId = search.get('session')
+  const [message, setMessage] = useState('Validation de votre réservation…')
 
   useEffect(() => {
     const run = async () => {
       if (!sessionId) {
-        setStatus('Paramètre sessionId manquant.')
+        setMessage('Session introuvable.')
         return
       }
 
-      // 1) Auth
+      // besoin d’un utilisateur connecté
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        const nextUrl = encodeURIComponent(`/reserve?sessionId=${sessionId}`)
-        window.location.href = `/login?next=${nextUrl}`
+        router.replace(`/login?next=${encodeURIComponent(`/reserve?session=${sessionId}`)}`)
         return
       }
 
-      setStatus('Réservation en cours…')
-
-      // 2) Réserver la session (statut doit être "disponible")
-      const { data, error } = await supabase
+      // sécurise : re-vérifie que la session est dispo
+      const { data: rows, error: selErr } = await supabase
         .from('sessions')
-        .update({
-          client_id: user.id,
-          statut: 'réservé'
-        })
+        .select('id, statut, payment_link')
         .eq('id', sessionId)
-        .eq('statut', 'disponible')
-        .select('payment_link')
-        .single()
+        .limit(1)
 
-      if (error) {
-        console.error('❌ Update error:', error)
-        setStatus("Impossible de réserver ce créneau (il n'est peut-être plus disponible).")
+      if (selErr || !rows?.length) {
+        setMessage('Cette session n’existe pas.')
         return
       }
 
-      // 3) Redirection Stripe
-      if (data?.payment_link) {
-        setStatus('Redirection vers Stripe…')
-        window.location.href = data.payment_link
-      } else {
-        setStatus('Réservation confirmée ✅')
-        setTimeout(() => router.push('/client/dashboard'), 1200)
+      const session = rows[0]
+      if (session.statut !== 'disponible') {
+        setMessage('Désolé, ce créneau n’est plus disponible.')
+        return
       }
+
+      // réserve pour ce client
+      const { error: updErr } = await supabase
+        .from('sessions')
+        .update({ statut: 'réservé', client_id: user.id })
+        .eq('id', sessionId)
+
+      if (updErr) {
+        setMessage('Impossible de réserver ce créneau.')
+        return
+      }
+
+      // redirection vers Stripe si on a l’URL
+      if (session.payment_link) {
+        window.location.replace(session.payment_link)
+        return
+      }
+
+      setMessage('Réservation confirmée. (pas de lien de paiement)')
+      // option : router.replace('/client/dashboard')
     }
 
     run()
   }, [sessionId, router])
 
   return (
-    <div className="min-h-[60vh] flex items-center justify-center">
-      <div className="bg-white p-6 rounded-lg shadow text-center">
-        <p className="text-gray-700">{status}</p>
-      </div>
+    <div className="max-w-xl mx-auto p-8 text-center">
+      <p className="text-lg">{message}</p>
     </div>
   )
 }

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { useRouter } from 'next/navigation'
 import Calendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
 
@@ -12,7 +11,6 @@ const supabase = createClient(
 )
 
 export default function CoachCalendar({ coachId }) {
-  const router = useRouter()
   const [sessions, setSessions] = useState([])
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [loading, setLoading] = useState(true)
@@ -30,26 +28,30 @@ export default function CoachCalendar({ coachId }) {
       .eq('statut', 'disponible')
       .order('date', { ascending: true })
 
-    if (error) {
-      console.error('❌ fetchSessions error:', error)
-    } else {
-      setSessions(data || [])
-    }
+    if (!error) setSessions(data || [])
+    else console.error('❌ sessions:', error)
     setLoading(false)
   }
 
-  // comparer 2 dates (jour UTC)
+  // comparaison de dates (UTC) jour-mois-année seulement
   const sameUTC = (a, b) =>
     a.getUTCFullYear() === b.getUTCFullYear() &&
     a.getUTCMonth() === b.getUTCMonth() &&
     a.getUTCDate() === b.getUTCDate()
 
   const availableDates = sessions.map(s => new Date(s.date))
-  const filteredSessions = sessions.filter(s => sameUTC(new Date(s.date), selectedDate))
+  const daySessions = sessions.filter(s => sameUTC(new Date(s.date), selectedDate))
 
-  const goReserve = (sessionId) => {
-    // on passe par une page dédiée qui gère auth + update + redirection
-    router.push(`/reserve?sessionId=${encodeURIComponent(sessionId)}`)
+  const goReserve = async (session) => {
+    const { data: { user } } = await supabase.auth.getUser()
+    const target = `/reserve?session=${encodeURIComponent(session.id)}`
+    if (!user) {
+      // demande login puis revient sur /reserve?session=...
+      window.location.href = `/login?next=${encodeURIComponent(target)}`
+      return
+    }
+    // déjà connecté -> file direct sur /reserve (qui fera la MAJ + redirection Stripe)
+    window.location.href = target
   }
 
   if (loading) return <p className="text-center py-4 text-gray-600">📅 Chargement du calendrier...</p>
@@ -70,20 +72,17 @@ export default function CoachCalendar({ coachId }) {
           Créneaux le {selectedDate.toLocaleDateString('fr-FR')}
         </h4>
 
-        {filteredSessions.length > 0 ? (
+        {daySessions.length > 0 ? (
           <ul className="space-y-2">
-            {filteredSessions.map(session => (
-              <li key={session.id} className="flex justify-between items-center border p-3 rounded">
+            {daySessions.map(s => (
+              <li key={s.id} className="flex justify-between items-center border p-3 rounded">
                 <span>
-                  {new Date(session.date).toLocaleTimeString('fr-FR', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false,
-                    timeZone: 'UTC'
+                  {new Date(s.date).toLocaleTimeString('fr-FR', {
+                    hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC'
                   })}
                 </span>
                 <button
-                  onClick={() => goReserve(session.id)}
+                  onClick={() => goReserve(s)}
                   className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded"
                 >
                   Réserver & Payer
