@@ -1,51 +1,86 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase/client'
 
 export default function RegisterPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectParam = searchParams.get('redirect') // ex: /zenoraapp/juliencoach
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isCoach, setIsCoach] = useState(false)
-  const [error, setError] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleRegister = async (e) => {
+  // Récupère un redirect stocké par le login/overlay le cas échéant
+  useEffect(() => {
+    const pending = localStorage.getItem('pendingRedirect')
+    if (!redirectParam && pending) {
+      // si l’URL n’a pas de redirect mais qu’on en avait gardé un
+      // on le laisse en localStorage (il sera consommé après)
+    }
+  }, [redirectParam])
+
+  const resolveRedirect = (role: 'coach' | 'client') => {
+    const local = localStorage.getItem('pendingRedirect')
+    const target = redirectParam || local || (role === 'coach' ? '/coach/dashboard' : '/client/dashboard')
+    localStorage.removeItem('pendingRedirect')
+    return target
+  }
+
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    setLoading(true)
 
-    const role = isCoach ? 'coach' : 'client'
+    try {
+      const role = isCoach ? 'coach' : 'client'
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { role }, // stocké dans user_metadata
-      },
-    })
-
-    if (error) {
-      setError(error.message)
-    } else if (data?.user) {
-      // Ajoute dans ta table "users"
-      await supabase.from('users').insert({
-        id: data.user.id,
-        email: data.user.email,
-        role,
-        created_at: new Date().toISOString(),
+      // 1) Sign up + stocker le rôle dans user_metadata
+      const { data, error: signErr } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { role } },
       })
+      if (signErr) throw signErr
 
+      const user = data.user
+      if (!user) throw new Error("Inscription échouée, réessayez.")
+
+      // 2) Upsert dans la table 'users'
+      const { error: upsertErr } = await supabase
+        .from('users')
+        .upsert(
+          {
+            id: user.id,
+            email: user.email,
+            role,
+            created_at: new Date().toISOString(),
+          },
+          { onConflict: 'id' }
+        )
+      if (upsertErr) throw upsertErr
+
+      // 3) Redirection
       localStorage.setItem('isLoggedIn', 'true')
-      router.push(role === 'coach' ? '/coach/dashboard' : '/client/dashboard')
+      router.push(resolveRedirect(role))
+    } catch (err: any) {
+      setError(err?.message || 'Une erreur est survenue.')
+    } finally {
+      setLoading(false)
     }
   }
 
   const handleGoogleSignup = async () => {
     const role = isCoach ? 'coach' : 'client'
-    localStorage.setItem('pendingRole', role) // récupéré dans /auth/callback
+    // on stocke le rôle + le redirect pour les récupérer dans /auth/callback
+    localStorage.setItem('pendingRole', role)
+    if (redirectParam) localStorage.setItem('pendingRedirect', redirectParam)
 
     await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -72,8 +107,8 @@ export default function RegisterPage() {
           <div>
             <label htmlFor="email" className="block text-gray-600 mb-1">Adresse email</label>
             <input
-              type="email"
               id="email"
+              type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -85,8 +120,8 @@ export default function RegisterPage() {
           <div>
             <label htmlFor="password" className="block text-gray-600 mb-1">Mot de passe</label>
             <input
-              type="password"
               id="password"
+              type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -110,12 +145,14 @@ export default function RegisterPage() {
 
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-semibold py-3 rounded-lg transition"
           >
-            S'inscrire
+            {loading ? 'Création du compte…' : "S'inscrire"}
           </button>
         </form>
 
+        {/* Séparateur */}
         <div className="flex items-center my-6">
           <div className="flex-grow h-px bg-gray-300" />
           <span className="mx-4 text-sm text-gray-400">ou</span>
@@ -131,7 +168,10 @@ export default function RegisterPage() {
 
         <p className="text-center text-gray-600 text-sm mt-6">
           Déjà inscrit ?{' '}
-          <Link href="/login" className="text-blue-600 font-semibold hover:underline">
+          <Link
+            href={`/login${redirectParam ? `?redirect=${encodeURIComponent(redirectParam)}` : ''}`}
+            className="text-blue-600 font-semibold hover:underline"
+          >
             Se connecter
           </Link>
         </p>
