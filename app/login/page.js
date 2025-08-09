@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -9,25 +9,30 @@ import { supabase } from '@/lib/supabase/client'
 export default function LoginPage() {
   const router = useRouter()
   const search = useSearchParams()
-  const nextParam = search.get('next') || '' // ex: /reserve?session=...
+
+  // On accepte ?next=... ou ?redirect=...
+  const redirectParam = useMemo(() => {
+    const n = search.get('next')
+    const r = search.get('redirect')
+    return n || r || ''
+  }, [search])
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+  const [error, setError] = useState<string>('')
   const [loading, setLoading] = useState(false)
 
-  const afterLoginRedirect = async () => {
-    // si on a une cible explicite -> on y va
-    if (nextParam) {
-      router.replace(nextParam)
+  const goAfterLogin = async () => {
+    if (redirectParam) {
+      router.replace(redirectParam)
       return
     }
-    // sinon, on route par rôle
     const { data } = await supabase.auth.getUser()
     const role = data?.user?.user_metadata?.role || 'client'
     router.replace(role === 'coach' ? '/coach/dashboard' : '/client/dashboard')
   }
 
-  const handleLogin = async (e) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
@@ -36,23 +41,34 @@ export default function LoginPage() {
     setLoading(false)
 
     if (error) {
-      setError(error.message || "Connexion impossible")
+      setError(error.message || 'Connexion impossible')
       return
     }
     if (data?.user) {
       localStorage.setItem('isLoggedIn', 'true')
-      afterLoginRedirect()
+      goAfterLogin()
+    } else {
+      setError('Connexion impossible. Réessayez.')
     }
   }
 
   const handleGoogleLogin = async () => {
     const base = `${window.location.origin}/auth/callback`
-    const redirectTo = nextParam ? `${base}?next=${encodeURIComponent(nextParam)}` : base
+    const callback = redirectParam
+      ? `${base}?redirect=${encodeURIComponent(redirectParam)}`
+      : base
 
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo }
-    })
+    try {
+      await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: callback,
+          queryParams: { prompt: 'select_account' }
+        }
+      })
+    } catch (e: any) {
+      setError(e?.message || 'Impossible d’ouvrir la fenêtre de connexion Google.')
+    }
   }
 
   return (
@@ -66,7 +82,9 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">Connexion Zenora</h1>
+        <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
+          Connexion Zenora
+        </h1>
 
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
@@ -125,7 +143,10 @@ export default function LoginPage() {
 
         <p className="text-center text-gray-600 text-sm mt-6">
           Pas encore de compte ?{' '}
-          <Link href={`/register${nextParam ? `?next=${encodeURIComponent(nextParam)}` : ''}`} className="text-blue-600 font-semibold hover:underline">
+          <Link
+            href={`/register${redirectParam ? `?redirect=${encodeURIComponent(redirectParam)}` : ''}`}
+            className="text-blue-600 font-semibold hover:underline"
+          >
             S'inscrire
           </Link>
         </p>

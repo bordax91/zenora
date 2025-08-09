@@ -9,31 +9,34 @@ import { supabase } from '@/lib/supabase/client'
 export default function RegisterPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectParam = searchParams.get('redirect') // ex: /zenoraapp/juliencoach
+
+  // ex: /register?redirect=/zenoraapp/johndoe
+  const redirectParam = searchParams.get('redirect') || null
+  // permet de pré-cocher le rôle via l’URL si besoin: /register?role=coach
+  const urlRole = (searchParams.get('role') === 'coach' ? 'coach' : null)
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [isCoach, setIsCoach] = useState(false)
+  const [isCoach, setIsCoach] = useState(urlRole === 'coach')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState(null)
 
-  // Récupère un redirect stocké par le login/overlay le cas échéant
+  // si on vient de l’overlay login, on peut avoir un redirect en localStorage
   useEffect(() => {
-    const pending = localStorage.getItem('pendingRedirect')
-    if (!redirectParam && pending) {
-      // si l’URL n’a pas de redirect mais qu’on en avait gardé un
-      // on le laisse en localStorage (il sera consommé après)
+    if (!redirectParam && localStorage.getItem('pendingRedirect')) {
+      // on le laisse en storage pour être consommé après
     }
   }, [redirectParam])
 
-  const resolveRedirect = (role: 'coach' | 'client') => {
-    const local = localStorage.getItem('pendingRedirect')
-    const target = redirectParam || local || (role === 'coach' ? '/coach/dashboard' : '/client/dashboard')
+  const resolveRedirect = (role) => {
+    const stored = localStorage.getItem('pendingRedirect')
+    const target =
+      redirectParam || stored || (role === 'coach' ? '/coach/dashboard' : '/client/dashboard')
     localStorage.removeItem('pendingRedirect')
     return target
   }
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleRegister = async (e) => {
     e.preventDefault()
     setError(null)
     setLoading(true)
@@ -41,7 +44,7 @@ export default function RegisterPage() {
     try {
       const role = isCoach ? 'coach' : 'client'
 
-      // 1) Sign up + stocker le rôle dans user_metadata
+      // 1) Création compte + rôle dans user_metadata
       const { data, error: signErr } = await supabase.auth.signUp({
         email,
         password,
@@ -49,10 +52,15 @@ export default function RegisterPage() {
       })
       if (signErr) throw signErr
 
-      const user = data.user
-      if (!user) throw new Error("Inscription échouée, réessayez.")
+      const user = data?.user
+      if (!user) {
+        // Cas “email confirmation required” : pas de session immédiate
+        // On redirige sur la page d’info ou login
+        router.replace('/login')
+        return
+      }
 
-      // 2) Upsert dans la table 'users'
+      // 2) Upsert dans table users
       const { error: upsertErr } = await supabase
         .from('users')
         .upsert(
@@ -66,10 +74,10 @@ export default function RegisterPage() {
         )
       if (upsertErr) throw upsertErr
 
-      // 3) Redirection
+      // 3) Redirection finale
       localStorage.setItem('isLoggedIn', 'true')
-      router.push(resolveRedirect(role))
-    } catch (err: any) {
+      router.replace(resolveRedirect(role))
+    } catch (err) {
       setError(err?.message || 'Une erreur est survenue.')
     } finally {
       setLoading(false)
@@ -78,15 +86,15 @@ export default function RegisterPage() {
 
   const handleGoogleSignup = async () => {
     const role = isCoach ? 'coach' : 'client'
-    // on stocke le rôle + le redirect pour les récupérer dans /auth/callback
     localStorage.setItem('pendingRole', role)
     if (redirectParam) localStorage.setItem('pendingRedirect', redirectParam)
 
+    const base = `${window.location.origin}/auth/callback`
+    const redirectTo = redirectParam ? `${base}?redirect=${encodeURIComponent(redirectParam)}` : base
+
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
+      options: { redirectTo },
     })
   }
 
@@ -101,7 +109,9 @@ export default function RegisterPage() {
           </Link>
         </div>
 
-        <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">Créer un compte Zenora</h1>
+        <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
+          Créer un compte Zenora
+        </h1>
 
         <form onSubmit={handleRegister} className="space-y-6">
           <div>
@@ -114,6 +124,7 @@ export default function RegisterPage() {
               onChange={(e) => setEmail(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
               placeholder="prenom@email.com"
+              autoComplete="email"
             />
           </div>
 
@@ -127,6 +138,7 @@ export default function RegisterPage() {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
               placeholder="Créer un mot de passe"
+              autoComplete="new-password"
             />
           </div>
 

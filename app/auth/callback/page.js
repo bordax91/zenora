@@ -12,49 +12,60 @@ export default function AuthCallback() {
   useEffect(() => {
     const run = async () => {
       try {
-        // 1) Gérer le retour OAuth (PKCE) : échanger le code contre une session
+        // 1) Échange du code OAuth -> session
         const code = search.get('code')
-        const nextParam = search.get('next') || ''
+        const oauthError = search.get('error_description') || search.get('error')
+        if (oauthError) throw new Error(oauthError)
 
         if (code) {
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(window.location.href)
-          if (exchangeError) throw exchangeError
+          const { error: exchangeErr } =
+            await supabase.auth.exchangeCodeForSession(window.location.href)
+          if (exchangeErr) throw exchangeErr
         }
 
-        // 2) Récupérer l'utilisateur
+        // 2) Récupérer l’utilisateur
         const { data: userData, error: userErr } = await supabase.auth.getUser()
         if (userErr || !userData?.user) {
           throw new Error('Erreur de connexion. Veuillez réessayer.')
         }
-
         const user = userData.user
 
-        // 3) S’assurer que le rôle est bien défini (par défaut "client")
-        let role = user.user_metadata?.role as string | undefined
+        // 3) Rôle: user_metadata.role -> sinon pendingRole -> sinon client
+        let role = (user.user_metadata as any)?.role as string | undefined
         if (!role) {
           role = localStorage.getItem('pendingRole') || 'client'
           await supabase.auth.updateUser({ data: { role } })
         }
 
-        // 4) Upsert dans la table "users" (idempotent)
-        await supabase.from('users').upsert({
-          id: user.id,
-          email: user.email,
-          role,
-          // si created_at géré par défaut, on peut l’omettre
-        }, { onConflict: 'id' })
+        // 4) Upsert idempotent dans "users"
+        await supabase
+          .from('users')
+          .upsert(
+            { id: user.id, email: user.email, role },
+            { onConflict: 'id' }
+          )
 
+        // 5) Nettoyage localStorage, flag login
         localStorage.removeItem('pendingRole')
         localStorage.setItem('isLoggedIn', 'true')
 
-        // 5) Redirection : priorité à `next=...`, sinon dashboard par rôle
-        if (nextParam && nextParam.startsWith('/')) {
-          router.replace(nextParam)
-        } else {
-          router.replace(role === 'coach' ? '/coach/dashboard' : '/client/dashboard')
-        }
+        // 6) Résolution de la destination
+        //    priorité: ?redirect=... > ?next=... > pendingRedirect > dashboard par rôle
+        const qsRedirect = search.get('redirect') || search.get('next') || ''
+        const storedRedirect = localStorage.getItem('pendingRedirect') || ''
+        localStorage.removeItem('pendingRedirect')
+
+        const pick = (path?: string | null) =>
+          path && path.startsWith('/') ? path : null
+
+        const target =
+          pick(qsRedirect) ||
+          pick(storedRedirect) ||
+          (role === 'coach' ? '/coach/dashboard' : '/client/dashboard')
+
+        router.replace(target)
       } catch (e: any) {
-        console.error(e)
+        console.error('[auth/callback]', e)
         setError(e?.message || 'Erreur de connexion. Veuillez réessayer.')
         router.replace('/login')
       }
