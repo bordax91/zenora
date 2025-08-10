@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import Link from 'next/link'
 
@@ -10,6 +10,24 @@ export default function LoginInline({ redirectPath = '/', onLoggedIn }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // 🔒 n’accepte que les chemins internes (/...)
+  const safeRedirect = useMemo(() => {
+    if (typeof redirectPath === 'string' && redirectPath.startsWith('/') && !redirectPath.startsWith('//')) {
+      return redirectPath
+    }
+    return '/'
+  }, [redirectPath])
+
+  // ✅ écoute l’état d’auth (utile au retour Google OAuth si la page n’a pas bougé)
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        onLoggedIn?.(session.user)
+      }
+    })
+    return () => sub?.subscription?.unsubscribe()
+  }, [onLoggedIn])
+
   const handleLogin = async (e) => {
     e.preventDefault()
     setError('')
@@ -17,8 +35,8 @@ export default function LoginInline({ redirectPath = '/', onLoggedIn }) {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password })
       if (error || !data?.user) throw new Error(error?.message || 'Connexion impossible.')
-      // ✅ connecté : on avertit le parent pour qu’il masque l’overlay
-      onLoggedIn?.()
+      // ✅ connecté : on avertit le parent pour masquer l’overlay / recharger les données
+      onLoggedIn?.(data.user)
     } catch (err) {
       setError(err?.message || 'Connexion impossible.')
     } finally {
@@ -28,7 +46,7 @@ export default function LoginInline({ redirectPath = '/', onLoggedIn }) {
 
   const handleGoogleLogin = async () => {
     const base = `${window.location.origin}/auth/callback`
-    const redirectTo = `${base}?redirect=${encodeURIComponent(redirectPath)}`
+    const redirectTo = `${base}?redirect=${encodeURIComponent(safeRedirect)}`
     try {
       await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -43,7 +61,7 @@ export default function LoginInline({ redirectPath = '/', onLoggedIn }) {
   }
 
   return (
-    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[1000]">
       <div className="bg-white p-6 sm:p-8 rounded-xl shadow-xl w-full max-w-md">
         <h2 className="text-2xl font-bold text-center mb-2">Connectez‑vous pour réserver</h2>
         <p className="text-center text-gray-600 mb-6">Accédez aux créneaux et réservez votre séance.</p>
@@ -102,7 +120,7 @@ export default function LoginInline({ redirectPath = '/', onLoggedIn }) {
         <p className="text-center text-gray-600 text-sm mt-6">
           Pas encore de compte ?{' '}
           <Link
-            href={`/register?redirect=${encodeURIComponent(redirectPath)}`}
+            href={`/register?redirect=${encodeURIComponent(safeRedirect)}`}
             className="text-blue-600 font-semibold hover:underline"
           >
             S’inscrire
