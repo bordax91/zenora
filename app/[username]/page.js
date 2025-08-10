@@ -9,37 +9,51 @@ import LoginInline from '@/components/LoginInline'
 export default function CoachProfilePage() {
   const { username } = useParams()
   const [coach, setCoach] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [loadingCoach, setLoadingCoach] = useState(true)
   const [user, setUser] = useState(null)
   const [authChecked, setAuthChecked] = useState(false)
 
+  // Récup coach
   useEffect(() => {
-    if (username) {
-      fetchCoach()
+    if (!username) return
+    const fetchCoach = async () => {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('username', username)
+        .eq('role', 'coach')
+        .single()
+      if (error) {
+        console.error('❌ Erreur récupération coach:', error)
+        setCoach(null)
+      } else {
+        setCoach(data)
+      }
+      setLoadingCoach(false)
     }
-    checkAuth()
+    fetchCoach()
   }, [username])
 
-  const fetchCoach = async () => {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('username', username)
-      .eq('role', 'coach')
-      .single()
+  // Auth + listener pour cacher l’overlay aussitôt connecté
+  useEffect(() => {
+    let unsub = null
+    const init = async () => {
+      const { data } = await supabase.auth.getUser()
+      setUser(data?.user || null)
+      setAuthChecked(true)
 
-    if (error) console.error('❌ Erreur récupération coach:', error)
-    else setCoach(data)
-    setLoading(false)
-  }
+      const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+        setUser(session?.user || null)
+      })
+      unsub = sub?.subscription
+    }
+    init()
+    return () => {
+      if (unsub) unsub.unsubscribe()
+    }
+  }, [])
 
-  const checkAuth = async () => {
-    const { data } = await supabase.auth.getUser()
-    setUser(data?.user || null)
-    setAuthChecked(true)
-  }
-
-  if (loading || !authChecked) {
+  if (loadingCoach || !authChecked) {
     return <p className="text-center py-10">Chargement...</p>
   }
 
@@ -49,9 +63,8 @@ export default function CoachProfilePage() {
 
   return (
     <div className="relative">
-      {/* === Profil coach en fond === */}
+      {/* Fond : profil coach */}
       <div className="max-w-5xl mx-auto p-6">
-        {/* Photo + nom */}
         <div className="text-center mb-8">
           <img
             src={coach.photo_url || '/default-avatar.png'}
@@ -62,20 +75,18 @@ export default function CoachProfilePage() {
           <p className="text-lg text-gray-600">{coach.specialty}</p>
         </div>
 
-        {/* Bio */}
         <div className="bg-white p-6 rounded-xl shadow-md mb-10 text-center max-w-3xl mx-auto">
           <h2 className="text-xl font-semibold mb-3">À propos</h2>
           <p className="text-gray-700 leading-relaxed">{coach.bio}</p>
         </div>
 
-        {/* Calendrier */}
         <div className="bg-white p-6 rounded-xl shadow-md mb-10">
           <h2 className="text-xl font-semibold mb-4 text-center">Réserver une séance</h2>
           <CoachCalendar coachId={coach.id} />
         </div>
       </div>
 
-      {/* === Overlay si pas connecté === */}
+      {/* Overlay login si pas connecté */}
       {!user && (
         <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <LoginInline redirect={`/zenoraapp/${username}`} />
