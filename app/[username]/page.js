@@ -4,13 +4,14 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import CoachCalendar from '@/components/CoachCalendar'
-import Link from 'next/link'
+import LoginInline from '@/components/LoginInline'
 
 export default function CoachProfilePage() {
   const { username } = useParams()
   const [coach, setCoach] = useState(null)
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState(null)
+  const [authChecked, setAuthChecked] = useState(false)
 
   useEffect(() => {
     if (username) {
@@ -35,9 +36,10 @@ export default function CoachProfilePage() {
   const checkAuth = async () => {
     const { data } = await supabase.auth.getUser()
     setUser(data?.user || null)
+    setAuthChecked(true)
   }
 
-  if (loading) {
+  if (loading || !authChecked) {
     return <p className="text-center py-10">Chargement...</p>
   }
 
@@ -47,7 +49,7 @@ export default function CoachProfilePage() {
 
   return (
     <div className="relative">
-      {/* === FOND : profil coach === */}
+      {/* === Profil coach en fond === */}
       <div className="max-w-5xl mx-auto p-6">
         {/* Photo + nom */}
         <div className="text-center mb-8">
@@ -73,26 +75,10 @@ export default function CoachProfilePage() {
         </div>
       </div>
 
-      {/* === OVERLAY LOGIN si pas connecté === */}
+      {/* === Overlay si pas connecté === */}
       {!user && (
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full text-center">
-            <h2 className="text-2xl font-bold mb-4">Connectez-vous pour réserver</h2>
-            <div className="flex flex-col gap-3">
-              <Link
-                href={`/login?redirect=/zenoraapp/${username}`}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold"
-              >
-                Se connecter
-              </Link>
-              <Link
-                href={`/register?redirect=/zenoraapp/${username}`}
-                className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-6 py-3 rounded-lg font-semibold"
-              >
-                Créer un compte
-              </Link>
-            </div>
-          </div>
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <LoginInline redirect={`/zenoraapp/${username}`} />
         </div>
       )}
     </div>
