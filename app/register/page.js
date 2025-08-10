@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -11,34 +11,42 @@ export default function RegisterPage() {
   const searchParams = useSearchParams()
 
   // ex: /register?redirect=/zenoraapp/johndoe
-  const redirectParam = searchParams.get('redirect') || null
-  // permet de pré-cocher le rôle via l’URL si besoin: /register?role=coach
-  const urlRole = (searchParams.get('role') === 'coach' ? 'coach' : null)
+  const rawRedirect = searchParams.get('redirect') || ''
+  // n’autorise que les chemins internes
+  const redirectParam = useMemo(() => {
+    return rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//')
+      ? rawRedirect
+      : ''
+  }, [rawRedirect])
+
+  // /register?role=coach pour pré-cocher
+  const isUrlCoach = searchParams.get('role') === 'coach'
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [isCoach, setIsCoach] = useState(urlRole === 'coach')
+  const [isCoach, setIsCoach] = useState(isUrlCoach)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [info, setInfo] = useState(null) // message confirmation email
 
   // si on vient de l’overlay login, on peut avoir un redirect en localStorage
   useEffect(() => {
-    if (!redirectParam && localStorage.getItem('pendingRedirect')) {
-      // on le laisse en storage pour être consommé après
-    }
-  }, [redirectParam])
+    // on ne fait rien ici volontairement : il sera consommé plus bas
+  }, [])
 
   const resolveRedirect = (role) => {
-    const stored = localStorage.getItem('pendingRedirect')
-    const target =
-      redirectParam || stored || (role === 'coach' ? '/coach/dashboard' : '/client/dashboard')
+    const stored = localStorage.getItem('pendingRedirect') || ''
     localStorage.removeItem('pendingRedirect')
-    return target
+
+    if (redirectParam) return redirectParam
+    if (stored && stored.startsWith('/')) return stored
+    return role === 'coach' ? '/coach/dashboard' : '/client/dashboard'
   }
 
   const handleRegister = async (e) => {
     e.preventDefault()
     setError(null)
+    setInfo(null)
     setLoading(true)
 
     try {
@@ -53,23 +61,20 @@ export default function RegisterPage() {
       if (signErr) throw signErr
 
       const user = data?.user
+
+      // Cas fréquent : vérification email activée -> pas de session immédiate
       if (!user) {
-        // Cas “email confirmation required” : pas de session immédiate
-        // On redirige sur la page d’info ou login
-        router.replace('/login')
+        setInfo(
+          "Compte créé. Vérifiez votre boîte mail pour confirmer votre adresse, puis reconnectez‑vous."
+        )
         return
       }
 
-      // 2) Upsert dans table users
+      // 2) Upsert dans table users (idempotent)
       const { error: upsertErr } = await supabase
         .from('users')
         .upsert(
-          {
-            id: user.id,
-            email: user.email,
-            role,
-            created_at: new Date().toISOString(),
-          },
+          { id: user.id, email: user.email, role },
           { onConflict: 'id' }
         )
       if (upsertErr) throw upsertErr
@@ -94,7 +99,10 @@ export default function RegisterPage() {
 
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo },
+      options: {
+        redirectTo,
+        queryParams: { prompt: 'select_account' },
+      },
     })
   }
 
@@ -154,6 +162,7 @@ export default function RegisterPage() {
           </div>
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
+          {info && <p className="text-green-600 text-sm">{info}</p>}
 
           <button
             type="submit"

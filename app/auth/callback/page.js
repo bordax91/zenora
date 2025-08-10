@@ -7,12 +7,12 @@ import { supabase } from '@/lib/supabase/client'
 export default function AuthCallback() {
   const router = useRouter()
   const search = useSearchParams()
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     const run = async () => {
       try {
-        // 1) Échange du code OAuth -> session
+        // 1) Échange du code OAuth -> session (PKCE)
         const code = search.get('code')
         const oauthError = search.get('error_description') || search.get('error')
         if (oauthError) throw new Error(oauthError)
@@ -30,8 +30,8 @@ export default function AuthCallback() {
         }
         const user = userData.user
 
-        // 3) Rôle: user_metadata.role -> sinon pendingRole -> sinon client
-        let role = (user.user_metadata as any)?.role as string | undefined
+        // 3) Déterminer le rôle: user_metadata.role -> pendingRole -> client
+        let role = user.user_metadata?.role
         if (!role) {
           role = localStorage.getItem('pendingRole') || 'client'
           await supabase.auth.updateUser({ data: { role } })
@@ -40,23 +40,18 @@ export default function AuthCallback() {
         // 4) Upsert idempotent dans "users"
         await supabase
           .from('users')
-          .upsert(
-            { id: user.id, email: user.email, role },
-            { onConflict: 'id' }
-          )
+          .upsert({ id: user.id, email: user.email, role }, { onConflict: 'id' })
 
-        // 5) Nettoyage localStorage, flag login
+        // 5) Nettoyage & flag login
         localStorage.removeItem('pendingRole')
         localStorage.setItem('isLoggedIn', 'true')
 
-        // 6) Résolution de la destination
-        //    priorité: ?redirect=... > ?next=... > pendingRedirect > dashboard par rôle
+        // 6) Destination prioritaire: ?redirect > ?next > pendingRedirect > dashboard
         const qsRedirect = search.get('redirect') || search.get('next') || ''
         const storedRedirect = localStorage.getItem('pendingRedirect') || ''
         localStorage.removeItem('pendingRedirect')
 
-        const pick = (path?: string | null) =>
-          path && path.startsWith('/') ? path : null
+        const pick = (path) => (path && path.startsWith('/') && !path.startsWith('//') ? path : null)
 
         const target =
           pick(qsRedirect) ||
@@ -64,7 +59,7 @@ export default function AuthCallback() {
           (role === 'coach' ? '/coach/dashboard' : '/client/dashboard')
 
         router.replace(target)
-      } catch (e: any) {
+      } catch (e) {
         console.error('[auth/callback]', e)
         setError(e?.message || 'Erreur de connexion. Veuillez réessayer.')
         router.replace('/login')

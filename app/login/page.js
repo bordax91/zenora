@@ -10,21 +10,29 @@ export default function LoginPage() {
   const router = useRouter()
   const search = useSearchParams()
 
-  // On accepte ?next=... ou ?redirect=...
-  const redirectParam = useMemo(() => {
-    const n = search.get('next')
+  // accepte ?redirect=... OU ?next=...
+  const rawRedirect = useMemo(() => {
     const r = search.get('redirect')
-    return n || r || ''
+    const n = search.get('next')
+    return r || n || ''
   }, [search])
+
+  // ne garde que les chemins internes (/... )
+  const safeRedirect = useMemo(() => {
+    if (rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//')) {
+      return rawRedirect
+    }
+    return ''
+  }, [rawRedirect])
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string>('')
+  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   const goAfterLogin = async () => {
-    if (redirectParam) {
-      router.replace(redirectParam)
+    if (safeRedirect) {
+      router.replace(safeRedirect)
       return
     }
     const { data } = await supabase.auth.getUser()
@@ -32,49 +40,43 @@ export default function LoginPage() {
     router.replace(role === 'coach' ? '/coach/dashboard' : '/client/dashboard')
   }
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
-
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    setLoading(false)
-
-    if (error) {
-      setError(error.message || 'Connexion impossible')
-      return
-    }
-    if (data?.user) {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error || !data?.user) {
+        throw new Error(error?.message || 'Connexion impossible')
+      }
       localStorage.setItem('isLoggedIn', 'true')
       goAfterLogin()
-    } else {
-      setError('Connexion impossible. Réessayez.')
+    } catch (err) {
+      setError(err?.message || 'Connexion impossible')
+    } finally {
+      setLoading(false)
     }
   }
 
   const handleGoogleLogin = async () => {
     const base = `${window.location.origin}/auth/callback`
-    const callback = redirectParam
-      ? `${base}?redirect=${encodeURIComponent(redirectParam)}`
-      : base
-
+    const redirectTo = safeRedirect ? `${base}?redirect=${encodeURIComponent(safeRedirect)}` : base
     try {
       await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: callback,
-          queryParams: { prompt: 'select_account' }
-        }
+          redirectTo,
+          queryParams: { prompt: 'select_account' },
+        },
       })
-    } catch (e: any) {
-      setError(e?.message || 'Impossible d’ouvrir la fenêtre de connexion Google.')
+    } catch (e) {
+      setError(e?.message || 'Impossible d’ouvrir la fenêtre Google.')
     }
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white px-4">
       <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-lg">
-        {/* Logo */}
         <div className="flex justify-center mb-6">
           <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition">
             <Image src="/logo.png" alt="Zenora Logo" width={40} height={40} />
@@ -82,16 +84,14 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
-          Connexion Zenora
-        </h1>
+        <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">Connexion Zenora</h1>
 
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
             <label htmlFor="email" className="block text-gray-600 mb-1">Adresse email</label>
             <input
-              type="email"
               id="email"
+              type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -104,8 +104,8 @@ export default function LoginPage() {
           <div>
             <label htmlFor="password" className="block text-gray-600 mb-1">Mot de passe</label>
             <input
-              type="password"
               id="password"
+              type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -126,14 +126,12 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Séparateur */}
         <div className="flex items-center my-6">
           <div className="flex-grow h-px bg-gray-300" />
           <span className="mx-4 text-sm text-gray-400">ou</span>
           <div className="flex-grow h-px bg-gray-300" />
         </div>
 
-        {/* Connexion Google */}
         <button
           onClick={handleGoogleLogin}
           className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition"
@@ -144,7 +142,7 @@ export default function LoginPage() {
         <p className="text-center text-gray-600 text-sm mt-6">
           Pas encore de compte ?{' '}
           <Link
-            href={`/register${redirectParam ? `?redirect=${encodeURIComponent(redirectParam)}` : ''}`}
+            href={`/register${safeRedirect ? `?redirect=${encodeURIComponent(safeRedirect)}` : ''}`}
             className="text-blue-600 font-semibold hover:underline"
           >
             S'inscrire
