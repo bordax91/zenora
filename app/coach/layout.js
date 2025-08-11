@@ -13,6 +13,7 @@ export default function CoachLayout({ children }) {
     { href: '/coach/clients', label: 'Clients' },
     { href: '/coach/packages', label: 'Offres / Forfaits' },
     { href: '/coach/sales', label: 'Ventes' },
+    { href: '/coach/integrations', label: 'Intégrations' }, 
   ]
 
   return (
@@ -29,7 +30,7 @@ export default function CoachLayout({ children }) {
               height={36}
               className="rounded"
             />
-            <span className="font-bold text-lg text-gray-800">Zenora Coach</span>
+            <span className="font-bold text-lg text-gray-800">Zenora</span>
           </Link>
 
           {/* Liens navigation */}
