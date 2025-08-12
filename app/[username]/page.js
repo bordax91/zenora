@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import CoachCalendar from '@/components/CoachCalendar'
-import LoginInline from '@/components/LoginInline'
 
 export default function CoachProfilePage() {
   const { username } = useParams()
