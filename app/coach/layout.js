@@ -13,7 +13,7 @@ export default function CoachLayout({ children }) {
     { href: '/coach/clients', label: 'Clients' },
     { href: '/coach/packages', label: 'Offres / Forfaits' },
     { href: '/coach/sales', label: 'Ventes' },
-    { href: '/coach/integrations', label: 'Intégrations' }, 
+    { href: '/coach/integrations', label: 'Intégrations' },
   ]
 
   return (
