@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/button'
 
 export default function StripeIntegrationPage() {
   const [loading, setLoading] = useState(false)
