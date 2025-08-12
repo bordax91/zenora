@@ -1,4 +1,5 @@
-export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic' // désactive le prerender
+'use client'
 
 import { Suspense } from 'react'
 import RegisterPageClient from './RegisterPageClient'
