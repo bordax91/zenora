@@ -1,13 +1,7 @@
-export const dynamic = 'force-dynamic' // désactive le prerender
-'use client'
+export const dynamic = 'force-dynamic'
 
-import { Suspense } from 'react'
 import RegisterPageClient from './RegisterPageClient'
 
-export default function RegisterPage() {
-  return (
-    <Suspense fallback={<div>Chargement...</div>}>
-      <RegisterPageClient />
-    </Suspense>
-  )
+export default function Page() {
+  return <RegisterPageClient />
 }
