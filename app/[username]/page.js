@@ -46,7 +46,7 @@ export default function CoachProfilePage() {
 
       // Redirection si pas connecté
       if (!currentUser) {
-        router.replace(`/login?redirect=/zenoraapp/${username}`)
+        router.replace(`/login?redirect=/${username}`)
         return
       }
 
