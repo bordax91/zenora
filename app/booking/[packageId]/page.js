@@ -18,12 +18,13 @@ export default function BookingPage() {
         .eq('id', packageId)
         .single()
       if (error) {
-        console.error('Erreur récupération package:', error)
+        console.error('❌ Erreur récupération package:', error)
       } else {
         setPkg(data)
       }
       setLoading(false)
     }
+
     fetchPackage()
   }, [packageId])
 
@@ -32,15 +33,20 @@ export default function BookingPage() {
 
   return (
     <div className="w-full px-4 md:px-10 py-6 space-y-8">
+      {/* Bloc infos package */}
       <div className="w-full bg-white p-6 rounded-xl shadow-md">
         <h1 className="text-2xl font-bold mb-2">{pkg.title}</h1>
         <p className="mb-2 text-gray-700">{pkg.description}</p>
         <p className="mb-2 font-semibold text-lg">Prix : {pkg.price}€</p>
+        <p className="text-sm text-gray-500">
+          Sélectionnez une date ci-dessous pour continuer la réservation.
+        </p>
       </div>
 
+      {/* Calendrier du coach */}
       {pkg.coach_id && (
         <div className="w-full bg-white p-4 sm:p-6 rounded-xl shadow-md">
-          <CoachCalendar coachId={pkg.coach_id} />
+          <CoachCalendar coachId={pkg.coach_id} packageId={packageId} />
         </div>
       )}
     </div>

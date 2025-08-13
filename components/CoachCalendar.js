@@ -10,7 +10,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
-export default function CoachCalendar({ coachId }) {
+export default function CoachCalendar({ coachId, packageId }) {
   const [sessions, setSessions] = useState([])
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [loading, setLoading] = useState(true)
@@ -33,7 +33,6 @@ export default function CoachCalendar({ coachId }) {
     setLoading(false)
   }
 
-  // comparaison de dates (UTC) jour-mois-année seulement
   const sameUTC = (a, b) =>
     a.getUTCFullYear() === b.getUTCFullYear() &&
     a.getUTCMonth() === b.getUTCMonth() &&
@@ -42,30 +41,32 @@ export default function CoachCalendar({ coachId }) {
   const availableDates = sessions.map(s => new Date(s.date))
   const daySessions = sessions.filter(s => sameUTC(new Date(s.date), selectedDate))
 
-  const goReserve = async (session) => {
+  const handleClick = async (session) => {
     const { data: { user } } = await supabase.auth.getUser()
-    const target = `/reserve?session=${encodeURIComponent(session.id)}`
+    const target = `/info-client?session=${session.id}&package=${packageId}`
+
     if (!user) {
-      // demande login puis revient sur /reserve?session=...
       window.location.href = `/login?next=${encodeURIComponent(target)}`
-      return
+    } else {
+      window.location.href = target
     }
-    // déjà connecté -> file direct sur /reserve (qui fera la MAJ + redirection Stripe)
-    window.location.href = target
   }
 
   if (loading) return <p className="text-center py-4 text-gray-600">📅 Chargement du calendrier...</p>
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow">
+    <div className="bg-white p-4 sm:p-6 rounded-lg shadow w-full">
       <h3 className="text-lg font-semibold mb-4">Disponibilités</h3>
 
-      <Calendar
-        onChange={setSelectedDate}
-        value={selectedDate}
-        minDate={new Date()}
-        tileDisabled={({ date }) => !availableDates.some(d => sameUTC(d, date))}
-      />
+      <div className="w-full overflow-auto">
+        <Calendar
+          onChange={setSelectedDate}
+          value={selectedDate}
+          minDate={new Date()}
+          tileDisabled={({ date }) => !availableDates.some(d => sameUTC(d, date))}
+          className="w-full"
+        />
+      </div>
 
       <div className="mt-6">
         <h4 className="font-semibold mb-2">
@@ -78,14 +79,17 @@ export default function CoachCalendar({ coachId }) {
               <li key={s.id} className="flex justify-between items-center border p-3 rounded">
                 <span>
                   {new Date(s.date).toLocaleTimeString('fr-FR', {
-                    hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC'
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false,
+                    timeZone: 'UTC',
                   })}
                 </span>
                 <button
-                  onClick={() => goReserve(s)}
+                  onClick={() => handleClick(s)}
                   className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded"
                 >
-                  Réserver & Payer
+                  Réserver ce créneau
                 </button>
               </li>
             ))}
