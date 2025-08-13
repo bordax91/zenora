@@ -1,18 +1,20 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import CoachCalendar from '@/components/CoachCalendar'
 
 export default function CoachProfilePage() {
   const { username } = useParams()
+  const router = useRouter()
+
   const [coach, setCoach] = useState(null)
   const [loadingCoach, setLoadingCoach] = useState(true)
   const [user, setUser] = useState(null)
   const [authChecked, setAuthChecked] = useState(false)
 
-  // Récup coach
+  // Récupération du coach
   useEffect(() => {
     if (!username) return
     const fetchCoach = async () => {
@@ -33,13 +35,20 @@ export default function CoachProfilePage() {
     fetchCoach()
   }, [username])
 
-  // Auth + listener pour cacher l’overlay aussitôt connecté
+  // Auth + listener pour mise à jour utilisateur
   useEffect(() => {
     let unsub = null
     const init = async () => {
       const { data } = await supabase.auth.getUser()
-      setUser(data?.user || null)
+      const currentUser = data?.user || null
+      setUser(currentUser)
       setAuthChecked(true)
+
+      // Redirection si pas connecté
+      if (!currentUser) {
+        router.replace(`/login?redirect=/zenoraapp/${username}`)
+        return
+      }
 
       const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
         setUser(session?.user || null)
@@ -50,7 +59,7 @@ export default function CoachProfilePage() {
     return () => {
       if (unsub) unsub.unsubscribe()
     }
-  }, [])
+  }, [router, username])
 
   if (loadingCoach || !authChecked) {
     return <p className="text-center py-10">Chargement...</p>
@@ -62,7 +71,6 @@ export default function CoachProfilePage() {
 
   return (
     <div className="relative">
-      {/* Fond : profil coach */}
       <div className="max-w-5xl mx-auto p-6">
         <div className="text-center mb-8">
           <img
@@ -84,13 +92,6 @@ export default function CoachProfilePage() {
           <CoachCalendar coachId={coach.id} />
         </div>
       </div>
-
-      {/* Overlay login si pas connecté */}
-      {!user && (
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <LoginInline redirect={`/zenoraapp/${username}`} />
-        </div>
-      )}
     </div>
   )
 }
