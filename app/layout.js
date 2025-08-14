@@ -1,10 +1,7 @@
-'use client'
-
 import './globals.css'
 import { Analytics } from '@vercel/analytics/react'
 import Script from 'next/script'
 import CookieBanner from '@/components/CookieBanner'
-import { UserProvider } from '@/lib/supabase/user-context' // 🟢 Assure-toi que ce chemin est bon
 
 export const metadata = {
   title: 'Zenora',
@@ -62,11 +59,9 @@ export default function RootLayout({ children }) {
       </head>
 
       <body>
-        <UserProvider>
-          {children}
-          <Analytics />
-          <CookieBanner />
-        </UserProvider>
+        {children}
+        <Analytics />
+        <CookieBanner />
       </body>
     </html>
   )
