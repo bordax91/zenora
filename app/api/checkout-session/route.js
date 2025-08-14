@@ -1,10 +1,18 @@
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: '2024-08-01',
+})
 
 export async function POST(req) {
   const body = await req.json()
   const { priceId, coachUsername } = body
+
+  if (!priceId || !coachUsername) {
+    return new Response(JSON.stringify({ error: 'Champs manquants' }), {
+      status: 400,
+    })
+  }
 
   try {
     const session = await stripe.checkout.sessions.create({
