@@ -1,25 +1,25 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { useUser } from "@/lib/supabase/user-context"
+export const dynamic = 'force-dynamic'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useUser } from '@/lib/supabase/user-context'
 
 export default function CreatePackagePage() {
   const router = useRouter()
   const { user } = useUser()
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
-    title: "",
-    description: "",
-    price: "",
+    title: '',
+    description: '',
+    price: '',
   })
   const [error, setError] = useState(null)
-  const [success, setSuccess] = useState(false)
 
-  // ✅ Ne pas afficher le formulaire tant que user n'est pas dispo
-  if (!user) {
-    return <p className="text-center mt-10">Chargement du profil...</p>
-  }
+  // ⛔ Ne pas appeler useUser côté serveur
+  if (typeof window === 'undefined') return null
+  if (!user) return <p className="text-center mt-10">Chargement du profil...</p>
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -32,24 +32,23 @@ export default function CreatePackagePage() {
     setError(null)
 
     try {
-      const response = await fetch("/api/stripe/create-product", {
-        method: "POST",
+      const response = await fetch('/api/stripe/create-product', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           title: form.title,
           description: form.description,
           price: parseFloat(form.price),
-          coachId: user.id, // ✅ safe ici car on a vérifié que user existe
+          coachId: user.id,
         }),
       })
 
       const data = await response.json()
-      if (!response.ok) throw new Error(data.error || "Erreur inconnue")
+      if (!response.ok) throw new Error(data.error || 'Erreur inconnue')
 
-      setSuccess(true)
-      router.push("/coach/packages")
+      router.push('/coach/packages')
     } catch (err) {
       setError(err.message)
     } finally {
@@ -99,7 +98,7 @@ export default function CreatePackagePage() {
           disabled={loading}
           className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
         >
-          {loading ? "Chargement..." : "Créer l'offre"}
+          {loading ? 'Chargement...' : "Créer l'offre"}
         </button>
       </form>
     </div>
