@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useUser } from "@/lib/supabase/user-context"
 
@@ -15,6 +15,11 @@ export default function CreatePackagePage() {
   })
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
+
+  // ✅ Ne pas afficher le formulaire tant que user n'est pas dispo
+  if (!user) {
+    return <p className="text-center mt-10">Chargement du profil...</p>
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -36,7 +41,7 @@ export default function CreatePackagePage() {
           title: form.title,
           description: form.description,
           price: parseFloat(form.price),
-          coachId: user.id,
+          coachId: user.id, // ✅ safe ici car on a vérifié que user existe
         }),
       })
 
