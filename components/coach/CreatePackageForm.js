@@ -1,17 +1,23 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@/lib/supabase/user-context'
 
 export default function CreatePackageForm() {
   const router = useRouter()
-  const userContext = useUser()
-  const user = userContext?.user
+  const { user } = useUser() || {}
 
   const [form, setForm] = useState({ title: '', description: '', price: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    if (user !== undefined) {
+      setReady(true)
+    }
+  }, [user])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -52,7 +58,9 @@ export default function CreatePackageForm() {
     }
   }
 
-  if (!user) return <p className="text-center mt-10">Chargement du profil...</p>
+  if (!ready) {
+    return <p className="text-center mt-10">Chargement du profil...</p>
+  }
 
   return (
     <div className="max-w-lg mx-auto bg-white p-6 rounded-xl shadow">
