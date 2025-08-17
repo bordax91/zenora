@@ -1,4 +1,3 @@
-// app/components/coach/CreatePackageForm.js
 'use client'
 
 import { useState } from 'react'
@@ -7,7 +6,8 @@ import { useUser } from '@/lib/supabase/user-context'
 
 export default function CreatePackageForm() {
   const router = useRouter()
-  const { user } = useUser()
+  const userContext = useUser()
+  const user = userContext?.user
 
   const [form, setForm] = useState({ title: '', description: '', price: '' })
   const [loading, setLoading] = useState(false)
