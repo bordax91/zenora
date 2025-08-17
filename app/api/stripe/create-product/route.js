@@ -11,60 +11,75 @@ const supabase = createClient(
 )
 
 export async function POST(req) {
-  const body = await req.json()
-  const { title, description, price, coachId } = body
-
-  if (!title || !price || !coachId) {
-    return new Response(JSON.stringify({ error: 'Champs requis manquants' }), { status: 400 })
-  }
-
   try {
-    // 1. Récupérer le compte Stripe du coach
-    const { data: user } = await supabase
+    const body = await req.json()
+    const { title, description, price, coachId } = body
+
+    if (!title || !price || !coachId) {
+      return new Response(JSON.stringify({ error: 'Champs requis manquants' }), { status: 400 })
+    }
+
+    // 🔍 1. Récupérer le compte Stripe du coach
+    const { data: user, error: userError } = await supabase
       .from('users')
       .select('stripe_account_id')
       .eq('id', coachId)
       .single()
+
+    if (userError) {
+      console.error('Erreur récupération utilisateur:', userError)
+      return new Response(JSON.stringify({ error: 'Erreur récupération utilisateur' }), { status: 500 })
+    }
 
     const stripeAccount = user?.stripe_account_id
     if (!stripeAccount) {
       return new Response(JSON.stringify({ error: 'Aucun compte Stripe connecté' }), { status: 403 })
     }
 
-    // 2. Créer le produit Stripe
+    // 🛒 2. Créer le produit Stripe
     const product = await stripe.products.create(
       {
         name: title,
         description,
       },
-      { stripeAccount } // ⚠️ Créé sur le compte du coach
+      { stripeAccount } // Création sur le compte connecté du coach
     )
 
-    // 3. Créer le prix Stripe
+    // 💰 3. Créer le prix Stripe
     const stripePrice = await stripe.prices.create(
       {
-        unit_amount: price * 100, // en centimes
+        unit_amount: Math.round(price * 100), // conversion en centimes
         currency: 'eur',
         product: product.id,
       },
       { stripeAccount }
     )
 
-    // 4. Sauvegarder dans Supabase
-    const { data, error } = await supabase.from('packages').insert([
-      {
-        title,
-        description,
-        price,
-        coach_id: coachId,
-        stripe_product_id: product.id,
-        stripe_price_id: stripePrice.id,
-      },
-    ])
+    // 💾 4. Enregistrer dans Supabase
+    const { data: inserted, error: insertError } = await supabase
+      .from('packages')
+      .insert([
+        {
+          title,
+          description,
+          price,
+          coach_id: coachId,
+          stripe_product_id: product.id,
+          stripe_price_id: stripePrice.id,
+        },
+      ])
+      .select() // <== Important pour obtenir `inserted[0]`
 
-    if (error) throw error
+    if (insertError) {
+      console.error('Erreur insertion Supabase :', insertError)
+      throw insertError
+    }
 
-    return new Response(JSON.stringify(data[0]), { status: 200 })
+    if (!inserted || inserted.length === 0) {
+      return new Response(JSON.stringify({ error: 'Aucune donnée retournée par Supabase.' }), { status: 500 })
+    }
+
+    return new Response(JSON.stringify(inserted[0]), { status: 200 })
   } catch (err) {
     console.error('Erreur création produit:', err)
     return new Response(JSON.stringify({ error: err.message }), { status: 500 })
