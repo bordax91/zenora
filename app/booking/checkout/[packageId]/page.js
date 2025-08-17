@@ -1,13 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams, useSearchParams, useRouter } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 
 export default function CheckoutPage() {
-  const { packageId } = useParams()
+  const params = useParams()
+  const packageId = params?.packageId
   const searchParams = useSearchParams()
   const sessionId = searchParams.get('session')
-  const router = useRouter()
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
