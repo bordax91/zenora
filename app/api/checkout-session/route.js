@@ -11,30 +11,37 @@ const supabase = createClient(
 )
 
 export async function POST(req) {
-  const body = await req.json()
-  const { packageId } = body
-
-  if (!packageId) {
-    return new Response(JSON.stringify({ error: 'packageId manquant' }), {
-      status: 400,
-    })
-  }
-
-  // 🔍 1. Récupère le package depuis Supabase
-  const { data: packageData, error } = await supabase
-    .from('packages')
-    .select('stripe_price_id, coach_id, coach:coach_id(username)')
-    .eq('id', packageId)
-    .single()
-
-  if (error || !packageData) {
-    return new Response(JSON.stringify({ error: 'Offre introuvable' }), {
-      status: 404,
-    })
-  }
-
   try {
-    // 🎯 2. Crée la session Stripe
+    const body = await req.json()
+    const { packageId } = body
+
+    if (!packageId) {
+      return new Response(JSON.stringify({ error: 'packageId manquant' }), {
+        status: 400,
+      })
+    }
+
+    // 🔍 Récupère l'offre avec jointure coach -> users
+    const { data: packageData, error } = await supabase
+      .from('packages')
+      .select(`
+        stripe_price_id,
+        coach_id,
+        coach:coach_id (
+          username
+        )
+      `)
+      .eq('id', packageId)
+      .single()
+
+    if (error || !packageData || !packageData.coach?.username) {
+      console.error('Erreur Supabase ou username manquant:', error)
+      return new Response(JSON.stringify({ error: 'Offre introuvable ou coach sans username' }), {
+        status: 404,
+      })
+    }
+
+    // 🎯 Crée la session Stripe
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -51,9 +58,10 @@ export async function POST(req) {
     return new Response(JSON.stringify({ url: session.url }), {
       status: 200,
     })
+
   } catch (err) {
     console.error('Stripe checkout error:', err)
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: err.message || 'Erreur serveur' }), {
       status: 500,
     })
   }
