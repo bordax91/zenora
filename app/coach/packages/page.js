@@ -68,7 +68,7 @@ export default function PackagesPage() {
             <div key={pkg.id} className="border p-4 rounded shadow-sm bg-white relative">
               <h2 className="text-lg font-semibold">{pkg.title}</h2>
               <p className="text-sm text-gray-600">{pkg.description}</p>
-              <p className="mt-2 font-medium">{pkg.price / 100} €</p>
+              <p className="mt-2 font-medium">{pkg.price} €</p>
 
               <button
                 onClick={() => handleDelete(pkg.id)}
