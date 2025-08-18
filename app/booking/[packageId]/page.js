@@ -12,16 +12,21 @@ export default function BookingPage() {
 
   useEffect(() => {
     const fetchPackage = async () => {
+      console.log('📦 packageId reçu depuis l’URL :', packageId)
+
       const { data, error } = await supabase
         .from('packages')
         .select('*')
-        .eq('id', packageId)
-        .single()
+        .eq('id', packageId.toString()) // on s'assure que c’est une string bien formatée
+        .maybeSingle()
+
       if (error) {
         console.error('❌ Erreur récupération package:', error)
       } else {
+        console.log('✅ Package récupéré :', data)
         setPkg(data)
       }
+
       setLoading(false)
     }
 
