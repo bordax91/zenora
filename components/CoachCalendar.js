@@ -25,7 +25,7 @@ export default function CoachCalendar({ coachId, packageId }) {
       .from('sessions')
       .select('*')
       .eq('coach_id', coachId)
-      .eq('statut', 'disponible')
+      .is('client_id', null) // ✅ MODIFICATION ICI
       .order('date', { ascending: true })
 
     if (!error) setSessions(data || [])
