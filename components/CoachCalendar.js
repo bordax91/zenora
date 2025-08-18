@@ -25,7 +25,7 @@ export default function CoachCalendar({ coachId, packageId }) {
       .from('sessions')
       .select('*')
       .eq('coach_id', coachId)
-      .is('client_id', null) // ✅ MODIFICATION ICI
+      .is('client_id', null) // ✅ Ne pas afficher les sessions déjà réservées
       .order('date', { ascending: true })
 
     if (!error) setSessions(data || [])
@@ -81,8 +81,7 @@ export default function CoachCalendar({ coachId, packageId }) {
                   {new Date(s.date).toLocaleTimeString('fr-FR', {
                     hour: '2-digit',
                     minute: '2-digit',
-                    hour12: false,
-                    timeZone: 'UTC',
+                    hour12: false, // 🕓 Format 24h
                   })}
                 </span>
                 <button
