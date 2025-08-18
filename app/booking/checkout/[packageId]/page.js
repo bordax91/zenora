@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 
 export default function CheckoutPage() {
-  const params = useParams()
-  const packageId = params?.packageId
+  const searchParams = useSearchParams()
+  const packageId = searchParams.get('package')
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -13,6 +13,8 @@ export default function CheckoutPage() {
   useEffect(() => {
     const startCheckout = async () => {
       try {
+        console.log('📦 packageId reçu pour checkout :', packageId)
+
         const res = await fetch('/api/checkout-session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -25,8 +27,10 @@ export default function CheckoutPage() {
           throw new Error(data?.error || 'Erreur de redirection')
         }
 
+        // Redirection vers Stripe Checkout
         window.location.href = data.url
       } catch (err) {
+        console.error('❌ Erreur checkout :', err.message)
         setError(err.message)
         setLoading(false)
       }
