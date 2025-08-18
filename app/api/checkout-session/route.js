@@ -2,7 +2,7 @@ import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2024-08-01',
+  apiVersion: '2024-04-10',
 })
 
 const supabase = createClient(
@@ -32,7 +32,7 @@ export async function POST(req) {
           username
         )
       `)
-      .eq('uuid', packageId) // ✅ correction ici
+      .eq('id', packageId) // ✅ correction ici
       .single()
 
     if (error || !packageData || !packageData.coach?.username) {

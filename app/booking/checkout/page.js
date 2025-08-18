@@ -22,6 +22,7 @@ export default function CheckoutPage() {
         })
 
         const data = await res.json()
+        console.log('📥 Réponse API /checkout-session :', data)
 
         if (!res.ok) {
           throw new Error(data?.error || 'Erreur de redirection')
