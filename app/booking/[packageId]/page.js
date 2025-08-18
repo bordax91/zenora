@@ -11,13 +11,15 @@ export default function BookingPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    console.log('🏁 useEffect lancé')
+
     const fetchPackage = async () => {
       console.log('📦 packageId reçu depuis l’URL :', packageId)
 
       const { data, error } = await supabase
         .from('packages')
         .select('*')
-        .eq('id', packageId.toString()) // on s'assure que c’est une string bien formatée
+        .eq('id', packageId?.toString()) // on sécurise avec ?
         .maybeSingle()
 
       if (error) {
@@ -30,7 +32,12 @@ export default function BookingPage() {
       setLoading(false)
     }
 
-    fetchPackage()
+    if (packageId) {
+      fetchPackage()
+    } else {
+      console.warn('⚠️ Aucun packageId trouvé dans l’URL')
+      setLoading(false)
+    }
   }, [packageId])
 
   if (loading) return <p className="text-center py-10">Chargement...</p>
