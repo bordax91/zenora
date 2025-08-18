@@ -21,7 +21,8 @@ export async function POST(req) {
       })
     }
 
-    // 🔍 Récupère l'offre avec jointure coach -> users
+    console.log('⏎ packageId reçu :', packageId)
+
     const { data: packageData, error } = await supabase
       .from('packages')
       .select(`
@@ -31,17 +32,16 @@ export async function POST(req) {
           username
         )
       `)
-      .eq('id', packageId)
+      .eq('uuid', packageId) // ✅ correction ici
       .single()
 
     if (error || !packageData || !packageData.coach?.username) {
-      console.error('Erreur Supabase ou username manquant:', error)
+      console.error('❌ Supabase error or username missing:', error)
       return new Response(JSON.stringify({ error: 'Offre introuvable ou coach sans username' }), {
         status: 404,
       })
     }
 
-    // 🎯 Crée la session Stripe
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
