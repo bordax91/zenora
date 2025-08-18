@@ -1,13 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams, useSearchParams } from 'next/navigation'
+import { useParams } from 'next/navigation'
 
 export default function CheckoutPage() {
   const params = useParams()
   const packageId = params?.packageId
-  const searchParams = useSearchParams()
-  const sessionId = searchParams.get('session')
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -18,29 +16,29 @@ export default function CheckoutPage() {
         const res = await fetch('/api/checkout-session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ packageId, sessionId })
+          body: JSON.stringify({ packageId })
         })
 
         const data = await res.json()
 
         if (!res.ok) {
-          throw new Error(data?.message || 'Erreur de redirection')
+          throw new Error(data?.error || 'Erreur de redirection')
         }
 
-        window.location.href = data.url // redirige vers Stripe Checkout
+        window.location.href = data.url
       } catch (err) {
         setError(err.message)
         setLoading(false)
       }
     }
 
-    if (packageId && sessionId) {
+    if (packageId) {
       startCheckout()
     } else {
-      setError('Paramètres manquants.')
+      setError('Package ID manquant.')
       setLoading(false)
     }
-  }, [packageId, sessionId])
+  }, [packageId])
 
   if (loading) {
     return <p className="text-center py-20">Redirection vers Stripe...</p>
