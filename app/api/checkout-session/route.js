@@ -18,26 +18,34 @@ export async function POST(req) {
 
     console.log('⏎ packageId reçu :', packageId)
 
+    // 🔍 On récupère aussi stripe_account_id depuis coach
     const { data: packageData, error } = await supabase
       .from('packages')
       .select(`
         stripe_price_id,
         coach_id,
         coach:coach_id (
-          username
+          username,
+          stripe_account_id
         )
       `)
       .eq('id', packageId)
       .single()
 
-    if (error || !packageData?.coach?.username || !packageData?.stripe_price_id) {
+    if (
+      error ||
+      !packageData?.coach?.username ||
+      !packageData?.stripe_price_id ||
+      !packageData?.coach?.stripe_account_id
+    ) {
       console.error('❌ Supabase error or données manquantes :', error)
       return new Response(
-        JSON.stringify({ error: 'Offre introuvable, coach sans username ou price manquant' }),
+        JSON.stringify({ error: 'Offre introuvable ou données manquantes (username, price ou compte Stripe)' }),
         { status: 404 }
       )
     }
 
+    // ✅ Création session Stripe pour le compte connecté
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -49,6 +57,8 @@ export async function POST(req) {
       mode: 'payment',
       success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/success?coach=${packageData.coach.username}`,
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/${packageData.coach.username}`,
+    }, {
+      stripeAccount: packageData.coach.stripe_account_id, // 🟢 c'est ici qu'on dit à Stripe quel compte utiliser
     })
 
     return new Response(JSON.stringify({ url: session.url }), {
