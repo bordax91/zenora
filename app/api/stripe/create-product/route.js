@@ -1,4 +1,4 @@
-import { stripe } from '@/lib/stripe'
+import stripe from '@/lib/stripe'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
