@@ -26,9 +26,13 @@ export async function POST(req) {
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object
 
-    const metadata = session.metadata
-    const clientId = metadata?.client_id
-    const sessionId = metadata?.session_id
+    if (!session.metadata) {
+      console.error('❌ Pas de metadata dans la session Stripe')
+      return NextResponse.json({ error: 'Metadata manquante' }, { status: 400 })
+    }
+
+    const clientId = session.metadata.client_id
+    const sessionId = session.metadata.session_id
 
     if (!clientId || !sessionId) {
       console.error('❌ Données metadata manquantes')

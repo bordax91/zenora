@@ -10,7 +10,7 @@ export default function InfoClientPage() {
   const packageId = searchParams.get('package')
   const sessionId = searchParams.get('session')
 
-  const [mode, setMode] = useState('signup') // 'signup' ou 'login'
+  const [mode, setMode] = useState('signup')
   const [form, setForm] = useState({
     email: '',
     password: '',
@@ -56,12 +56,43 @@ export default function InfoClientPage() {
         return
       }
 
-      // ✅ Redirection vers checkout avec infos
-      const url = `/booking/checkout?package=${packageId}&session=${sessionId}`
-      router.push(url)
+      // ✅ Récupérer l'ID du client
+      const { data: userData } = await supabase.auth.getUser()
+      const clientId = userData?.user?.id
+
+      if (!clientId) {
+        setError("Erreur d'identification du client.")
+        setLoading(false)
+        return
+      }
+
+      // ✅ Appel à l'API pour créer la session Stripe Checkout
+      const response = await fetch('/api/checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          packageId,
+          sessionId,
+          clientId
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || 'Erreur lors de la redirection vers Stripe.')
+        setLoading(false)
+        return
+      }
+
+      // ✅ Redirection vers Stripe
+      window.location.href = data.url
 
     } catch (err) {
       setError('Une erreur est survenue.')
+      console.error(err)
     }
 
     setLoading(false)
