@@ -90,7 +90,7 @@ export default function CoachProfilePage() {
 
         {/* Partie droite : packages */}
         <div className="w-full lg:w-1/3 space-y-6">
-          <h2 className="text-xl font-semibold mb-2 text-center lg:text-left">Choisir un package</h2>
+          <h2 className="text-xl font-semibold mb-2 text-center lg:text-left">Choisir une offre</h2>
           {packages.length === 0 && (
             <p className="text-gray-500 text-center">Aucun package disponible.</p>
           )}
