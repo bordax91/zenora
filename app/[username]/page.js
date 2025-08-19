@@ -16,7 +16,6 @@ export default function CoachProfilePage() {
     if (!username) return
 
     const fetchData = async () => {
-      // Récupère le coach
       const { data: coachData, error: coachError } = await supabase
         .from('users')
         .select('*')
@@ -33,7 +32,6 @@ export default function CoachProfilePage() {
 
       setCoach(coachData)
 
-      // Récupère les packages du coach
       const { data: packagesData, error: packagesError } = await supabase
         .from('packages')
         .select('*')
@@ -60,8 +58,18 @@ export default function CoachProfilePage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="flex flex-col lg:flex-row gap-10">
+    <div className="max-w-6xl mx-auto p-6 relative">
+      {/* Bouton "Se connecter" en haut à droite */}
+      <div className="absolute top-6 right-6">
+        <button
+          onClick={() => router.push('/connectclient')}
+          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+        >
+          Se connecter
+        </button>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-10 mt-6">
         {/* Partie gauche : bio */}
         <div className="flex-1">
           <div className="text-center mb-8">
@@ -103,4 +111,3 @@ export default function CoachProfilePage() {
     </div>
   )
 }
-
