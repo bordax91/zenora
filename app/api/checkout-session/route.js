@@ -8,17 +8,17 @@ const supabase = createClient(
 
 export async function POST(req) {
   try {
-    const { packageId } = await req.json()
+    const { packageId, clientId, sessionId } = await req.json()
 
-    if (!packageId) {
-      return new Response(JSON.stringify({ error: 'packageId manquant' }), {
-        status: 400,
-      })
+    if (!packageId || !clientId || !sessionId) {
+      return new Response(
+        JSON.stringify({ error: 'Champs requis manquants (packageId, clientId, sessionId)' }),
+        { status: 400 }
+      )
     }
 
     console.log('⏎ packageId reçu :', packageId)
 
-    // 🔍 Récupérer le package + coach
     const { data: packageData, error } = await supabase
       .from('packages')
       .select(`
@@ -38,7 +38,7 @@ export async function POST(req) {
       !packageData?.stripe_price_id ||
       !packageData?.coach?.stripe_account_id
     ) {
-      console.error('❌ Supabase error or données manquantes :', error)
+      console.error('❌ Supabase error ou données manquantes :', error)
       return new Response(
         JSON.stringify({ error: 'Offre introuvable ou données manquantes (username, price ou compte Stripe)' }),
         { status: 404 }
@@ -57,6 +57,10 @@ export async function POST(req) {
       mode: 'payment',
       success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/client/dashboard?package=${packageId}`,
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/${packageData.coach.username}`,
+      metadata: {
+        client_id: clientId,
+        session_id: sessionId,
+      },
     }, {
       stripeAccount: packageData.coach.stripe_account_id,
     })
