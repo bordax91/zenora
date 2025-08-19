@@ -25,7 +25,7 @@ export default function CoachCalendar({ coachId, packageId }) {
       .from('sessions')
       .select('*')
       .eq('coach_id', coachId)
-      .is('client_id', null) // ✅ Ne pas afficher les sessions déjà réservées
+      .is('client_id', null)
       .order('date', { ascending: true })
 
     if (!error) setSessions(data || [])
@@ -33,13 +33,20 @@ export default function CoachCalendar({ coachId, packageId }) {
     setLoading(false)
   }
 
-  const sameUTC = (a, b) =>
-    a.getUTCFullYear() === b.getUTCFullYear() &&
-    a.getUTCMonth() === b.getUTCMonth() &&
-    a.getUTCDate() === b.getUTCDate()
+  const sameDay = (a, b) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
 
-  const availableDates = sessions.map(s => new Date(s.date))
-  const daySessions = sessions.filter(s => sameUTC(new Date(s.date), selectedDate))
+  const availableDates = sessions.map((s) => {
+    const localDate = new Date(s.date)
+    return new Date(localDate.getFullYear(), localDate.getMonth(), localDate.getDate())
+  })
+
+  const daySessions = sessions.filter((s) => {
+    const sessionDate = new Date(s.date)
+    return sameDay(sessionDate, selectedDate)
+  })
 
   const handleClick = async (session) => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -63,7 +70,7 @@ export default function CoachCalendar({ coachId, packageId }) {
           onChange={setSelectedDate}
           value={selectedDate}
           minDate={new Date()}
-          tileDisabled={({ date }) => !availableDates.some(d => sameUTC(d, date))}
+          tileDisabled={({ date }) => !availableDates.some(d => sameDay(d, date))}
           className="w-full"
         />
       </div>
@@ -81,7 +88,7 @@ export default function CoachCalendar({ coachId, packageId }) {
                   {new Date(s.date).toLocaleTimeString('fr-FR', {
                     hour: '2-digit',
                     minute: '2-digit',
-                    hour12: false, // 🕓 Format 24h
+                    hour12: false,
                   })}
                 </span>
                 <button
