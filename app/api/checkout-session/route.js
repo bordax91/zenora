@@ -18,7 +18,7 @@ export async function POST(req) {
 
     console.log('⏎ packageId reçu :', packageId)
 
-    // 🔍 On récupère aussi stripe_account_id depuis coach
+    // 🔍 Récupérer le package + coach
     const { data: packageData, error } = await supabase
       .from('packages')
       .select(`
@@ -45,7 +45,7 @@ export async function POST(req) {
       )
     }
 
-    // ✅ Création session Stripe pour le compte connecté
+    // ✅ Création de la session Stripe Checkout
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -55,10 +55,10 @@ export async function POST(req) {
         },
       ],
       mode: 'payment',
-      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/success?coach=${packageData.coach.username}`,
+      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/client/dashboard?package=${packageId}`,
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/${packageData.coach.username}`,
     }, {
-      stripeAccount: packageData.coach.stripe_account_id, // 🟢 c'est ici qu'on dit à Stripe quel compte utiliser
+      stripeAccount: packageData.coach.stripe_account_id,
     })
 
     return new Response(JSON.stringify({ url: session.url }), {
