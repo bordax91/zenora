@@ -1,26 +1,21 @@
 import { NextResponse } from 'next/server'
-import Stripe from 'stripe'
+import stripe from '@/lib/stripe'
 import { createClient } from '@supabase/supabase-js'
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2025-07-30.basil',
-})
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY // ⚠️ pas l'anon key ici
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
 export async function POST(request) {
   try {
-    const body = await request.json()
-    const userId = body.userId
+    const { userId } = await request.json()
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID requis' }, { status: 400 })
     }
 
-    // Récupère les infos de l’utilisateur depuis Supabase
+    // 🔍 Récupérer l'utilisateur depuis Supabase
     const { data: user, error } = await supabase
       .from('users')
       .select('email, stripe_account_id')
@@ -33,7 +28,7 @@ export async function POST(request) {
 
     let accountId = user.stripe_account_id
 
-    // Si l'utilisateur n’a pas encore de compte Stripe, on en crée un
+    // 🆕 Création du compte Stripe s'il n'existe pas encore
     if (!accountId) {
       const account = await stripe.accounts.create({
         type: 'standard',
@@ -42,14 +37,18 @@ export async function POST(request) {
 
       accountId = account.id
 
-      // Sauvegarde le compte Stripe dans Supabase
-      await supabase
+      // 💾 Mise à jour dans Supabase
+      const { error: updateError } = await supabase
         .from('users')
         .update({ stripe_account_id: accountId })
         .eq('id', userId)
+
+      if (updateError) {
+        return NextResponse.json({ error: 'Erreur lors de la mise à jour Supabase' }, { status: 500 })
+      }
     }
 
-    // Crée un lien Stripe Connect pour que l’utilisateur finalise la configuration
+    // 🔗 Création du lien Stripe Connect
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
       refresh_url: `${process.env.NEXT_PUBLIC_SITE_URL}/coach/integrations`,
@@ -58,8 +57,9 @@ export async function POST(request) {
     })
 
     return NextResponse.json({ url: accountLink.url })
+
   } catch (err) {
-    console.error('Erreur Stripe Connect:', err)
+    console.error('❌ Erreur Stripe Connect:', err)
     return NextResponse.json({ error: 'Erreur interne Stripe' }, { status: 500 })
   }
 }

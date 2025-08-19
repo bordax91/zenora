@@ -1,9 +1,5 @@
-import Stripe from 'stripe'
+import stripe from '@/lib/stripe'
 import { createClient } from '@supabase/supabase-js'
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2025-07-30.basil',
-})
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -12,8 +8,7 @@ const supabase = createClient(
 
 export async function POST(req) {
   try {
-    const body = await req.json()
-    const { packageId } = body
+    const { packageId } = await req.json()
 
     if (!packageId) {
       return new Response(JSON.stringify({ error: 'packageId manquant' }), {
@@ -32,14 +27,15 @@ export async function POST(req) {
           username
         )
       `)
-      .eq('id', packageId) // ✅ correction ici
+      .eq('id', packageId)
       .single()
 
-    if (error || !packageData || !packageData.coach?.username) {
-      console.error('❌ Supabase error or username missing:', error)
-      return new Response(JSON.stringify({ error: 'Offre introuvable ou coach sans username' }), {
-        status: 404,
-      })
+    if (error || !packageData?.coach?.username || !packageData?.stripe_price_id) {
+      console.error('❌ Supabase error or données manquantes :', error)
+      return new Response(
+        JSON.stringify({ error: 'Offre introuvable, coach sans username ou price manquant' }),
+        { status: 404 }
+      )
     }
 
     const session = await stripe.checkout.sessions.create({
@@ -60,7 +56,7 @@ export async function POST(req) {
     })
 
   } catch (err) {
-    console.error('Stripe checkout error:', err)
+    console.error('❌ Stripe checkout error :', err)
     return new Response(JSON.stringify({ error: err.message || 'Erreur serveur' }), {
       status: 500,
     })

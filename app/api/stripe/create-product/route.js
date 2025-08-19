@@ -1,9 +1,5 @@
-import Stripe from 'stripe'
+import { stripe } from '@/lib/stripe'
 import { createClient } from '@supabase/supabase-js'
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2025-07-30.basil',
-})
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -42,13 +38,13 @@ export async function POST(req) {
         name: title,
         description,
       },
-      { stripeAccount } // Création sur le compte connecté du coach
+      { stripeAccount }
     )
 
     // 💰 3. Créer le prix Stripe
     const stripePrice = await stripe.prices.create(
       {
-        unit_amount: Math.round(price * 100), // conversion en centimes
+        unit_amount: Math.round(price * 100),
         currency: 'eur',
         product: product.id,
       },
@@ -68,7 +64,7 @@ export async function POST(req) {
           stripe_price_id: stripePrice.id,
         },
       ])
-      .select() // <== Important pour obtenir `inserted[0]`
+      .select()
 
     if (insertError) {
       console.error('Erreur insertion Supabase :', insertError)
