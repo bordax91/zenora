@@ -66,6 +66,33 @@ export default function InfoClientPage() {
         return
       }
 
+      // ✅ Si signup, insérer manuellement dans table `users`
+      if (mode === 'signup') {
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', clientId)
+          .single()
+
+        if (!existingUser) {
+          const { error: insertError } = await supabase.from('users').insert([
+            {
+              id: clientId,
+              email: form.email,
+              name: `${form.first_name} ${form.last_name}`,
+              role: 'client'
+            }
+          ])
+
+          if (insertError) {
+            console.error('❌ Erreur insertion user :', insertError)
+            setError("Erreur lors de l'ajout de l'utilisateur.")
+            setLoading(false)
+            return
+          }
+        }
+      }
+
       // ✅ Appel à l'API pour créer la session Stripe Checkout
       const response = await fetch('/api/checkout-session', {
         method: 'POST',
