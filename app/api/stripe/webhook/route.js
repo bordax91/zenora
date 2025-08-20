@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import Stripe from 'stripe'
+import stripe from '@/lib/stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET
 
 const supabase = createClient(
@@ -12,6 +11,10 @@ const supabase = createClient(
 
 export async function POST(req) {
   const sig = req.headers.get('stripe-signature')
+  if (!sig) {
+    return NextResponse.json({ error: 'Signature manquante' }, { status: 400 })
+  }
+
   const rawBody = await req.text()
 
   let event
@@ -41,7 +44,10 @@ export async function POST(req) {
 
     const { error } = await supabase
       .from('sessions')
-      .update({ client_id: clientId })
+      .update({
+        client_id: clientId,
+        statut: 'réservé'
+      })
       .eq('id', sessionId)
 
     if (error) {
@@ -49,7 +55,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Erreur Supabase' }, { status: 500 })
     }
 
-    console.log('✅ Session réservée mise à jour avec client_id:', clientId)
+    console.log('✅ Session réservée avec succès :', sessionId)
   }
 
   return NextResponse.json({ received: true }, { status: 200 })
