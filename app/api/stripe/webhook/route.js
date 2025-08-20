@@ -49,6 +49,18 @@ export async function POST(req) {
       return NextResponse.json({ error: 'client_id ou session_id manquant' }, { status: 400 })
     }
 
+    // ✅ Vérification que le clientId existe bien
+    const { data: clientExists, error: clientCheckError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', clientId)
+      .single()
+
+    if (clientCheckError || !clientExists) {
+      console.error('❌ Le client_id fourni ne correspond à aucun utilisateur :', clientId)
+      return NextResponse.json({ error: 'client_id invalide (non trouvé)' }, { status: 400 })
+    }
+
     console.log('🔄 Mise à jour Supabase avec :', {
       sessionId,
       clientId,
