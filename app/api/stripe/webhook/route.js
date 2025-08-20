@@ -12,6 +12,7 @@ const supabase = createClient(
 export async function POST(req) {
   const sig = req.headers.get('stripe-signature')
   if (!sig) {
+    console.warn('⚠️ Signature manquante dans le header')
     return NextResponse.json({ error: 'Signature manquante' }, { status: 400 })
   }
 
@@ -21,6 +22,7 @@ export async function POST(req) {
 
   try {
     event = stripe.webhooks.constructEvent(rawBody, sig, endpointSecret)
+    console.log('✅ Webhook Stripe reçu :', event.type)
   } catch (err) {
     console.error('❌ Erreur signature webhook Stripe :', err.message)
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
@@ -28,6 +30,11 @@ export async function POST(req) {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object
+
+    console.log('📦 Données session reçue de Stripe :', {
+      metadata: session.metadata,
+      id: session.id
+    })
 
     if (!session.metadata) {
       console.error('❌ Pas de metadata dans la session Stripe')
@@ -38,9 +45,15 @@ export async function POST(req) {
     const sessionId = session.metadata.session_id
 
     if (!clientId || !sessionId) {
-      console.error('❌ Données metadata manquantes')
+      console.error('❌ Données metadata manquantes', { clientId, sessionId })
       return NextResponse.json({ error: 'client_id ou session_id manquant' }, { status: 400 })
     }
+
+    console.log('🔄 Mise à jour Supabase avec :', {
+      sessionId,
+      clientId,
+      statut: 'réservé'
+    })
 
     const { error } = await supabase
       .from('sessions')
@@ -51,11 +64,11 @@ export async function POST(req) {
       .eq('id', sessionId)
 
     if (error) {
-      console.error('❌ Erreur mise à jour Supabase :', error)
-      return NextResponse.json({ error: 'Erreur Supabase' }, { status: 500 })
+      console.error('❌ Erreur Supabase détaillée :', error)
+      return NextResponse.json({ error: error.message || 'Erreur Supabase' }, { status: 500 })
     }
 
-    console.log('✅ Session réservée avec succès :', sessionId)
+    console.log('✅ Session mise à jour avec succès dans Supabase :', sessionId)
   }
 
   return NextResponse.json({ received: true }, { status: 200 })
