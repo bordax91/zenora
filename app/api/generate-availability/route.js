@@ -5,16 +5,6 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
-const weekdayToNumber = {
-  Sunday: 0,
-  Monday: 1,
-  Tuesday: 2,
-  Wednesday: 3,
-  Thursday: 4,
-  Friday: 5,
-  Saturday: 6,
-}
-
 export async function POST(req) {
   try {
     const { user_id } = await req.json()
@@ -43,7 +33,7 @@ export async function POST(req) {
       const weekdayNumber = date.getDay() // 0 = dimanche
 
       templates.forEach((template) => {
-        if (weekdayToNumber[template.weekday] === weekdayNumber) {
+        if (template.day_of_week === weekdayNumber) {
           const [hour, minute] = template.start_time.split(':')
           const slotDate = new Date(date)
           slotDate.setHours(parseInt(hour), parseInt(minute), 0, 0)

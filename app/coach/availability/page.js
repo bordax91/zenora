@@ -12,10 +12,7 @@ export default function AvailabilityPage() {
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState('')
 
-  const weekdays = [
-    'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'
-  ]
-
+  const weekdays = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
   const weekdayMap = {
     'Lundi': 1,
     'Mardi': 2,
@@ -24,6 +21,16 @@ export default function AvailabilityPage() {
     'Vendredi': 5,
     'Samedi': 6,
     'Dimanche': 0
+  }
+
+  const weekdayReverse = {
+    1: 'Lundi',
+    2: 'Mardi',
+    3: 'Mercredi',
+    4: 'Jeudi',
+    5: 'Vendredi',
+    6: 'Samedi',
+    0: 'Dimanche'
   }
 
   useEffect(() => {
@@ -56,14 +63,23 @@ export default function AvailabilityPage() {
 
   const handleAddTemplate = async () => {
     if (!weekday || !startTime || !endTime) return alert('Champs requis')
+    const dayOfWeek = weekdayMap[weekday]
+
     const { error } = await supabase.from('availability_template').insert({
       coach_id: userId,
-      weekday,
+      day_of_week: dayOfWeek,
       start_time: startTime,
       end_time: endTime
     })
+
     if (error) return alert("Erreur ajout : " + error.message)
-    setTemplate([...template, { weekday, start_time: startTime, end_time: endTime }])
+
+    setTemplate([...template, {
+      coach_id: userId,
+      day_of_week: dayOfWeek,
+      start_time: startTime,
+      end_time: endTime
+    }])
   }
 
   const handleGenerateSlots = async () => {
