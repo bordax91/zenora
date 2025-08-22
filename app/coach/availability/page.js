@@ -23,7 +23,7 @@ export default function AvailabilityPage() {
     'Dimanche': 0
   }
 
-  const fetchAvailabilities = async (uid: string) => {
+  const fetchAvailabilities = async (uid) => {
     const { data: slotsData } = await supabase
       .from('availabilities')
       .select('*')
@@ -106,7 +106,7 @@ export default function AvailabilityPage() {
     }
   }
 
-  const deleteSlot = async (id: string) => {
+  const deleteSlot = async (id) => {
     const { error } = await supabase.from('availabilities').delete().eq('id', id)
     if (!error) setAvailabilities(availabilities.filter(a => a.id !== id))
   }
