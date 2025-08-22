@@ -7,30 +7,44 @@ import { supabase } from '@/lib/supabase/client'
 export default function PackagesPage() {
   const [packages, setPackages] = useState([])
   const [loading, setLoading] = useState(true)
+  const [userId, setUserId] = useState(null)
 
   useEffect(() => {
-    fetchPackages()
-  }, [])
+    const fetchUserAndPackages = async () => {
+      // Récupère l'utilisateur connecté
+      const { data: authData, error: authError } = await supabase.auth.getUser()
+      const user = authData?.user
 
-  const fetchPackages = async () => {
-    setLoading(true)
-    const { data, error } = await supabase
-      .from('packages')
-      .select('*')
-      .order('created_at', { ascending: false })
+      if (!user) {
+        console.error("Utilisateur non connecté")
+        setLoading(false)
+        return
+      }
 
-    if (error) {
-      console.error('Erreur chargement packages:', error)
-    } else {
-      setPackages(data)
+      setUserId(user.id)
+
+      // Récupère les packages du coach connecté
+      const { data, error } = await supabase
+        .from('packages')
+        .select('*')
+        .eq('coach_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Erreur chargement packages:', error)
+      } else {
+        setPackages(data || [])
+      }
+
+      setLoading(false)
     }
 
-    setLoading(false)
-  }
+    fetchUserAndPackages()
+  }, [])
 
   const handleDelete = async (id) => {
-    const confirm = window.confirm('Supprimer cette offre ?')
-    if (!confirm) return
+    const confirmDelete = window.confirm('Supprimer cette offre ?')
+    if (!confirmDelete) return
 
     const { error } = await supabase
       .from('packages')
@@ -41,7 +55,6 @@ export default function PackagesPage() {
       alert("Erreur lors de la suppression")
       console.error(error)
     } else {
-      // Supprime l’élément de l’état local
       setPackages(prev => prev.filter(pkg => pkg.id !== id))
     }
   }
