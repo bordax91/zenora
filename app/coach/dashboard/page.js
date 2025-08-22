@@ -6,45 +6,109 @@ import { supabase } from '@/lib/supabase/client'
 export default function CoachDashboard() {
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [date, setDate] = useState('')
+
+  const fetchSessions = async () => {
+    const { data: authData } = await supabase.auth.getUser()
+    const user = authData?.user
+    if (!user) return
+
+    const { data, error } = await supabase
+      .from('sessions')
+      .select(`
+        id,
+        date,
+        client:client_id (
+          name,
+          email
+        )
+      `)
+      .eq('coach_id', user.id)
+      .order('date', { ascending: true })
+
+    if (!error) setSessions(data || [])
+    setLoading(false)
+  }
 
   useEffect(() => {
-    const fetchSessions = async () => {
-      const { data: authData } = await supabase.auth.getUser()
-      const user = authData?.user
-      if (!user) return
-
-      const { data, error } = await supabase
-        .from('sessions')
-        .select(`
-          id,
-          date,
-          statut,
-          client:client_id (
-            name,
-            email
-          )
-        `)
-        .eq('coach_id', user.id)
-        .order('date', { ascending: true })
-
-      if (error) {
-        console.error('Erreur chargement sessions:', error)
-      } else {
-        setSessions(data || [])
-      }
-      setLoading(false)
-    }
-
     fetchSessions()
   }, [])
 
-  if (loading) {
-    return <p className="text-center text-gray-500">Chargement...</p>
+  const handleAddSession = async () => {
+    const { data: authData } = await supabase.auth.getUser()
+    const coach = authData?.user
+    if (!coach) return alert("Coach non identifié")
+
+    const { data: existingClient } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single()
+
+    let clientId = existingClient?.id
+
+    if (!clientId) {
+      const { data: newClient, error: insertError } = await supabase
+        .from('users')
+        .insert({ email, name, role: 'client' })
+        .select()
+        .single()
+
+      if (insertError || !newClient) return alert('Erreur création client')
+
+      clientId = newClient.id
+    }
+
+    const { error: sessionError } = await supabase
+      .from('sessions')
+      .insert({
+        coach_id: coach.id,
+        client_id: clientId,
+        date
+        // Pas besoin de 'statut': on le calcule dynamiquement
+      })
+
+    if (sessionError) return alert('Erreur création session')
+
+    setName('')
+    setEmail('')
+    setDate('')
+    fetchSessions()
   }
+
+  const handleDeleteSession = async (sessionId: string) => {
+    const confirmDelete = confirm('Supprimer cette session ?')
+    if (!confirmDelete) return
+
+    const { error } = await supabase
+      .from('sessions')
+      .delete()
+      .eq('id', sessionId)
+
+    if (error) {
+      alert('Erreur lors de la suppression')
+    } else {
+      fetchSessions()
+    }
+  }
+
+  if (loading) return <p className="text-center text-gray-500">Chargement...</p>
 
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">📅 Vos rendez-vous</h1>
+
+      <div className="bg-white p-4 rounded-lg shadow mb-6">
+        <h2 className="text-lg font-semibold mb-2">➕ Ajouter une session</h2>
+        <div className="flex flex-col md:flex-row gap-2">
+          <input value={name} onChange={e => setName(e.target.value)} placeholder="Nom" className="border px-3 py-2 rounded w-full md:w-auto" />
+          <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" className="border px-3 py-2 rounded w-full md:w-auto" />
+          <input value={date} onChange={e => setDate(e.target.value)} type="datetime-local" className="border px-3 py-2 rounded w-full md:w-auto" />
+          <button onClick={handleAddSession} className="bg-blue-600 text-white px-4 py-2 rounded">Ajouter</button>
+        </div>
+      </div>
 
       {sessions.length === 0 ? (
         <div className="bg-white p-8 rounded-lg shadow text-center text-gray-500">
@@ -59,30 +123,42 @@ export default function CoachDashboard() {
                 <th className="px-4 py-3">Nom</th>
                 <th className="px-4 py-3">Email</th>
                 <th className="px-4 py-3">Statut</th>
+                <th className="px-4 py-3">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {sessions.map((session) => (
-                <tr key={session.id} className="border-t">
-                  <td className="px-4 py-3">
-                    {new Date(session.date).toLocaleString('fr-FR', {
-                      dateStyle: 'medium',
-                      timeStyle: 'short'
-                    })}
-                  </td>
-                  <td className="px-4 py-3">{session.client?.name || '—'}</td>
-                  <td className="px-4 py-3">{session.client?.email || '—'}</td>
-                  <td className="px-4 py-3">
-                    {session.statut === 'prévu' ? (
-                      <span className="text-blue-600 font-medium">Prévu</span>
-                    ) : session.statut === 'terminé' ? (
-                      <span className="text-green-600 font-medium">Terminé</span>
-                    ) : (
-                      <span className="text-gray-500">—</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {sessions.map((session) => {
+                const isPast = new Date(session.date) < new Date()
+                return (
+                  <tr key={session.id} className="border-t">
+                    <td className="px-4 py-3">
+                      {new Date(session.date).toLocaleString('fr-FR', {
+                        dateStyle: 'medium',
+                        timeStyle: 'short'
+                      })}
+                    </td>
+                    <td className="px-4 py-3">{session.client?.name || '—'}</td>
+                    <td className="px-4 py-3">{session.client?.email || '—'}</td>
+                    <td className="px-4 py-3">
+                      {isPast ? (
+                        <span className="text-green-600 font-medium">Terminé</span>
+                      ) : (
+                        <span className="text-blue-600 font-medium">Prévu</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {isPast && (
+                        <button
+                          onClick={() => handleDeleteSession(session.id)}
+                          className="text-red-600 hover:underline"
+                        >
+                          Supprimer
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
