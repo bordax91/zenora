@@ -19,7 +19,8 @@ export async function POST(req) {
 
     console.log('⏎ packageId reçu :', packageId)
 
-    const { data: packageData, error } = await supabase
+    // 🔁 On récupère les infos sur le package
+    const { data: packageData, error: packageError } = await supabase
       .from('packages')
       .select(`
         stripe_price_id,
@@ -33,15 +34,29 @@ export async function POST(req) {
       .single()
 
     if (
-      error ||
+      packageError ||
       !packageData?.coach?.username ||
       !packageData?.stripe_price_id ||
       !packageData?.coach?.stripe_account_id
     ) {
-      console.error('❌ Supabase error ou données manquantes :', error)
+      console.error('❌ Supabase error ou données manquantes :', packageError)
       return new Response(
         JSON.stringify({ error: 'Offre introuvable ou données manquantes (username, price ou compte Stripe)' }),
         { status: 404 }
+      )
+    }
+
+    // ✅ Mise à jour de la session Supabase pour lier le package
+    const { error: updateError } = await supabase
+      .from('sessions')
+      .update({ package_id: packageId })
+      .eq('id', sessionId)
+
+    if (updateError) {
+      console.error('❌ Erreur en mettant à jour la session avec le package :', updateError)
+      return new Response(
+        JSON.stringify({ error: 'Impossible d’associer le package à la session' }),
+        { status: 500 }
       )
     }
 
