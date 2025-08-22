@@ -2,19 +2,29 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import DatePicker from 'react-datepicker'
-import 'react-datepicker/dist/react-datepicker.css'
 
 export default function AvailabilityPage() {
   const [template, setTemplate] = useState([])
   const [availabilities, setAvailabilities] = useState([])
-  const [weekday, setWeekday] = useState('Monday')
+  const [weekday, setWeekday] = useState('Lundi')
   const [startTime, setStartTime] = useState('10:00')
   const [endTime, setEndTime] = useState('11:00')
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState('')
 
-  const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+  const weekdays = [
+    'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'
+  ]
+
+  const weekdayMap = {
+    'Lundi': 1,
+    'Mardi': 2,
+    'Mercredi': 3,
+    'Jeudi': 4,
+    'Vendredi': 5,
+    'Samedi': 6,
+    'Dimanche': 0
+  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -50,19 +60,25 @@ export default function AvailabilityPage() {
       coach_id: userId,
       weekday,
       start_time: startTime,
-      end_time: endTime,
+      end_time: endTime
     })
-    if (error) return alert('Erreur ajout')
+    if (error) return alert("Erreur ajout : " + error.message)
     setTemplate([...template, { weekday, start_time: startTime, end_time: endTime }])
   }
 
   const handleGenerateSlots = async () => {
-    const res = await fetch('/api/generate-availability', { method: 'POST' })
+    const res = await fetch('/api/generate-availability', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId })
+    })
+
     if (res.ok) {
       alert('Créneaux générés')
       location.reload()
     } else {
-      alert('Erreur génération')
+      const error = await res.json()
+      alert('Erreur génération : ' + (error?.error || ''))
     }
   }
 
@@ -75,7 +91,6 @@ export default function AvailabilityPage() {
     <div>
       <h1 className="text-2xl font-bold mb-6">🗓 Disponibilités</h1>
 
-      {/* Formulaire ajout template */}
       <div className="bg-white p-4 rounded-lg shadow mb-6">
         <h2 className="text-lg font-semibold mb-2">➕ Ajouter une disponibilité récurrente</h2>
         <div className="flex flex-col sm:flex-row gap-2">
@@ -88,14 +103,12 @@ export default function AvailabilityPage() {
         </div>
       </div>
 
-      {/* Bouton génération */}
       <div className="mb-6">
         <button onClick={handleGenerateSlots} className="bg-green-600 text-white px-4 py-2 rounded">
           🔄 Générer mes créneaux (14 jours)
         </button>
       </div>
 
-      {/* Créneaux à venir */}
       <h2 className="text-lg font-semibold mb-2">📅 Créneaux à venir</h2>
       {loading ? (
         <p>Chargement...</p>

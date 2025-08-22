@@ -5,57 +5,76 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
-export async function POST() {
-  try {
-    const { data: authData } = await supabase.auth.getUser()
-    const coach = authData?.user
-    if (!coach) return new Response('Non autorisé', { status: 401 })
+const weekdayToNumber = {
+  Sunday: 0,
+  Monday: 1,
+  Tuesday: 2,
+  Wednesday: 3,
+  Thursday: 4,
+  Friday: 5,
+  Saturday: 6,
+}
 
-    const { data: templates } = await supabase
+export async function POST(req) {
+  try {
+    const { user_id } = await req.json()
+    if (!user_id) return new Response('user_id requis', { status: 400 })
+
+    const { data: templates, error: templateError } = await supabase
       .from('availability_template')
       .select('*')
-      .eq('coach_id', coach.id)
+      .eq('coach_id', user_id)
+
+    if (templateError) {
+      console.error(templateError)
+      return new Response('Erreur chargement template', { status: 500 })
+    }
 
     const now = new Date()
     const next14Days = [...Array(14)].map((_, i) => {
-      const date = new Date()
-      date.setDate(now.getDate() + i)
-      return date
+      const d = new Date()
+      d.setDate(now.getDate() + i)
+      return d
     })
 
     const availabilities = []
 
-    next14Days.forEach(date => {
-      const day = date.getDay() // 0=dimanche, 1=lundi, etc.
+    next14Days.forEach((date) => {
+      const weekdayNumber = date.getDay() // 0 = dimanche
 
-      templates
-        .filter(t => t.day_of_week === day)
-        .forEach(t => {
-          const [hour, minute] = t.start_time.split(':')
+      templates.forEach((template) => {
+        if (weekdayToNumber[template.weekday] === weekdayNumber) {
+          const [hour, minute] = template.start_time.split(':')
           const slotDate = new Date(date)
           slotDate.setHours(parseInt(hour), parseInt(minute), 0, 0)
 
           availabilities.push({
-            coach_id: coach.id,
-            date: slotDate.toISOString()
+            coach_id: user_id,
+            date: slotDate.toISOString(),
+            is_booked: false,
           })
-        })
+        }
+      })
     })
 
-    // Supprimer les anciennes dispo à venir (optionnel)
+    // Supprimer les anciennes dispos à venir
     await supabase
       .from('availabilities')
       .delete()
-      .eq('coach_id', coach.id)
+      .eq('coach_id', user_id)
       .gte('date', now.toISOString())
 
-    const { error } = await supabase
+    const { error: insertError } = await supabase
       .from('availabilities')
       .insert(availabilities)
 
-    if (error) return new Response('Erreur insertion', { status: 500 })
+    if (insertError) {
+      console.error(insertError)
+      return new Response('Erreur insertion', { status: 500 })
+    }
 
-    return new Response('Disponibilités générées ✅', { status: 200 })
+    return new Response('Créneaux générés avec succès ✅', { status: 200 })
+
   } catch (e) {
     console.error(e)
     return new Response('Erreur serveur', { status: 500 })
