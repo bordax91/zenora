@@ -11,25 +11,26 @@ const supabase = createClient(
 )
 
 export default function CoachCalendar({ coachId, packageId }) {
-  const [sessions, setSessions] = useState([])
+  const [availabilities, setAvailabilities] = useState([])
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (coachId) fetchSessions()
+    if (coachId) fetchAvailabilities()
   }, [coachId])
 
-  const fetchSessions = async () => {
+  const fetchAvailabilities = async () => {
     setLoading(true)
     const { data, error } = await supabase
-      .from('sessions')
+      .from('availabilities')
       .select('*')
       .eq('coach_id', coachId)
-      .is('client_id', null)
+      .eq('is_booked', false)
+      .gte('date', new Date().toISOString())
       .order('date', { ascending: true })
 
-    if (!error) setSessions(data || [])
-    else console.error('❌ sessions:', error)
+    if (!error) setAvailabilities(data || [])
+    else console.error('❌ availabilities:', error)
     setLoading(false)
   }
 
@@ -38,25 +39,47 @@ export default function CoachCalendar({ coachId, packageId }) {
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate()
 
-  const availableDates = sessions.map((s) => {
-    const localDate = new Date(s.date)
+  const availableDates = availabilities.map((a) => {
+    const localDate = new Date(a.date)
     return new Date(localDate.getFullYear(), localDate.getMonth(), localDate.getDate())
   })
 
-  const daySessions = sessions.filter((s) => {
-    const sessionDate = new Date(s.date)
-    return sameDay(sessionDate, selectedDate)
+  const dayAvailabilities = availabilities.filter((a) => {
+    const date = new Date(a.date)
+    return sameDay(date, selectedDate)
   })
 
-  const handleClick = async (session) => {
+  const handleClick = async (slot) => {
     const { data: { user } } = await supabase.auth.getUser()
-    const target = `/info-client?session=${session.id}&package=${packageId}`
+    const target = `/info-client?availabilityId=${slot.id}&package=${packageId}`
 
     if (!user) {
       window.location.href = `/login?next=${encodeURIComponent(target)}`
-    } else {
-      window.location.href = target
+      return
     }
+
+    // Créer une session dans la table `sessions`
+    const { error: sessionError } = await supabase.from('sessions').insert({
+      coach_id: coachId,
+      client_id: user.id,
+      date: slot.date,
+      package_id: packageId,
+      availability_id: slot.id
+    })
+
+    if (sessionError) {
+      alert('Erreur lors de la réservation : ' + sessionError.message)
+      return
+    }
+
+    // Marquer le créneau comme réservé dans `availabilities`
+    await supabase
+      .from('availabilities')
+      .update({ is_booked: true })
+      .eq('id', slot.id)
+
+    alert('Réservation confirmée ✅')
+    window.location.href = '/client/dashboard'
   }
 
   if (loading) return <p className="text-center py-4 text-gray-600">📅 Chargement du calendrier...</p>
@@ -80,19 +103,19 @@ export default function CoachCalendar({ coachId, packageId }) {
           Créneaux le {selectedDate.toLocaleDateString('fr-FR')}
         </h4>
 
-        {daySessions.length > 0 ? (
+        {dayAvailabilities.length > 0 ? (
           <ul className="space-y-2">
-            {daySessions.map(s => (
-              <li key={s.id} className="flex justify-between items-center border p-3 rounded">
+            {dayAvailabilities.map(slot => (
+              <li key={slot.id} className="flex justify-between items-center border p-3 rounded">
                 <span>
-                  {new Date(s.date).toLocaleTimeString('fr-FR', {
+                  {new Date(slot.date).toLocaleTimeString('fr-FR', {
                     hour: '2-digit',
                     minute: '2-digit',
                     hour12: false,
                   })}
                 </span>
                 <button
-                  onClick={() => handleClick(s)}
+                  onClick={() => handleClick(slot)}
                   className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded"
                 >
                   Réserver ce créneau
