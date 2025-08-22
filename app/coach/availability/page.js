@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
 
 export default function AvailabilityPage() {
   const [disponibilites, setDisponibilites] = useState([])
-  const [nouvelleDate, setNouvelleDate] = useState('')
-  const [nouvelleHeure, setNouvelleHeure] = useState('')
+  const [nouvelleDate, setNouvelleDate] = useState(new Date())
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState('')
 
@@ -17,7 +18,6 @@ export default function AvailabilityPage() {
       if (!user) return
       setUserId(user.id)
 
-      // Charger les disponibilités existantes
       const { data, error } = await supabase
         .from('sessions')
         .select('id, date, statut')
@@ -35,16 +35,14 @@ export default function AvailabilityPage() {
   }, [])
 
   const ajouterDisponibilite = async () => {
-    if (!nouvelleDate || !nouvelleHeure) {
+    if (!nouvelleDate) {
       alert('Veuillez choisir une date et une heure')
       return
     }
 
-    const dateTime = new Date(`${nouvelleDate}T${nouvelleHeure}`)
-
     const { error } = await supabase.from('sessions').insert({
       coach_id: userId,
-      date: dateTime.toISOString(),
+      date: nouvelleDate.toISOString(),
       statut: 'disponible'
     })
 
@@ -54,10 +52,9 @@ export default function AvailabilityPage() {
       alert('Disponibilité ajoutée')
       setDisponibilites([
         ...disponibilites,
-        { id: Date.now(), date: dateTime.toISOString(), statut: 'disponible' }
+        { id: Date.now(), date: nouvelleDate.toISOString(), statut: 'disponible' }
       ])
-      setNouvelleDate('')
-      setNouvelleHeure('')
+      setNouvelleDate(new Date())
     }
   }
 
@@ -73,18 +70,15 @@ export default function AvailabilityPage() {
       <h1 className="text-2xl font-bold mb-4">Mes disponibilités</h1>
 
       {/* Formulaire ajout */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6 flex flex-col sm:flex-row gap-4">
-        <input
-          type="date"
-          value={nouvelleDate}
-          onChange={(e) => setNouvelleDate(e.target.value)}
-          className="border p-2 rounded flex-1"
-        />
-        <input
-          type="time"
-          value={nouvelleHeure}
-          onChange={(e) => setNouvelleHeure(e.target.value)}
-          className="border p-2 rounded flex-1"
+      <div className="bg-white p-4 rounded-lg shadow mb-6 flex flex-col sm:flex-row gap-4 items-center">
+        <DatePicker
+          selected={nouvelleDate}
+          onChange={(date) => setNouvelleDate(date)}
+          showTimeSelect
+          timeFormat="HH:mm"
+          timeIntervals={15}
+          dateFormat="Pp"
+          className="border p-2 rounded w-full sm:w-auto"
         />
         <button
           onClick={ajouterDisponibilite}
