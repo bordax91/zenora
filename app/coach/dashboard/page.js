@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
 
 export default function CoachDashboard() {
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [date, setDate] = useState('')
+  const [selectedDate, setSelectedDate] = useState(new Date())
 
   const fetchSessions = async () => {
     const { data: authData } = await supabase.auth.getUser()
@@ -66,14 +68,14 @@ export default function CoachDashboard() {
       .insert({
         coach_id: coach.id,
         client_id: clientId,
-        date
+        date: selectedDate.toISOString()
       })
 
     if (sessionError) return alert('Erreur création session')
 
     setName('')
     setEmail('')
-    setDate('')
+    setSelectedDate(new Date())
     fetchSessions()
   }
 
@@ -104,7 +106,15 @@ export default function CoachDashboard() {
         <div className="flex flex-col md:flex-row gap-2">
           <input value={name} onChange={e => setName(e.target.value)} placeholder="Nom" className="border px-3 py-2 rounded w-full md:w-auto" />
           <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" className="border px-3 py-2 rounded w-full md:w-auto" />
-          <input value={date} onChange={e => setDate(e.target.value)} type="datetime-local" className="border px-3 py-2 rounded w-full md:w-auto" />
+          <DatePicker
+            selected={selectedDate}
+            onChange={(date) => setSelectedDate(date)}
+            showTimeSelect
+            timeFormat="HH:mm"
+            timeIntervals={15}
+            dateFormat="Pp"
+            className="border px-3 py-2 rounded w-full md:w-auto"
+          />
           <button onClick={handleAddSession} className="bg-blue-600 text-white px-4 py-2 rounded">Ajouter</button>
         </div>
       </div>

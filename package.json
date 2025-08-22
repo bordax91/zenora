@@ -21,6 +21,7 @@
     "react": "latest",
     "react-big-calendar": "^1.19.4",
     "react-calendar": "^6.0.0",
+    "react-datepicker": "^8.7.0",
     "react-dom": "latest",
     "resend": "^4.6.0",
     "stripe": "^18.4.0",
