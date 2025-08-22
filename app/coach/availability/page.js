@@ -23,14 +23,16 @@ export default function AvailabilityPage() {
     'Dimanche': 0
   }
 
-  const weekdayReverse = {
-    1: 'Lundi',
-    2: 'Mardi',
-    3: 'Mercredi',
-    4: 'Jeudi',
-    5: 'Vendredi',
-    6: 'Samedi',
-    0: 'Dimanche'
+  const fetchAvailabilities = async (uid: string) => {
+    const { data: slotsData } = await supabase
+      .from('availabilities')
+      .select('*')
+      .eq('coach_id', uid)
+      .eq('is_booked', false)
+      .gte('date', new Date().toISOString())
+      .order('date', { ascending: true })
+
+    setAvailabilities(slotsData || [])
   }
 
   useEffect(() => {
@@ -45,16 +47,8 @@ export default function AvailabilityPage() {
         .select('*')
         .eq('coach_id', user.id)
 
-      const { data: slotsData } = await supabase
-        .from('availabilities')
-        .select('*')
-        .eq('coach_id', user.id)
-        .eq('is_booked', false)
-        .gte('date', new Date().toISOString())
-        .order('date', { ascending: true })
-
       setTemplate(templateData || [])
-      setAvailabilities(slotsData || [])
+      await fetchAvailabilities(user.id)
       setLoading(false)
     }
 
@@ -80,6 +74,20 @@ export default function AvailabilityPage() {
       start_time: startTime,
       end_time: endTime
     }])
+
+    const res = await fetch('/api/generate-availability', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId })
+    })
+
+    if (!res.ok) {
+      const err = await res.json()
+      return alert('Erreur génération : ' + (err?.error || ''))
+    }
+
+    await fetchAvailabilities(userId)
+    alert('Disponibilité ajoutée et créneaux générés ✅')
   }
 
   const handleGenerateSlots = async () => {
@@ -90,15 +98,15 @@ export default function AvailabilityPage() {
     })
 
     if (res.ok) {
-      alert('Créneaux générés')
-      location.reload()
+      await fetchAvailabilities(userId)
+      alert('Créneaux générés ✅')
     } else {
       const error = await res.json()
       alert('Erreur génération : ' + (error?.error || ''))
     }
   }
 
-  const deleteSlot = async (id) => {
+  const deleteSlot = async (id: string) => {
     const { error } = await supabase.from('availabilities').delete().eq('id', id)
     if (!error) setAvailabilities(availabilities.filter(a => a.id !== id))
   }
