@@ -6,10 +6,15 @@ import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 
 export default function AvailabilityPage() {
-  const [disponibilites, setDisponibilites] = useState([])
-  const [nouvelleDate, setNouvelleDate] = useState(new Date())
+  const [template, setTemplate] = useState([])
+  const [availabilities, setAvailabilities] = useState([])
+  const [weekday, setWeekday] = useState('Monday')
+  const [startTime, setStartTime] = useState('10:00')
+  const [endTime, setEndTime] = useState('11:00')
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState('')
+
+  const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
   useEffect(() => {
     const fetchData = async () => {
@@ -18,103 +23,93 @@ export default function AvailabilityPage() {
       if (!user) return
       setUserId(user.id)
 
-      const { data, error } = await supabase
-        .from('sessions')
-        .select('id, date, statut')
+      const { data: templateData } = await supabase
+        .from('availability_template')
+        .select('*')
         .eq('coach_id', user.id)
-        .eq('statut', 'disponible')
+
+      const { data: slotsData } = await supabase
+        .from('availabilities')
+        .select('*')
+        .eq('coach_id', user.id)
+        .eq('is_booked', false)
+        .gte('date', new Date().toISOString())
         .order('date', { ascending: true })
 
-      if (!error) {
-        setDisponibilites(data || [])
-      }
+      setTemplate(templateData || [])
+      setAvailabilities(slotsData || [])
       setLoading(false)
     }
 
     fetchData()
   }, [])
 
-  const ajouterDisponibilite = async () => {
-    if (!nouvelleDate) {
-      alert('Veuillez choisir une date et une heure')
-      return
-    }
-
-    const { error } = await supabase.from('sessions').insert({
+  const handleAddTemplate = async () => {
+    if (!weekday || !startTime || !endTime) return alert('Champs requis')
+    const { error } = await supabase.from('availability_template').insert({
       coach_id: userId,
-      date: nouvelleDate.toISOString(),
-      statut: 'disponible'
+      weekday,
+      start_time: startTime,
+      end_time: endTime,
     })
+    if (error) return alert('Erreur ajout')
+    setTemplate([...template, { weekday, start_time: startTime, end_time: endTime }])
+  }
 
-    if (error) {
-      alert('Erreur lors de l’ajout de la disponibilité')
+  const handleGenerateSlots = async () => {
+    const res = await fetch('/api/generate-availability', { method: 'POST' })
+    if (res.ok) {
+      alert('Créneaux générés')
+      location.reload()
     } else {
-      alert('Disponibilité ajoutée')
-      setDisponibilites([
-        ...disponibilites,
-        { id: Date.now(), date: nouvelleDate.toISOString(), statut: 'disponible' }
-      ])
-      setNouvelleDate(new Date())
+      alert('Erreur génération')
     }
   }
 
-  const supprimerDisponibilite = async (id) => {
-    const { error } = await supabase.from('sessions').delete().eq('id', id)
-    if (!error) {
-      setDisponibilites(disponibilites.filter((d) => d.id !== id))
-    }
+  const deleteSlot = async (id) => {
+    const { error } = await supabase.from('availabilities').delete().eq('id', id)
+    if (!error) setAvailabilities(availabilities.filter(a => a.id !== id))
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Mes disponibilités</h1>
+      <h1 className="text-2xl font-bold mb-6">🗓 Disponibilités</h1>
 
-      {/* Formulaire ajout */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6 flex flex-col sm:flex-row gap-4 items-center">
-        <DatePicker
-          selected={nouvelleDate}
-          onChange={(date) => setNouvelleDate(date)}
-          showTimeSelect
-          timeFormat="HH:mm"
-          timeIntervals={15}
-          dateFormat="Pp"
-          className="border p-2 rounded w-full sm:w-auto"
-        />
-        <button
-          onClick={ajouterDisponibilite}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          ➕ Ajouter
+      {/* Formulaire ajout template */}
+      <div className="bg-white p-4 rounded-lg shadow mb-6">
+        <h2 className="text-lg font-semibold mb-2">➕ Ajouter une disponibilité récurrente</h2>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <select value={weekday} onChange={(e) => setWeekday(e.target.value)} className="border p-2 rounded">
+            {weekdays.map((d) => <option key={d}>{d}</option>)}
+          </select>
+          <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="border p-2 rounded" />
+          <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="border p-2 rounded" />
+          <button onClick={handleAddTemplate} className="bg-blue-600 text-white px-4 py-2 rounded">Ajouter</button>
+        </div>
+      </div>
+
+      {/* Bouton génération */}
+      <div className="mb-6">
+        <button onClick={handleGenerateSlots} className="bg-green-600 text-white px-4 py-2 rounded">
+          🔄 Générer mes créneaux (14 jours)
         </button>
       </div>
 
-      {/* Liste des dispos */}
+      {/* Créneaux à venir */}
+      <h2 className="text-lg font-semibold mb-2">📅 Créneaux à venir</h2>
       {loading ? (
         <p>Chargement...</p>
-      ) : disponibilites.length > 0 ? (
+      ) : availabilities.length > 0 ? (
         <ul className="space-y-3">
-          {disponibilites.map((d) => (
-            <li
-              key={d.id}
-              className="bg-white p-4 rounded-lg shadow flex justify-between items-center"
-            >
-              <span>
-                {new Date(d.date).toLocaleString('fr-FR', {
-                  dateStyle: 'full',
-                  timeStyle: 'short'
-                })}
-              </span>
-              <button
-                onClick={() => supprimerDisponibilite(d.id)}
-                className="text-red-500 hover:underline"
-              >
-                Supprimer
-              </button>
+          {availabilities.map((a) => (
+            <li key={a.id} className="bg-white p-4 rounded-lg shadow flex justify-between items-center">
+              <span>{new Date(a.date).toLocaleString('fr-FR', { dateStyle: 'full', timeStyle: 'short' })}</span>
+              <button onClick={() => deleteSlot(a.id)} className="text-red-500 hover:underline">Supprimer</button>
             </li>
           ))}
         </ul>
       ) : (
-        <p>Aucune disponibilité définie.</p>
+        <p>Aucun créneau disponible.</p>
       )}
     </div>
   )
