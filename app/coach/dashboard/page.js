@@ -19,7 +19,10 @@ export default function CoachDashboard() {
           id,
           date,
           statut,
-          client:client_id (email)
+          client:client_id (
+            name,
+            email
+          )
         `)
         .eq('coach_id', user.id)
         .order('date', { ascending: true })
@@ -53,7 +56,8 @@ export default function CoachDashboard() {
             <thead className="bg-gray-100 text-left">
               <tr>
                 <th className="px-4 py-3">Date</th>
-                <th className="px-4 py-3">Client</th>
+                <th className="px-4 py-3">Nom</th>
+                <th className="px-4 py-3">Email</th>
                 <th className="px-4 py-3">Statut</th>
               </tr>
             </thead>
@@ -66,6 +70,7 @@ export default function CoachDashboard() {
                       timeStyle: 'short'
                     })}
                   </td>
+                  <td className="px-4 py-3">{session.client?.name || '—'}</td>
                   <td className="px-4 py-3">{session.client?.email || '—'}</td>
                   <td className="px-4 py-3">
                     {session.statut === 'prévu' ? (
