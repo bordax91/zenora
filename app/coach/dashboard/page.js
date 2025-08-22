@@ -67,7 +67,6 @@ export default function CoachDashboard() {
         coach_id: coach.id,
         client_id: clientId,
         date
-        // Pas besoin de 'statut': on le calcule dynamiquement
       })
 
     if (sessionError) return alert('Erreur création session')
@@ -78,7 +77,7 @@ export default function CoachDashboard() {
     fetchSessions()
   }
 
-  const handleDeleteSession = async (sessionId: string) => {
+  const handleDeleteSession = async (sessionId) => {
     const confirmDelete = confirm('Supprimer cette session ?')
     if (!confirmDelete) return
 
