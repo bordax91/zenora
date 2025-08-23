@@ -8,7 +8,6 @@ export default function AvailabilityPage() {
   const [availabilities, setAvailabilities] = useState([])
   const [weekday, setWeekday] = useState('Lundi')
   const [startTime, setStartTime] = useState('10:00')
-  const [endTime, setEndTime] = useState('11:00')
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState('')
 
@@ -56,8 +55,9 @@ export default function AvailabilityPage() {
   }, [])
 
   const handleAddTemplate = async () => {
-    if (!weekday || !startTime || !endTime) return alert('Champs requis')
+    if (!weekday || !startTime) return alert('Champs requis')
     const dayOfWeek = weekdayMap[weekday]
+    const endTime = addOneHour(startTime)
 
     const { error } = await supabase.from('availability_template').insert({
       coach_id: userId,
@@ -111,6 +111,13 @@ export default function AvailabilityPage() {
     if (!error) setAvailabilities(availabilities.filter(a => a.id !== id))
   }
 
+  const addOneHour = (start) => {
+    const [h, m] = start.split(':').map(Number)
+    const date = new Date()
+    date.setHours(h + 1, m)
+    return date.toTimeString().slice(0, 5)
+  }
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">🗓 Disponibilités</h1>
@@ -122,7 +129,6 @@ export default function AvailabilityPage() {
             {weekdays.map((d) => <option key={d}>{d}</option>)}
           </select>
           <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="border p-2 rounded" />
-          <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="border p-2 rounded" />
           <button onClick={handleAddTemplate} className="bg-blue-600 text-white px-4 py-2 rounded">Ajouter</button>
         </div>
       </div>
