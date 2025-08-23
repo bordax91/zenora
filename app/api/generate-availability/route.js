@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { DateTime } from 'luxon'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -10,6 +11,7 @@ export async function POST(req) {
     const { user_id } = await req.json()
     if (!user_id) return new Response('user_id requis', { status: 400 })
 
+    // Récupération du template
     const { data: templates, error: templateError } = await supabase
       .from('availability_template')
       .select('*')
@@ -20,40 +22,46 @@ export async function POST(req) {
       return new Response('Erreur chargement template', { status: 500 })
     }
 
-    const now = new Date()
-    const next14Days = [...Array(14)].map((_, i) => {
-      const d = new Date()
-      d.setDate(now.getDate() + i)
-      return d
-    })
+    const now = DateTime.now().setZone('Europe/Paris')
+    const next14Days = [...Array(14)].map((_, i) =>
+      now.plus({ days: i }).startOf('day')
+    )
 
     const availabilities = []
 
-    next14Days.forEach((date) => {
-      const weekdayNumber = date.getDay() // 0 = dimanche
+    next14Days.forEach((day) => {
+      const weekday = day.weekday % 7 // Luxon : lundi = 1, dimanche = 7 → on veut 0–6
 
       templates.forEach((template) => {
-        if (template.day_of_week === weekdayNumber) {
+        if (template.day_of_week === weekday) {
           const [hour, minute] = template.start_time.split(':')
-          const slotDate = new Date(date)
-          slotDate.setHours(parseInt(hour), parseInt(minute), 0, 0)
+
+          const localDateTime = day.set({
+            hour: parseInt(hour),
+            minute: parseInt(minute),
+            second: 0,
+            millisecond: 0
+          })
+
+          const utcISO = localDateTime.toUTC().toISO()
 
           availabilities.push({
             coach_id: user_id,
-            date: slotDate.toISOString(),
-            is_booked: false,
+            date: utcISO,
+            is_booked: false
           })
         }
       })
     })
 
-    // Supprimer les anciennes dispos à venir
+    // Supprimer les anciens créneaux à venir
     await supabase
       .from('availabilities')
       .delete()
       .eq('coach_id', user_id)
-      .gte('date', now.toISOString())
+      .gte('date', now.toUTC().toISO())
 
+    // Insérer les nouveaux créneaux
     const { error: insertError } = await supabase
       .from('availabilities')
       .insert(availabilities)
