@@ -57,8 +57,29 @@ export default function CoachCalendar({ coachId, packageId }) {
       // Redirection vers login avec redirection automatique après identification
       window.location.href = `/login?next=${encodeURIComponent(target)}`
     } else {
-      // Redirection vers formulaire d’info client avant Stripe
-      window.location.href = target
+      // ✅ Créer une session dès maintenant si l'utilisateur est déjà connecté
+      const { data, error } = await supabase.from('sessions').insert({
+        coach_id: coachId,
+        client_id: user.id,
+        date: slot.date,
+        package_id: packageId,
+        availability_id: slot.id,
+        statut: 'réservé' // ✅ Ajout du statut
+      }).select().single()
+
+      if (error) {
+        alert('Erreur lors de la réservation : ' + error.message)
+        return
+      }
+
+      // ✅ Marquer l’availability comme réservée
+      await supabase
+        .from('availabilities')
+        .update({ is_booked: true })
+        .eq('id', slot.id)
+
+      // ✅ Redirection vers le formulaire (où Stripe prendra la suite)
+      window.location.href = `/info-client?availabilityId=${slot.id}&package=${packageId}&session=${data.id}`
     }
   }
 
