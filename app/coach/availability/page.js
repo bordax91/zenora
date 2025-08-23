@@ -151,7 +151,7 @@ export default function AvailabilityPage() {
                 {
                   DateTime.fromISO(a.date, { zone: 'utc' })
                     .setZone('Europe/Paris')
-                    .toLocaleString(DateTime.DATETIME_FULL)
+                    .toFormat("cccc d LLLL yyyy 'à' HH'h'mm")
                 }
               </span>
               <button onClick={() => deleteSlot(a.id)} className="text-red-500 hover:underline">Supprimer</button>
