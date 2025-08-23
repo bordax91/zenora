@@ -1,4 +1,4 @@
-// ✅ Nouveau composant de planification hebdomadaire façon Calendly
+// ✅ Nouveau composant de planification hebdomadaire façon Calendly avec durée personnalisable
 
 'use client'
 
@@ -21,6 +21,7 @@ export default function WeeklyAvailability() {
   const [weekTemplate, setWeekTemplate] = useState({})
   const [userId, setUserId] = useState('')
   const [loading, setLoading] = useState(true)
+  const [slotDuration, setSlotDuration] = useState(60) // minutes
 
   useEffect(() => {
     const fetchData = async () => {
@@ -73,57 +74,72 @@ export default function WeeklyAvailability() {
 
   const saveTemplate = async () => {
     if (!userId) return
+
+    // 1. Supprimer anciens templates
     await supabase.from('availability_template').delete().eq('coach_id', userId)
 
-    const toInsert = []
+    const toInsertTemplate = []
+    const toInsertSlots = []
+    const now = DateTime.now().setZone('Europe/Paris').startOf('day')
+
     Object.entries(weekTemplate).forEach(([day, slots]) => {
+      const dayOfWeek = weekdayMap[day]
+
       slots.forEach(({ start_time, end_time }) => {
-        toInsert.push({
+        // Enregistrement du template
+        toInsertTemplate.push({
           coach_id: userId,
-          day_of_week: weekdayMap[day],
+          day_of_week: dayOfWeek,
           start_time,
           end_time
         })
+
+        // Génération des créneaux sur 14 jours
+        for (let i = 0; i < 14; i++) {
+          const currentDay = now.plus({ days: i })
+          if (currentDay.weekday % 7 !== dayOfWeek) continue
+
+          const start = DateTime.fromFormat(start_time, 'HH:mm', { zone: 'Europe/Paris' })
+          const end = DateTime.fromFormat(end_time, 'HH:mm', { zone: 'Europe/Paris' })
+          let cursor = start
+
+          while (cursor.plus({ minutes: slotDuration }) <= end) {
+            const slotDate = currentDay
+              .set({ hour: cursor.hour, minute: cursor.minute })
+              .toUTC()
+              .toISO()
+
+            toInsertSlots.push({
+              coach_id: userId,
+              date: slotDate,
+              is_booked: false
+            })
+
+            cursor = cursor.plus({ minutes: slotDuration })
+          }
+        }
       })
     })
 
-    const { error } = await supabase.from('availability_template').insert(toInsert)
-    if (error) return alert('Erreur sauvegarde : ' + error.message)
+    // Enregistrement
+    const { error: templateError } = await supabase
+      .from('availability_template')
+      .insert(toInsertTemplate)
+    if (templateError) return alert('Erreur template : ' + templateError.message)
 
-    const res = await fetch('/api/generate-availability', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: userId })
-    })
+    // Suppression anciens créneaux
+    const nowUTC = DateTime.now().setZone('Europe/Paris').toUTC().toISO()
+    await supabase.from('availabilities').delete().lt('date', nowUTC).eq('is_booked', false)
 
-    if (!res.ok) return alert('Erreur génération')
-    alert('Planning sauvegardé et créneaux générés ✅')
+    // Insertion créneaux
+    const { error: slotError } = await supabase
+      .from('availabilities')
+      .insert(toInsertSlots)
+    if (slotError) return alert('Erreur créneaux : ' + slotError.message)
+
+    alert('Planning sauvegardé et créneaux générés ✅\n→ Pensez à regénérer toutes les 2 semaines !')
   }
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <h1 className="text-3xl font-bold mb-8">🗓️ Planning hebdomadaire</h1>
-      {loading ? (
-        <p>Chargement...</p>
-      ) : (
-        <div className="space-y-6">
-          {weekdays.map(day => (
-            <div key={day} className="bg-white p-4 rounded shadow">
-              <h2 className="text-lg font-semibold mb-2">{day}</h2>
-              {(weekTemplate[day] || []).map((slot, i) => (
-                <div key={i} className="flex items-center gap-2 mb-2">
-                  <input type="time" value={slot.start_time} onChange={(e) => handleTimeChange(day, i, 'start_time', e.target.value)} className="border p-2 rounded" />
-                  <span>-</span>
-                  <input type="time" value={slot.end_time} onChange={(e) => handleTimeChange(day, i, 'end_time', e.target.value)} className="border p-2 rounded" />
-                  <button onClick={() => removeTimeSlot(day, i)} className="text-red-500 hover:underline text-sm">Supprimer</button>
-                </div>
-              ))}
-              <button onClick={() => addTimeSlot(day)} className="text-blue-600 hover:underline text-sm">➕ Ajouter une plage</button>
-            </div>
-          ))}
-          <button onClick={saveTemplate} className="mt-6 bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">💾 Enregistrer le planning & générer</button>
-        </div>
-      )}
-    </div>
-  )
-}
+      <h1 className="text-3xl font-bold mb-8">
