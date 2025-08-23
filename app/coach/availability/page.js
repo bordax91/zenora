@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import { DateTime } from 'luxon'
 
 export default function AvailabilityPage() {
   const [template, setTemplate] = useState([])
@@ -146,7 +147,13 @@ export default function AvailabilityPage() {
         <ul className="space-y-3">
           {availabilities.map((a) => (
             <li key={a.id} className="bg-white p-4 rounded-lg shadow flex justify-between items-center">
-              <span>{new Date(a.date).toLocaleString('fr-FR', { dateStyle: 'full', timeStyle: 'short' })}</span>
+              <span>
+                {
+                  DateTime.fromISO(a.date, { zone: 'utc' })
+                    .setZone('Europe/Paris')
+                    .toLocaleString(DateTime.DATETIME_FULL)
+                }
+              </span>
               <button onClick={() => deleteSlot(a.id)} className="text-red-500 hover:underline">Supprimer</button>
             </li>
           ))}

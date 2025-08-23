@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import Calendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
+import { DateTime } from 'luxon'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -16,7 +17,9 @@ export default function CoachCalendar({ coachId, packageId }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (coachId) fetchAvailabilities()
+    if (coachId) {
+      fetchAvailabilities()
+    }
   }, [coachId])
 
   const fetchAvailabilities = async () => {
@@ -35,18 +38,18 @@ export default function CoachCalendar({ coachId, packageId }) {
   }
 
   const sameDay = (a, b) =>
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
+    a.year === b.getFullYear() &&
+    a.month === b.getMonth() + 1 &&
+    a.day === b.getDate()
 
   const availableDates = availabilities.map((a) => {
-    const localDate = new Date(a.date)
-    return new Date(localDate.getFullYear(), localDate.getMonth(), localDate.getDate())
+    const parisDate = DateTime.fromISO(a.date, { zone: 'utc' }).setZone('Europe/Paris')
+    return new Date(parisDate.year, parisDate.month - 1, parisDate.day)
   })
 
   const dayAvailabilities = availabilities.filter((a) => {
-    const date = new Date(a.date)
-    return sameDay(date, selectedDate)
+    const dt = DateTime.fromISO(a.date, { zone: 'utc' }).setZone('Europe/Paris')
+    return sameDay(dt, selectedDate)
   })
 
   const handleClick = async (slot) => {
@@ -54,31 +57,31 @@ export default function CoachCalendar({ coachId, packageId }) {
     const target = `/info-client?availabilityId=${slot.id}&package=${packageId}`
 
     if (!user) {
-      // Redirection vers login avec redirection automatique après identification
       window.location.href = `/login?next=${encodeURIComponent(target)}`
     } else {
-      // ✅ Créer une session dès maintenant si l'utilisateur est déjà connecté
-      const { data, error } = await supabase.from('sessions').insert({
-        coach_id: coachId,
-        client_id: user.id,
-        date: slot.date,
-        package_id: packageId,
-        availability_id: slot.id,
-        statut: 'réservé' // ✅ Ajout du statut
-      }).select().single()
+      const { data, error } = await supabase
+        .from('sessions')
+        .insert({
+          coach_id: coachId,
+          client_id: user.id,
+          date: slot.date,
+          package_id: packageId,
+          availability_id: slot.id,
+          statut: 'réservé'
+        })
+        .select()
+        .single()
 
       if (error) {
         alert('Erreur lors de la réservation : ' + error.message)
         return
       }
 
-      // ✅ Marquer l’availability comme réservée
       await supabase
         .from('availabilities')
         .update({ is_booked: true })
         .eq('id', slot.id)
 
-      // ✅ Redirection vers le formulaire (où Stripe prendra la suite)
       window.location.href = `/info-client?availabilityId=${slot.id}&package=${packageId}&session=${data.id}`
     }
   }
@@ -94,7 +97,9 @@ export default function CoachCalendar({ coachId, packageId }) {
           onChange={setSelectedDate}
           value={selectedDate}
           minDate={new Date()}
-          tileDisabled={({ date }) => !availableDates.some(d => sameDay(d, date))}
+          tileDisabled={({ date }) =>
+            !availableDates.some((d) => sameDay(DateTime.fromJSDate(d), date))
+          }
           className="w-full"
         />
       </div>
@@ -106,23 +111,22 @@ export default function CoachCalendar({ coachId, packageId }) {
 
         {dayAvailabilities.length > 0 ? (
           <ul className="space-y-2">
-            {dayAvailabilities.map(slot => (
-              <li key={slot.id} className="flex justify-between items-center border p-3 rounded">
-                <span>
-                  {new Date(slot.date).toLocaleTimeString('fr-FR', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false,
-                  })}
-                </span>
-                <button
-                  onClick={() => handleClick(slot)}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded"
-                >
-                  Réserver ce créneau
-                </button>
-              </li>
-            ))}
+            {dayAvailabilities.map((slot) => {
+              const timeParis = DateTime.fromISO(slot.date, { zone: 'utc' }).setZone('Europe/Paris')
+              return (
+                <li key={slot.id} className="flex justify-between items-center border p-3 rounded">
+                  <span>
+                    {timeParis.toLocaleString(DateTime.TIME_24_SIMPLE)} {/* Ex : 10:00 */}
+                  </span>
+                  <button
+                    onClick={() => handleClick(slot)}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded"
+                  >
+                    Réserver ce créneau
+                  </button>
+                </li>
+              )
+            })}
           </ul>
         ) : (
           <p className="text-gray-500">Aucun créneau disponible ce jour-là.</p>
