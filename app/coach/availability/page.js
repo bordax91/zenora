@@ -151,6 +151,7 @@ export default function AvailabilityPage() {
                 {
                   DateTime.fromISO(a.date, { zone: 'utc' })
                     .setZone('Europe/Paris')
+                    .setLocale('fr')
                     .toFormat("cccc d LLLL yyyy 'à' HH'h'mm")
                 }
               </span>
