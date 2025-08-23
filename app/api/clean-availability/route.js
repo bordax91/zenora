@@ -7,7 +7,14 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-export async function POST() {
+export async function POST(req: Request) {
+  const authHeader = req.headers.get('Authorization')
+  const expected = `Bearer ${process.env.CRON_SECRET}`
+
+  if (authHeader !== expected) {
+    return new NextResponse('Unauthorized', { status: 401 })
+  }
+
   try {
     const now = DateTime.now().setZone('Europe/Paris').toUTC().toISO()
 

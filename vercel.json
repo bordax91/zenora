@@ -1,9 +1,0 @@
-{
-  "cron": [
-    {
-      "path": "/api/clean-availability",
-      "schedule": "0 2 * * *",
-      "method": "POST"
-    }
-  ]
-}
