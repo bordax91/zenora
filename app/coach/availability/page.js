@@ -1,39 +1,26 @@
+// ✅ Nouveau composant de planification hebdomadaire façon Calendly
+
 'use client'
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { DateTime } from 'luxon'
 
-export default function AvailabilityPage() {
-  const [template, setTemplate] = useState([])
-  const [availabilities, setAvailabilities] = useState([])
-  const [weekday, setWeekday] = useState('Lundi')
-  const [startTime, setStartTime] = useState('10:00')
-  const [loading, setLoading] = useState(true)
+const weekdays = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
+const weekdayMap = {
+  'Lundi': 1,
+  'Mardi': 2,
+  'Mercredi': 3,
+  'Jeudi': 4,
+  'Vendredi': 5,
+  'Samedi': 6,
+  'Dimanche': 0
+}
+
+export default function WeeklyAvailability() {
+  const [weekTemplate, setWeekTemplate] = useState({})
   const [userId, setUserId] = useState('')
-
-  const weekdays = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
-  const weekdayMap = {
-    'Lundi': 1,
-    'Mardi': 2,
-    'Mercredi': 3,
-    'Jeudi': 4,
-    'Vendredi': 5,
-    'Samedi': 6,
-    'Dimanche': 0
-  }
-
-  const fetchAvailabilities = async (uid) => {
-    const { data: slotsData } = await supabase
-      .from('availabilities')
-      .select('*')
-      .eq('coach_id', uid)
-      .eq('is_booked', false)
-      .gte('date', new Date().toISOString())
-      .order('date', { ascending: true })
-
-    setAvailabilities(slotsData || [])
-  }
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -47,34 +34,61 @@ export default function AvailabilityPage() {
         .select('*')
         .eq('coach_id', user.id)
 
-      setTemplate(templateData || [])
-      await fetchAvailabilities(user.id)
+      const byDay = {}
+      templateData?.forEach(({ day_of_week, start_time, end_time }) => {
+        const dayName = weekdays.find(d => weekdayMap[d] === day_of_week)
+        if (!byDay[dayName]) byDay[dayName] = []
+        byDay[dayName].push({ start_time, end_time })
+      })
+
+      setWeekTemplate(byDay)
       setLoading(false)
     }
 
     fetchData()
   }, [])
 
-  const handleAddTemplate = async () => {
-    if (!weekday || !startTime) return alert('Champs requis')
-    const dayOfWeek = weekdayMap[weekday]
-    const endTime = addOneHour(startTime)
+  const handleTimeChange = (day, index, field, value) => {
+    setWeekTemplate(prev => {
+      const newDay = [...(prev[day] || [])]
+      newDay[index][field] = value
+      return { ...prev, [day]: newDay }
+    })
+  }
 
-    const { error } = await supabase.from('availability_template').insert({
-      coach_id: userId,
-      day_of_week: dayOfWeek,
-      start_time: startTime,
-      end_time: endTime
+  const addTimeSlot = (day) => {
+    setWeekTemplate(prev => {
+      const newSlots = [...(prev[day] || []), { start_time: '09:00', end_time: '10:00' }]
+      return { ...prev, [day]: newSlots }
+    })
+  }
+
+  const removeTimeSlot = (day, index) => {
+    setWeekTemplate(prev => {
+      const newSlots = [...(prev[day] || [])]
+      newSlots.splice(index, 1)
+      return { ...prev, [day]: newSlots }
+    })
+  }
+
+  const saveTemplate = async () => {
+    if (!userId) return
+    await supabase.from('availability_template').delete().eq('coach_id', userId)
+
+    const toInsert = []
+    Object.entries(weekTemplate).forEach(([day, slots]) => {
+      slots.forEach(({ start_time, end_time }) => {
+        toInsert.push({
+          coach_id: userId,
+          day_of_week: weekdayMap[day],
+          start_time,
+          end_time
+        })
+      })
     })
 
-    if (error) return alert("Erreur ajout : " + error.message)
-
-    setTemplate([...template, {
-      coach_id: userId,
-      day_of_week: dayOfWeek,
-      start_time: startTime,
-      end_time: endTime
-    }])
+    const { error } = await supabase.from('availability_template').insert(toInsert)
+    if (error) return alert('Erreur sauvegarde : ' + error.message)
 
     const res = await fetch('/api/generate-availability', {
       method: 'POST',
@@ -82,87 +96,34 @@ export default function AvailabilityPage() {
       body: JSON.stringify({ user_id: userId })
     })
 
-    if (!res.ok) {
-      const err = await res.json()
-      return alert('Erreur génération : ' + (err?.error || ''))
-    }
-
-    await fetchAvailabilities(userId)
-    alert('Disponibilité ajoutée et créneaux générés ✅')
-  }
-
-  const handleGenerateSlots = async () => {
-    const res = await fetch('/api/generate-availability', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: userId })
-    })
-
-    if (res.ok) {
-      await fetchAvailabilities(userId)
-      alert('Créneaux générés ✅')
-    } else {
-      const error = await res.json()
-      alert('Erreur génération : ' + (error?.error || ''))
-    }
-  }
-
-  const deleteSlot = async (id) => {
-    const { error } = await supabase.from('availabilities').delete().eq('id', id)
-    if (!error) setAvailabilities(availabilities.filter(a => a.id !== id))
-  }
-
-  const addOneHour = (start) => {
-    const [h, m] = start.split(':').map(Number)
-    const date = new Date()
-    date.setHours(h + 1, m)
-    return date.toTimeString().slice(0, 5)
+    if (!res.ok) return alert('Erreur génération')
+    alert('Planning sauvegardé et créneaux générés ✅')
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold mb-8">📆 Planification des créneaux</h1>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="bg-white p-6 rounded-xl shadow">
-          <h2 className="text-xl font-semibold mb-4">➕ Ajouter une récurrence</h2>
-          <div className="space-y-3">
-            <select value={weekday} onChange={(e) => setWeekday(e.target.value)} className="w-full border p-2 rounded">
-              {weekdays.map((d) => <option key={d}>{d}</option>)}
-            </select>
-            <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="w-full border p-2 rounded" />
-            <button onClick={handleAddTemplate} className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Ajouter</button>
-          </div>
+    <div className="p-6 max-w-5xl mx-auto">
+      <h1 className="text-3xl font-bold mb-8">🗓️ Planning hebdomadaire</h1>
+      {loading ? (
+        <p>Chargement...</p>
+      ) : (
+        <div className="space-y-6">
+          {weekdays.map(day => (
+            <div key={day} className="bg-white p-4 rounded shadow">
+              <h2 className="text-lg font-semibold mb-2">{day}</h2>
+              {(weekTemplate[day] || []).map((slot, i) => (
+                <div key={i} className="flex items-center gap-2 mb-2">
+                  <input type="time" value={slot.start_time} onChange={(e) => handleTimeChange(day, i, 'start_time', e.target.value)} className="border p-2 rounded" />
+                  <span>-</span>
+                  <input type="time" value={slot.end_time} onChange={(e) => handleTimeChange(day, i, 'end_time', e.target.value)} className="border p-2 rounded" />
+                  <button onClick={() => removeTimeSlot(day, i)} className="text-red-500 hover:underline text-sm">Supprimer</button>
+                </div>
+              ))}
+              <button onClick={() => addTimeSlot(day)} className="text-blue-600 hover:underline text-sm">➕ Ajouter une plage</button>
+            </div>
+          ))}
+          <button onClick={saveTemplate} className="mt-6 bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">💾 Enregistrer le planning & générer</button>
         </div>
-
-        <div className="bg-white p-6 rounded-xl shadow">
-          <h2 className="text-xl font-semibold mb-4">🔁 Générer les créneaux</h2>
-          <button onClick={handleGenerateSlots} className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">Générer 14 jours</button>
-        </div>
-      </div>
-
-      <div className="mt-10">
-        <h2 className="text-2xl font-semibold mb-4">📅 Mes créneaux à venir</h2>
-        {loading ? (
-          <p>Chargement...</p>
-        ) : availabilities.length > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {availabilities.map((a) => (
-              <div key={a.id} className="bg-white p-4 rounded-xl shadow flex flex-col justify-between">
-                <span className="text-gray-800 text-lg">
-                  {DateTime.fromISO(a.date, { zone: 'utc' })
-                    .setZone('Europe/Paris')
-                    .setLocale('fr')
-                    .toFormat("cccc d LLLL yyyy 'à' HH'h'mm")}
-                </span>
-                <button onClick={() => deleteSlot(a.id)} className="text-red-500 text-sm mt-2 hover:underline self-end">Supprimer</button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-500">Aucun créneau disponible.</p>
-        )}
-      </div>
+      )}
     </div>
   )
 }
