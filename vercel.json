@@ -2,8 +2,8 @@
   "cron": [
     {
       "path": "/api/clean-availability",
-      "schedule": "0 1 * * *",
-      "timezone": "Europe/Paris"
+      "schedule": "0 2 * * *",
+      "method": "POST"
     }
   ]
 }
