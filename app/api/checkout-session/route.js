@@ -44,6 +44,42 @@ export async function POST(req) {
       )
     }
 
+    // ✅ Récupérer la date du créneau (pour la session)
+    const { data: availabilityData, error: availabilityError } = await supabase
+      .from('availabilities')
+      .select('date')
+      .eq('id', availabilityId)
+      .single()
+
+    if (availabilityError || !availabilityData) {
+      return new Response(
+        JSON.stringify({ error: 'Créneau introuvable' }),
+        { status: 404 }
+      )
+    }
+
+    // ✅ Insérer la session dans Supabase
+    const { data: sessionData, error: sessionError } = await supabase
+      .from('sessions')
+      .insert({
+        coach_id: packageData.coach_id,
+        client_id: clientId,
+        package_id: packageId,
+        availability_id: availabilityId,
+        date: availabilityData.date,
+        statut: 'réservé'
+      })
+      .select('id')
+      .single()
+
+    if (sessionError) {
+      console.error('❌ Erreur insertion session :', sessionError)
+      return new Response(
+        JSON.stringify({ error: 'Impossible de créer la session dans la base' }),
+        { status: 500 }
+      )
+    }
+
     // ✅ Créer la session Stripe
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -58,7 +94,7 @@ export async function POST(req) {
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/${packageData.coach.username}`,
       metadata: {
         client_id: clientId,
-        package_id: packageId,
+        session_id: sessionData.id,
         availability_id: availabilityId,
       },
     }, {
