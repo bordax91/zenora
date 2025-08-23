@@ -3,18 +3,11 @@ import { createClient } from '@supabase/supabase-js'
 import { DateTime } from 'luxon'
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
-export async function POST(req: Request) {
-  const authHeader = req.headers.get('Authorization')
-  const expected = `Bearer ${process.env.CRON_SECRET}`
-
-  if (authHeader !== expected) {
-    return new NextResponse('Unauthorized', { status: 401 })
-  }
-
+export async function POST(req) {
   try {
     const now = DateTime.now().setZone('Europe/Paris').toUTC().toISO()
 
