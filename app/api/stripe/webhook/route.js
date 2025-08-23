@@ -12,7 +12,7 @@ const supabase = createClient(
 export async function POST(req) {
   const sig = req.headers.get('stripe-signature')
   if (!sig) {
-    console.warn('⚠️ Signature manquante dans le header')
+    console.warn('⚠️ Signature manquante')
     return NextResponse.json({ error: 'Signature manquante' }, { status: 400 })
   }
 
@@ -22,65 +22,68 @@ export async function POST(req) {
 
   try {
     event = stripe.webhooks.constructEvent(rawBody, sig, endpointSecret)
-    console.log('✅ Webhook Stripe reçu :', event.type)
+    console.log('✅ Webhook reçu :', event.type)
   } catch (err) {
-    console.error('❌ Erreur signature webhook Stripe :', err.message)
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
+    console.error('❌ Erreur de vérification Stripe :', err.message)
+    return NextResponse.json({ error: 'Signature invalide' }, { status: 400 })
   }
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object
 
-    console.log('📦 Données session reçue de Stripe :', {
-      metadata: session.metadata,
-      id: session.id
-    })
+    console.log('📦 Session Stripe :', session)
 
-    if (!session.metadata) {
-      console.error('❌ Pas de metadata dans la session Stripe')
+    const metadata = session.metadata || {}
+    const clientId = metadata.client_id
+    const packageId = metadata.package_id
+    const availabilityId = metadata.availability_id
+
+    if (!clientId || !packageId || !availabilityId) {
+      console.error('❌ Metadata incomplète', metadata)
       return NextResponse.json({ error: 'Metadata manquante' }, { status: 400 })
     }
 
-    const clientId = session.metadata.client_id
-    const sessionId = session.metadata.session_id
-
-    if (!clientId || !sessionId) {
-      console.error('❌ Données metadata manquantes', { clientId, sessionId })
-      return NextResponse.json({ error: 'client_id ou session_id manquant' }, { status: 400 })
-    }
-
-    // ✅ Vérification que le clientId existe bien
-    const { data: clientExists, error: clientCheckError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('id', clientId)
+    // 🔍 On récupère la disponibilité réservée
+    const { data: availability, error: availabilityError } = await supabase
+      .from('availabilities')
+      .select('date, coach_id')
+      .eq('id', availabilityId)
       .single()
 
-    if (clientCheckError || !clientExists) {
-      console.error('❌ Le client_id fourni ne correspond à aucun utilisateur :', clientId)
-      return NextResponse.json({ error: 'client_id invalide (non trouvé)' }, { status: 400 })
+    if (availabilityError || !availability) {
+      console.error('❌ Disponibilité non trouvée :', availabilityError)
+      return NextResponse.json({ error: 'Créneau non trouvé' }, { status: 404 })
     }
 
-    console.log('🔄 Mise à jour Supabase avec :', {
-      sessionId,
-      clientId,
+    const { coach_id, date } = availability
+
+    // ✅ Création de la session de coaching
+    const { error: insertError } = await supabase.from('sessions').insert({
+      coach_id,
+      client_id: clientId,
+      package_id: packageId,
+      date,
+      availability_id: availabilityId,
       statut: 'réservé'
     })
 
-    const { error } = await supabase
-      .from('sessions')
-      .update({
-        client_id: clientId,
-        statut: 'réservé'
-      })
-      .eq('id', sessionId)
-
-    if (error) {
-      console.error('❌ Erreur Supabase détaillée :', error)
-      return NextResponse.json({ error: error.message || 'Erreur Supabase' }, { status: 500 })
+    if (insertError) {
+      console.error('❌ Erreur insertion session :', insertError)
+      return NextResponse.json({ error: 'Impossible de créer la session' }, { status: 500 })
     }
 
-    console.log('✅ Session mise à jour avec succès dans Supabase :', sessionId)
+    // ✅ Mise à jour de la disponibilité comme réservée
+    const { error: updateError } = await supabase
+      .from('availabilities')
+      .update({ is_booked: true })
+      .eq('id', availabilityId)
+
+    if (updateError) {
+      console.error('❌ Erreur update disponibilité :', updateError)
+      return NextResponse.json({ error: 'Impossible de bloquer la disponibilité' }, { status: 500 })
+    }
+
+    console.log('✅ Session créée et créneau réservé 👍')
   }
 
   return NextResponse.json({ received: true }, { status: 200 })

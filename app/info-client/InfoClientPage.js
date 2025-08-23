@@ -8,7 +8,7 @@ export default function InfoClientPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const packageId = searchParams.get('package')
-  const sessionId = searchParams.get('session')
+  const availabilityId = searchParams.get('availabilityId')
 
   const [mode, setMode] = useState('signup')
   const [form, setForm] = useState({
@@ -56,7 +56,6 @@ export default function InfoClientPage() {
         return
       }
 
-      // ✅ Récupérer l'ID du client
       const { data: userData } = await supabase.auth.getUser()
       const clientId = userData?.user?.id
 
@@ -66,13 +65,13 @@ export default function InfoClientPage() {
         return
       }
 
-      // ✅ Si signup, insérer manuellement dans table `users`
+      // Vérifier et insérer dans table users (si signup)
       if (mode === 'signup') {
         const { data: existingUser } = await supabase
           .from('users')
           .select('id')
           .eq('id', clientId)
-          .single()
+          .maybeSingle()
 
         if (!existingUser) {
           const { error: insertError } = await supabase.from('users').insert([
@@ -93,33 +92,30 @@ export default function InfoClientPage() {
         }
       }
 
-      // ✅ Appel à l'API pour créer la session Stripe Checkout
+      // Créer la session de paiement Stripe
       const response = await fetch('/api/checkout-session', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           packageId,
-          sessionId,
+          availabilityId,
           clientId
         })
       })
 
       const data = await response.json()
 
-      if (!response.ok) {
+      if (!response.ok || !data?.url) {
         setError(data.error || 'Erreur lors de la redirection vers Stripe.')
         setLoading(false)
         return
       }
 
-      // ✅ Redirection vers Stripe
       window.location.href = data.url
 
     } catch (err) {
+      console.error('❌ Erreur inconnue :', err)
       setError('Une erreur est survenue.')
-      console.error(err)
     }
 
     setLoading(false)

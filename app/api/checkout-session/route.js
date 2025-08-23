@@ -8,18 +8,16 @@ const supabase = createClient(
 
 export async function POST(req) {
   try {
-    const { packageId, clientId, sessionId } = await req.json()
+    const { packageId, clientId, availabilityId } = await req.json()
 
-    if (!packageId || !clientId || !sessionId) {
+    if (!packageId || !clientId || !availabilityId) {
       return new Response(
-        JSON.stringify({ error: 'Champs requis manquants (packageId, clientId, sessionId)' }),
+        JSON.stringify({ error: 'Champs requis manquants (packageId, clientId, availabilityId)' }),
         { status: 400 }
       )
     }
 
-    console.log('⏎ packageId reçu :', packageId)
-
-    // 🔁 On récupère les infos sur le package
+    // 🔁 Récupérer les infos de l'offre
     const { data: packageData, error: packageError } = await supabase
       .from('packages')
       .select(`
@@ -41,26 +39,12 @@ export async function POST(req) {
     ) {
       console.error('❌ Supabase error ou données manquantes :', packageError)
       return new Response(
-        JSON.stringify({ error: 'Offre introuvable ou données manquantes (username, price ou compte Stripe)' }),
+        JSON.stringify({ error: 'Offre introuvable ou incomplète' }),
         { status: 404 }
       )
     }
 
-    // ✅ Mise à jour de la session Supabase pour lier le package
-    const { error: updateError } = await supabase
-      .from('sessions')
-      .update({ package_id: packageId })
-      .eq('id', sessionId)
-
-    if (updateError) {
-      console.error('❌ Erreur en mettant à jour la session avec le package :', updateError)
-      return new Response(
-        JSON.stringify({ error: 'Impossible d’associer le package à la session' }),
-        { status: 500 }
-      )
-    }
-
-    // ✅ Création de la session Stripe Checkout
+    // ✅ Créer la session Stripe
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -74,7 +58,8 @@ export async function POST(req) {
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/${packageData.coach.username}`,
       metadata: {
         client_id: clientId,
-        session_id: sessionId,
+        package_id: packageId,
+        availability_id: availabilityId,
       },
     }, {
       stripeAccount: packageData.coach.stripe_account_id,

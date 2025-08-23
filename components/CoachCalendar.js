@@ -54,32 +54,12 @@ export default function CoachCalendar({ coachId, packageId }) {
     const target = `/info-client?availabilityId=${slot.id}&package=${packageId}`
 
     if (!user) {
+      // Redirection vers login avec redirection automatique après identification
       window.location.href = `/login?next=${encodeURIComponent(target)}`
-      return
+    } else {
+      // Redirection vers formulaire d’info client avant Stripe
+      window.location.href = target
     }
-
-    // Créer une session dans la table `sessions`
-    const { error: sessionError } = await supabase.from('sessions').insert({
-      coach_id: coachId,
-      client_id: user.id,
-      date: slot.date,
-      package_id: packageId,
-      availability_id: slot.id
-    })
-
-    if (sessionError) {
-      alert('Erreur lors de la réservation : ' + sessionError.message)
-      return
-    }
-
-    // Marquer le créneau comme réservé dans `availabilities`
-    await supabase
-      .from('availabilities')
-      .update({ is_booked: true })
-      .eq('id', slot.id)
-
-    alert('Réservation confirmée ✅')
-    window.location.href = '/client/dashboard'
   }
 
   if (loading) return <p className="text-center py-4 text-gray-600">📅 Chargement du calendrier...</p>
