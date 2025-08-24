@@ -40,17 +40,36 @@ export async function POST(req) {
 
       for (const tpl of templates) {
         if (currentDate.weekday % 7 === tpl.day_of_week) {
-          const duration = tpl.duration || 60 // durée en minutes (par défaut 60)
+          const duration = tpl.duration || 60
           const [sh, sm] = tpl.start_time.split(':').map(Number)
           const [eh, em] = tpl.end_time.split(':').map(Number)
 
-          let slotStart = currentDate.set({ hour: sh, minute: sm })
-          const slotEnd = currentDate.set({ hour: eh, minute: em })
+          let slotStart = DateTime.fromObject(
+            {
+              year: currentDate.year,
+              month: currentDate.month,
+              day: currentDate.day,
+              hour: sh,
+              minute: sm
+            },
+            { zone: 'Europe/Paris' }
+          )
+
+          const slotEnd = DateTime.fromObject(
+            {
+              year: currentDate.year,
+              month: currentDate.month,
+              day: currentDate.day,
+              hour: eh,
+              minute: em
+            },
+            { zone: 'Europe/Paris' }
+          )
 
           while (slotStart.plus({ minutes: duration }) <= slotEnd) {
             slots.push({
               coach_id: user_id,
-              date: slotStart.toUTC().toISO(),
+              date: slotStart.toUTC().toISO(), // stocké en UTC dans Supabase
               is_booked: false
             })
 
@@ -58,6 +77,10 @@ export async function POST(req) {
           }
         }
       }
+    }
+
+    if (slots.length === 0) {
+      return new Response(JSON.stringify({ message: 'Aucun créneau à générer' }), { status: 200 })
     }
 
     const { error: insertError } = await supabase.from('availabilities').insert(slots)

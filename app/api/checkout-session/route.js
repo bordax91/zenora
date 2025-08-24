@@ -49,11 +49,12 @@ export async function POST(req) {
       .from('availabilities')
       .select('date')
       .eq('id', availabilityId)
+      .eq('is_booked', false) // Ne pas autoriser si déjà réservé
       .single()
 
     if (availabilityError || !availabilityData) {
       return new Response(
-        JSON.stringify({ error: 'Créneau introuvable' }),
+        JSON.stringify({ error: 'Créneau introuvable ou déjà réservé' }),
         { status: 404 }
       )
     }
@@ -76,6 +77,20 @@ export async function POST(req) {
       console.error('❌ Erreur insertion session :', sessionError)
       return new Response(
         JSON.stringify({ error: 'Impossible de créer la session dans la base' }),
+        { status: 500 }
+      )
+    }
+
+    // ✅ Mettre à jour le créneau comme réservé
+    const { error: updateError } = await supabase
+      .from('availabilities')
+      .update({ is_booked: true })
+      .eq('id', availabilityId)
+
+    if (updateError) {
+      console.error('❌ Erreur mise à jour availability :', updateError)
+      return new Response(
+        JSON.stringify({ error: 'Créneau non mis à jour comme réservé' }),
         { status: 500 }
       )
     }
