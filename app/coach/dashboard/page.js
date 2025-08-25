@@ -29,7 +29,7 @@ export default function CoachDashboard() {
         )
       `)
       .eq('coach_id', user.id)
-      .order('date', { ascending: true })
+      .order('date', { ascending: false }) // ✅ Les plus récentes d'abord
 
     if (!error) setSessions(data || [])
     setLoading(false)
@@ -60,7 +60,6 @@ export default function CoachDashboard() {
         .single()
 
       if (insertError || !newClient) return alert('Erreur création client')
-
       clientId = newClient.id
     }
 
@@ -153,7 +152,11 @@ export default function CoachDashboard() {
             </thead>
             <tbody>
               {sessions.map((session) => {
-                const parisDate = DateTime.fromISO(session.date, { zone: 'utc' }).setZone('Europe/Paris').setLocale('fr')
+                const parisDate = DateTime
+                  .fromISO(session.date, { zone: 'utc' })
+                  .setZone('Europe/Paris')
+                  .setLocale('fr')
+
                 const isPast = parisDate < DateTime.now().setZone('Europe/Paris')
 
                 return (
