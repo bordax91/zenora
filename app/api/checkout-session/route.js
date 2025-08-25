@@ -44,54 +44,18 @@ export async function POST(req) {
       )
     }
 
-    // ✅ Récupérer la date du créneau (pour la session)
+    // ✅ Vérifier que le créneau est disponible
     const { data: availabilityData, error: availabilityError } = await supabase
       .from('availabilities')
       .select('date')
       .eq('id', availabilityId)
-      .eq('is_booked', false) // Ne pas autoriser si déjà réservé
+      .eq('is_booked', false)
       .single()
 
     if (availabilityError || !availabilityData) {
       return new Response(
         JSON.stringify({ error: 'Créneau introuvable ou déjà réservé' }),
         { status: 404 }
-      )
-    }
-
-    // ✅ Insérer la session dans Supabase
-    const { data: sessionData, error: sessionError } = await supabase
-      .from('sessions')
-      .insert({
-        coach_id: packageData.coach_id,
-        client_id: clientId,
-        package_id: packageId,
-        availability_id: availabilityId,
-        date: availabilityData.date,
-        statut: 'réservé'
-      })
-      .select('id')
-      .single()
-
-    if (sessionError) {
-      console.error('❌ Erreur insertion session :', sessionError)
-      return new Response(
-        JSON.stringify({ error: 'Impossible de créer la session dans la base' }),
-        { status: 500 }
-      )
-    }
-
-    // ✅ Mettre à jour le créneau comme réservé
-    const { error: updateError } = await supabase
-      .from('availabilities')
-      .update({ is_booked: true })
-      .eq('id', availabilityId)
-
-    if (updateError) {
-      console.error('❌ Erreur mise à jour availability :', updateError)
-      return new Response(
-        JSON.stringify({ error: 'Créneau non mis à jour comme réservé' }),
-        { status: 500 }
       )
     }
 
@@ -109,8 +73,8 @@ export async function POST(req) {
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/${packageData.coach.username}`,
       metadata: {
         client_id: clientId,
-        session_id: sessionData.id,
         availability_id: availabilityId,
+        package_id: packageId // ✅ utile pour le webhook
       },
     }, {
       stripeAccount: packageData.coach.stripe_account_id,

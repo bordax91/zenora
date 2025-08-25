@@ -12,12 +12,10 @@ const supabase = createClient(
 export async function POST(req) {
   const sig = req.headers.get('stripe-signature')
   if (!sig) {
-    console.warn('⚠️ Signature manquante')
     return NextResponse.json({ error: 'Signature manquante' }, { status: 400 })
   }
 
   const rawBody = await req.text()
-
   let event
 
   try {
@@ -30,10 +28,8 @@ export async function POST(req) {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object
-
-    console.log('📦 Session Stripe :', session)
-
     const metadata = session.metadata || {}
+
     const clientId = metadata.client_id
     const packageId = metadata.package_id
     const availabilityId = metadata.availability_id
@@ -43,10 +39,10 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Metadata manquante' }, { status: 400 })
     }
 
-    // 🔍 On récupère la disponibilité réservée
+    // 🔍 Récupérer la disponibilité
     const { data: availability, error: availabilityError } = await supabase
       .from('availabilities')
-      .select('date, coach_id')
+      .select('date, coach_id, is_booked')
       .eq('id', availabilityId)
       .single()
 
@@ -55,9 +51,15 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Créneau non trouvé' }, { status: 404 })
     }
 
+    // 🚫 Si déjà réservé, ne rien faire
+    if (availability.is_booked) {
+      console.warn('⚠️ Créneau déjà réservé, pas de double insertion.')
+      return NextResponse.json({ message: 'Déjà réservé' }, { status: 200 })
+    }
+
     const { coach_id, date } = availability
 
-    // ✅ Création de la session de coaching
+    // ✅ Créer la session
     const { error: insertError } = await supabase.from('sessions').insert({
       coach_id,
       client_id: clientId,
@@ -72,7 +74,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Impossible de créer la session' }, { status: 500 })
     }
 
-    // ✅ Mise à jour de la disponibilité comme réservée
+    // ✅ Marquer le créneau comme réservé
     const { error: updateError } = await supabase
       .from('availabilities')
       .update({ is_booked: true })
