@@ -54,23 +54,11 @@ export default function CoachCalendar({ coachId, packageId }) {
   }
 
   return (
-    <div className="max-w-5xl mx-auto flex flex-col md:flex-row gap-6">
-      {/* Left column - infos du package */}
-      <div className="bg-white p-6 rounded-xl shadow w-full md:w-1/3 border">
-        <h2 className="text-xl font-bold mb-1">Zenora</h2>
-        <p className="text-lg font-semibold text-gray-800">30 Minute Meeting</p>
-        <p className="text-sm text-gray-500 mt-2">🕒 30 minutes</p>
-        <p className="text-sm text-gray-500 mt-4">
-          Informations sur la conférence en ligne fournies à la confirmation.
-        </p>
-        <p className="text-sm text-gray-400 mt-6">
-          Fuseau horaire : {Intl.DateTimeFormat().resolvedOptions().timeZone}
-        </p>
-      </div>
-
-      {/* Right column - créneaux */}
-      <div className="bg-white p-6 rounded-xl shadow w-full md:w-2/3 border">
-        <h3 className="text-2xl font-bold mb-6">📆 Sélectionnez la date et l'heure</h3>
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="bg-white rounded-xl shadow border p-6">
+        <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
+          📆 Sélectionnez la date et l'heure
+        </h3>
 
         {loading ? (
           <p className="text-gray-600">Chargement des créneaux...</p>
@@ -79,20 +67,20 @@ export default function CoachCalendar({ coachId, packageId }) {
         ) : (
           <div className="space-y-8">
             {sortedDates.map((dateStr) => (
-              <div key={dateStr} className="border p-4 rounded-lg">
-                <h4 className="text-lg font-semibold mb-2">
+              <div key={dateStr} className="bg-gray-50 p-4 rounded-lg border">
+                <h4 className="text-lg font-semibold mb-4 text-gray-700">
                   {DateTime.fromISO(dateStr).setLocale('fr').toLocaleString({
                     weekday: 'long',
                     day: 'numeric',
                     month: 'long'
                   })}
                 </h4>
-                <div className="flex flex-wrap gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   {groupedDates[dateStr].map((slot) => (
                     <button
                       key={slot.id}
                       onClick={() => handleClick(slot.id)}
-                      className="border border-blue-500 text-blue-600 px-4 py-2 rounded hover:bg-blue-50 transition"
+                      className="border border-blue-500 text-blue-600 font-medium py-2 rounded-lg hover:bg-blue-50 transition"
                     >
                       {slot.time}
                     </button>
