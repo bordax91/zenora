@@ -5,18 +5,32 @@ import { supabase } from '@/lib/supabase/client'
 
 export default function ClientSettings() {
   const [user, setUser] = useState(null)
+  const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchUserAndProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
       setUser(user)
+
+      const { data, error } = await supabase
+        .from('users')
+        .select('name')
+        .eq('uuid', user.id)
+        .single()
+
+      if (!error) {
+        setProfile(data)
+      } else {
+        console.error('Erreur récupération profil client :', error)
+      }
+
       setLoading(false)
     }
 
-    fetchUser()
+    fetchUserAndProfile()
   }, [])
 
   return (
@@ -33,7 +47,7 @@ export default function ClientSettings() {
             <label className="block text-sm text-gray-600 mb-1">Nom / Prénom</label>
             <input
               type="text"
-              value={user.user_metadata?.full_name || ''}
+              value={profile?.name || ''}
               readOnly
               className="w-full border px-4 py-2 rounded bg-gray-100"
             />
@@ -47,19 +61,6 @@ export default function ClientSettings() {
               readOnly
               className="w-full border px-4 py-2 rounded bg-gray-100"
             />
-          </div>
-
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">Mot de passe</label>
-            <input
-              type="password"
-              value="•••••••••••"
-              readOnly
-              className="w-full border px-4 py-2 rounded bg-gray-100"
-            />
-            <p className="text-sm text-gray-500 mt-1">
-              Pour modifier votre mot de passe, <a href="/reset-password" className="text-blue-600 underline">cliquez ici</a>.
-            </p>
           </div>
         </div>
       )}
