@@ -153,7 +153,7 @@ export default function CoachDashboard() {
             </thead>
             <tbody>
               {sessions.map((session) => {
-                const parisDate = DateTime.fromISO(session.date, { zone: 'utc' }).setZone('Europe/Paris')
+                const parisDate = DateTime.fromISO(session.date, { zone: 'utc' }).setZone('Europe/Paris').setLocale('fr')
                 const isPast = parisDate < DateTime.now().setZone('Europe/Paris')
 
                 return (

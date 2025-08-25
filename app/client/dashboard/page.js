@@ -61,7 +61,7 @@ export default function ClientDashboard() {
             </thead>
             <tbody>
               {sessions.map((session) => {
-                const dateParis = DateTime.fromISO(session.date, { zone: 'utc' }).setZone('Europe/Paris')
+                const dateParis = DateTime.fromISO(session.date, { zone: 'utc' }).setZone('Europe/Paris').setLocale('fr')
                 return (
                   <tr key={session.id} className="border-t">
                     <td className="px-4 py-3 border">
