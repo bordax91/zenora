@@ -16,6 +16,10 @@ export default function ClientLayout({ children }) {
     { href: '/client/settings', label: 'Paramètres' },
   ]
 
+  const handleLogout = () => {
+    window.location.href = 'https://zenoraapp.com/connectclient'
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white border-b shadow-sm">
@@ -31,13 +35,8 @@ export default function ClientLayout({ children }) {
             <span className="font-bold text-lg text-gray-800">Zenora</span>
           </Link>
 
-          <div className="md:hidden">
-            <button onClick={() => setMenuOpen(!menuOpen)}>
-              {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
-
-          <div className="hidden md:flex gap-6">
+          {/* Desktop links */}
+          <div className="hidden md:flex items-center gap-6">
             {links.map(link => (
               <Link
                 key={link.href}
@@ -51,9 +50,23 @@ export default function ClientLayout({ children }) {
                 {link.label}
               </Link>
             ))}
+            <button
+              onClick={handleLogout}
+              className="text-sm text-red-500 hover:text-red-700 font-medium border px-3 py-1 rounded border-red-300"
+            >
+              Se déconnecter
+            </button>
+          </div>
+
+          {/* Mobile menu toggle */}
+          <div className="md:hidden">
+            <button onClick={() => setMenuOpen(!menuOpen)}>
+              {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
         </div>
 
+        {/* Mobile menu */}
         {menuOpen && (
           <div className="md:hidden px-4 pb-4">
             <div className="flex flex-col gap-2">
@@ -71,14 +84,18 @@ export default function ClientLayout({ children }) {
                   {link.label}
                 </Link>
               ))}
+              <button
+                onClick={handleLogout}
+                className="mt-2 py-2 px-3 rounded text-red-500 hover:text-red-700 border border-red-300 text-left"
+              >
+                Se déconnecter
+              </button>
             </div>
           </div>
         )}
       </nav>
 
-      <main className="max-w-6xl mx-auto px-4 py-6">
-        {children}
-      </main>
+      <main className="max-w-6xl mx-auto px-4 py-6">{children}</main>
     </div>
   )
 }
