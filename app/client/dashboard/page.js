@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import { DateTime } from 'luxon'
 
 export default function ClientDashboard() {
   const [sessions, setSessions] = useState([])
@@ -59,22 +60,22 @@ export default function ClientDashboard() {
               </tr>
             </thead>
             <tbody>
-              {sessions.map((session) => (
-                <tr key={session.id} className="border-t">
-                  <td className="px-4 py-3 border">
-                    {new Date(session.date).toLocaleString('fr-FR', {
-                      dateStyle: 'long',
-                      timeStyle: 'short',
-                    })}
-                  </td>
-                  <td className="px-4 py-3 border">
-                    {session.coach?.username || '—'}
-                  </td>
-                  <td className="px-4 py-3 border">
-                    {session.statut || '—'}
-                  </td>
-                </tr>
-              ))}
+              {sessions.map((session) => {
+                const dateParis = DateTime.fromISO(session.date, { zone: 'utc' }).setZone('Europe/Paris')
+                return (
+                  <tr key={session.id} className="border-t">
+                    <td className="px-4 py-3 border">
+                      {dateParis.toFormat('dd MMMM yyyy, HH:mm')}
+                    </td>
+                    <td className="px-4 py-3 border">
+                      {session.coach?.username || '—'}
+                    </td>
+                    <td className="px-4 py-3 border">
+                      {session.statut || '—'}
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

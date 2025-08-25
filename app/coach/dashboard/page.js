@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
+import { DateTime } from 'luxon'
 
 export default function CoachDashboard() {
   const [sessions, setSessions] = useState([])
@@ -104,8 +105,18 @@ export default function CoachDashboard() {
       <div className="bg-white p-4 rounded-lg shadow mb-6">
         <h2 className="text-lg font-semibold mb-2">➕ Ajouter une session</h2>
         <div className="flex flex-col md:flex-row gap-2">
-          <input value={name} onChange={e => setName(e.target.value)} placeholder="Nom" className="border px-3 py-2 rounded w-full md:w-auto" />
-          <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" className="border px-3 py-2 rounded w-full md:w-auto" />
+          <input
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="Nom"
+            className="border px-3 py-2 rounded w-full md:w-auto"
+          />
+          <input
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            placeholder="Email"
+            className="border px-3 py-2 rounded w-full md:w-auto"
+          />
           <DatePicker
             selected={selectedDate}
             onChange={(date) => setSelectedDate(date)}
@@ -115,7 +126,12 @@ export default function CoachDashboard() {
             dateFormat="Pp"
             className="border px-3 py-2 rounded w-full md:w-auto"
           />
-          <button onClick={handleAddSession} className="bg-blue-600 text-white px-4 py-2 rounded">Ajouter</button>
+          <button
+            onClick={handleAddSession}
+            className="bg-blue-600 text-white px-4 py-2 rounded"
+          >
+            Ajouter
+          </button>
         </div>
       </div>
 
@@ -137,14 +153,13 @@ export default function CoachDashboard() {
             </thead>
             <tbody>
               {sessions.map((session) => {
-                const isPast = new Date(session.date) < new Date()
+                const parisDate = DateTime.fromISO(session.date, { zone: 'utc' }).setZone('Europe/Paris')
+                const isPast = parisDate < DateTime.now().setZone('Europe/Paris')
+
                 return (
                   <tr key={session.id} className="border-t">
                     <td className="px-4 py-3">
-                      {new Date(session.date).toLocaleString('fr-FR', {
-                        dateStyle: 'medium',
-                        timeStyle: 'short'
-                      })}
+                      {parisDate.toFormat('dd MMM yyyy, HH:mm')}
                     </td>
                     <td className="px-4 py-3">{session.client?.name || '—'}</td>
                     <td className="px-4 py-3">{session.client?.email || '—'}</td>
