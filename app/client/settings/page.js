@@ -18,7 +18,7 @@ export default function ClientSettings() {
       const { data, error } = await supabase
         .from('users')
         .select('name')
-        .eq('uuid', user.id)
+        .eq('id', user.id)
         .single()
 
       if (!error) {
