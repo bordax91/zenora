@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import { v4 as uuidv4 } from 'uuid'
@@ -21,13 +21,14 @@ export default function CoachOnboardingPage() {
     setLoading(true)
     setError('')
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (!user || authError) {
       setError("Utilisateur non connecté.")
       setLoading(false)
       return
     }
 
+    // Vérification unicité du username
     const { data: existing, error: checkError } = await supabase
       .from('users')
       .select('id')
@@ -36,7 +37,7 @@ export default function CoachOnboardingPage() {
       .maybeSingle()
 
     if (checkError) {
-      setError("Erreur lors de la vérification du username.")
+      setError("Erreur lors de la vérification du nom d'utilisateur.")
       setLoading(false)
       return
     }
@@ -47,6 +48,7 @@ export default function CoachOnboardingPage() {
       return
     }
 
+    // Upload image
     let photo_url = null
     if (photoFile) {
       const fileExt = photoFile.name.split('.').pop()
@@ -66,24 +68,26 @@ export default function CoachOnboardingPage() {
         return
       }
 
-      // ✅ Correction ici : pas besoin d’attendre ou de déstructurer une promesse
-      const publicUrl = supabase.storage.from('avatars').getPublicUrl(filePath)
-      photo_url = publicUrl.publicUrl
+      const { data: publicData } = supabase.storage.from('avatars').getPublicUrl(filePath)
+      photo_url = publicData.publicUrl
     }
 
-    const { error: updateError } = await supabase
+    // Upsert des données dans la table "users"
+    const { error: upsertError } = await supabase
       .from('users')
-      .update({
+      .upsert({
+        id: user.id,
         name,
         username,
         specialty,
         bio,
         photo_url,
-      })
-      .eq('id', user.id)
+        role: 'coach',
+        email: user.email,
+      }, { onConflict: 'id' })
 
-    if (updateError) {
-      setError("Erreur lors de l'enregistrement.")
+    if (upsertError) {
+      setError("Erreur lors de l'enregistrement du profil.")
       setLoading(false)
       return
     }
@@ -118,7 +122,9 @@ export default function CoachOnboardingPage() {
             className="w-full border px-4 py-2 rounded"
             placeholder="Ex : sarahcoach"
           />
-          <p className="text-sm text-gray-500 mt-1">Votre profil sera accessible via : <strong>zenoraapp.com/votre-username</strong></p>
+          <p className="text-sm text-gray-500 mt-1">
+            Votre profil sera accessible via : <strong>zenoraapp.com/votre-username</strong>
+          </p>
         </div>
 
         <div>
