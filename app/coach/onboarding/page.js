@@ -66,7 +66,8 @@ export default function CoachOnboardingPage() {
         return
       }
 
-      const { data: publicUrl } = supabase.storage.from('avatars').getPublicUrl(filePath)
+      // ✅ Correction ici : pas besoin d’attendre ou de déstructurer une promesse
+      const publicUrl = supabase.storage.from('avatars').getPublicUrl(filePath)
       photo_url = publicUrl.publicUrl
     }
 
