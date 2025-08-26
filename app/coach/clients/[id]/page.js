@@ -3,6 +3,7 @@
 import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import { DateTime } from 'luxon'
 
 export default function ClientDetailsPage() {
   const { id } = useParams()
@@ -117,14 +118,14 @@ export default function ClientDetailsPage() {
           <p>Aucune session.</p>
         ) : (
           <ul className="list-disc list-inside">
-            {sessions.map((s) => (
-              <li key={s.id}>
-                {new Date(s.date).toLocaleString('fr-FR', {
-                  dateStyle: 'medium',
-                  timeStyle: 'short'
-                })}
-              </li>
-            ))}
+            {sessions.map((s) => {
+              const parisTime = DateTime.fromISO(s.date, { zone: 'utc' }).setZone('Europe/Paris')
+              return (
+                <li key={s.id}>
+                  {parisTime.toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS)}
+                </li>
+              )
+            })}
           </ul>
         )}
       </div>
@@ -149,54 +150,57 @@ export default function ClientDetailsPage() {
           <p className="mt-4 text-gray-500">Aucune note pour ce client.</p>
         ) : (
           <ul className="mt-4 space-y-2">
-            {notes.map((note) => (
-              <li key={note.id} className="border rounded p-3 bg-gray-50 relative">
-                {editingNoteId === note.id ? (
-                  <>
-                    <textarea
-                      className="w-full border rounded p-2 mb-2"
-                      value={editingContent}
-                      onChange={(e) => setEditingContent(e.target.value)}
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleUpdateNote}
-                        className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-                      >
-                        Enregistrer
-                      </button>
-                      <button
-                        onClick={() => setEditingNoteId(null)}
-                        className="text-gray-500 hover:underline"
-                      >
-                        Annuler
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-sm text-gray-800 whitespace-pre-wrap">{note.content}</p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      {new Date(note.created_at).toLocaleString('fr-FR')}
-                    </p>
-                    <div className="absolute top-2 right-2 flex gap-3 text-sm">
-                      <button
-                        onClick={() => handleEditNote(note.id, note.content)}
-                        className="text-blue-600 hover:underline"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        onClick={() => handleDeleteNote(note.id)}
-                        className="text-red-600 hover:underline"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  </>
-                )}
-              </li>
-            ))}
+            {notes.map((note) => {
+              const createdAtParis = DateTime.fromISO(note.created_at, { zone: 'utc' }).setZone('Europe/Paris')
+              return (
+                <li key={note.id} className="border rounded p-3 bg-gray-50 relative">
+                  {editingNoteId === note.id ? (
+                    <>
+                      <textarea
+                        className="w-full border rounded p-2 mb-2"
+                        value={editingContent}
+                        onChange={(e) => setEditingContent(e.target.value)}
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleUpdateNote}
+                          className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                        >
+                          Enregistrer
+                        </button>
+                        <button
+                          onClick={() => setEditingNoteId(null)}
+                          className="text-gray-500 hover:underline"
+                        >
+                          Annuler
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-gray-800 whitespace-pre-wrap">{note.content}</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {createdAtParis.toLocaleString(DateTime.DATETIME_MED)}
+                      </p>
+                      <div className="absolute top-2 right-2 flex gap-3 text-sm">
+                        <button
+                          onClick={() => handleEditNote(note.id, note.content)}
+                          className="text-blue-600 hover:underline"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => handleDeleteNote(note.id)}
+                          className="text-red-600 hover:underline"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </li>
+              )
+            })}
           </ul>
         )}
       </div>
