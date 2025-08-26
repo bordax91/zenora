@@ -11,8 +11,8 @@ export default function CoachWelcomePage() {
 
   useEffect(() => {
     const fetchCoach = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (!user || authError) {
         router.push('/connectcoach')
         return
       }
@@ -29,7 +29,6 @@ export default function CoachWelcomePage() {
         return
       }
 
-      // Redirection obligatoire si le username est vide
       if (!coachData.username || coachData.username.trim() === '') {
         router.push('/coach/onboarding')
         return
@@ -40,7 +39,7 @@ export default function CoachWelcomePage() {
     }
 
     fetchCoach()
-  }, [])
+  }, [router])
 
   if (loading) return <p className="text-center py-10">Chargement...</p>
 
@@ -52,14 +51,36 @@ export default function CoachWelcomePage() {
         Voici un aperçu de votre profil public et de vos offres. Vous pouvez copier votre lien de profil ou ajouter une nouvelle offre.
       </p>
 
-      <div className="bg-white rounded-xl shadow p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-2">🧑‍💼 Votre profil public</h2>
-        <p className="mb-2">Nom : <strong>{coach.name}</strong></p>
-        <p className="mb-2">Spécialité : <strong>{coach.specialty || 'Non renseignée'}</strong></p>
-        <p className="mb-4">Bio : <em>{coach.bio || 'Aucune description.'}</em></p>
-        <p className="text-indigo-600">
-          Lien public : <a className="underline" href={`/${coach.username}`} target="_blank">{`zenoraapp.com/${coach.username}`}</a>
-        </p>
+      <div className="bg-white rounded-xl shadow p-6 mb-6 flex flex-col md:flex-row items-center gap-6">
+        {coach.photo_url ? (
+          <img
+            src={coach.photo_url}
+            alt={coach.name}
+            className="w-32 h-32 rounded-full object-cover border shadow"
+          />
+        ) : (
+          <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-semibold">
+            Aucune photo
+          </div>
+        )}
+
+        <div className="flex-1">
+          <h2 className="text-xl font-semibold mb-2">🧑‍💼 Votre profil public</h2>
+          <p className="mb-1">Nom : <strong>{coach.name}</strong></p>
+          <p className="mb-1">Spécialité : <strong>{coach.specialty || 'Non renseignée'}</strong></p>
+          <p className="mb-2">Bio : <em>{coach.bio || 'Aucune description.'}</em></p>
+          <p className="text-indigo-600">
+            Lien public :{' '}
+            <a
+              className="underline"
+              href={`/${coach.username}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              zenoraapp.com/{coach.username}
+            </a>
+          </p>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow p-6">
@@ -67,14 +88,14 @@ export default function CoachWelcomePage() {
           <h2 className="text-xl font-semibold">🎁 Vos offres (packages)</h2>
           <button
             onClick={() => router.push('/coach/packages')}
-            className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+            className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition"
           >
             Ajouter une offre
           </button>
         </div>
 
-        {/* Ici tu peux insérer la récupération des packages du coach si tu veux */}
         <p className="text-gray-500">Vous pouvez créer et afficher vos offres ici.</p>
+        {/* Tu peux insérer ici la liste des packages plus tard */}
       </div>
     </div>
   )
