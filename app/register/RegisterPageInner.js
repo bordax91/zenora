@@ -10,32 +10,13 @@ export default function RegisterPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const rawRedirect = searchParams.get('redirect') || ''
-  const redirectParam = useMemo(() => {
-    return rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//')
-      ? rawRedirect
-      : ''
-  }, [rawRedirect])
-
-  const isUrlCoach = searchParams.get('role') === 'coach'
-
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [isCoach, setIsCoach] = useState(isUrlCoach)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [info, setInfo] = useState(null)
 
-  useEffect(() => {}, [])
-
-  const resolveRedirect = (role) => {
-    const stored = localStorage.getItem('pendingRedirect') || ''
-    localStorage.removeItem('pendingRedirect')
-
-    if (redirectParam) return redirectParam
-    if (stored && stored.startsWith('/')) return stored
-    return role === 'coach' ? '/coach/dashboard' : '/client/dashboard'
-  }
+  const resolveRedirect = () => '/coach/onboarding'
 
   const handleRegister = async (e) => {
     e.preventDefault()
@@ -44,7 +25,7 @@ export default function RegisterPageInner() {
     setLoading(true)
 
     try {
-      const role = isCoach ? 'coach' : 'client'
+      const role = 'coach'
 
       const { data, error: signErr } = await supabase.auth.signUp({
         email,
@@ -69,7 +50,7 @@ export default function RegisterPageInner() {
       if (upsertErr) throw upsertErr
 
       localStorage.setItem('isLoggedIn', 'true')
-      router.replace(resolveRedirect(role))
+      router.replace(resolveRedirect())
     } catch (err) {
       setError(err?.message || 'Une erreur est survenue.')
     } finally {
@@ -78,12 +59,11 @@ export default function RegisterPageInner() {
   }
 
   const handleGoogleSignup = async () => {
-    const role = isCoach ? 'coach' : 'client'
+    const role = 'coach'
     localStorage.setItem('pendingRole', role)
-    if (redirectParam) localStorage.setItem('pendingRedirect', redirectParam)
+    localStorage.setItem('pendingRedirect', '/coach/onboarding')
 
-    const base = `${window.location.origin}/auth/callback`
-    const redirectTo = redirectParam ? `${base}?redirect=${encodeURIComponent(redirectParam)}` : base
+    const redirectTo = `${window.location.origin}/auth/callback?redirect=/coach/onboarding`
 
     await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -105,7 +85,7 @@ export default function RegisterPageInner() {
         </div>
 
         <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
-          Créer un compte Zenora
+          Créer un compte Coach
         </h1>
 
         <form onSubmit={handleRegister} className="space-y-6">
@@ -137,17 +117,6 @@ export default function RegisterPageInner() {
             />
           </div>
 
-          <div className="flex items-center gap-2">
-            <input
-              id="isCoach"
-              type="checkbox"
-              checked={isCoach}
-              onChange={(e) => setIsCoach(e.target.checked)}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label htmlFor="isCoach" className="text-sm text-gray-600">Vous êtes coach ?</label>
-          </div>
-
           {error && <p className="text-red-500 text-sm">{error}</p>}
           {info && <p className="text-green-600 text-sm">{info}</p>}
 
@@ -175,10 +144,7 @@ export default function RegisterPageInner() {
 
         <p className="text-center text-gray-600 text-sm mt-6">
           Déjà inscrit ?{' '}
-          <Link
-            href={`/login${redirectParam ? `?redirect=${encodeURIComponent(redirectParam)}` : ''}`}
-            className="text-blue-600 font-semibold hover:underline"
-          >
+          <Link href="/login?redirect=/coach/onboarding" className="text-blue-600 font-semibold hover:underline">
             Se connecter
           </Link>
         </p>
