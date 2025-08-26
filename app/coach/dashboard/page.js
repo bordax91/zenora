@@ -122,7 +122,7 @@ export default function CoachDashboard() {
             showTimeSelect
             timeFormat="HH:mm"
             timeIntervals={15}
-            dateFormat="Pp"
+            dateFormat="dd/MM/yyyy HH:mm"
             className="border px-3 py-2 rounded w-full md:w-auto"
           />
           <button
