@@ -86,7 +86,7 @@ export default function CoachSettingsPage() {
           </Link>
 
           <Link
-            href="/coach/abonnement"
+            href="/coach/subscribe"
             className="text-indigo-600 hover:underline block"
           >
             💳 Voir mon abonnement
