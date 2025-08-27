@@ -42,7 +42,7 @@ export default function EditCoachProfilePage() {
     }
 
     fetchProfile()
-  }, [router])
+  }, [])
 
   const handleSubmit = async () => {
     setLoading(true)
