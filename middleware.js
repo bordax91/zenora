@@ -7,14 +7,15 @@ export async function middleware(req) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
+  // ✅ Si pas connecté → redirection login
   if (!user) {
     return NextResponse.redirect(new URL('/login', req.url))
   }
 
-  // Récupérer l'utilisateur dans la table Supabase
+  // 🔍 Récupérer les infos de l'utilisateur
   const { data: profile, error } = await supabase
     .from('users')
-    .select('trial_end, is_subscribed')
+    .select('trial_start, is_subscribed')
     .eq('id', user.id)
     .single()
 
@@ -23,11 +24,14 @@ export async function middleware(req) {
   }
 
   const now = new Date()
-  const trialEnd = new Date(profile.trial_end)
+  const trialStart = new Date(profile.trial_start)
+  const trialEnd = new Date(trialStart)
+  trialEnd.setDate(trialStart.getDate() + 7) // ✅ 7 jours d’essai
 
   const isTrialExpired = now > trialEnd
   const isSubscribed = profile.is_subscribed
 
+  // ✅ Si l'utilisateur n’a plus droit → redirection abonnement
   if (isTrialExpired && !isSubscribed) {
     return NextResponse.redirect(new URL('/coach/abonnement', req.url))
   }
@@ -35,7 +39,7 @@ export async function middleware(req) {
   return res
 }
 
-// Appliquer uniquement à toutes les routes dans /app/coach/**
+// ✅ Appliquer à /app/coach/** et /app/:username
 export const config = {
-  matcher: ['/app/coach/:path*'],
+  matcher: ['/app/coach/:path*', '/app/:username'],
 }
