@@ -72,7 +72,7 @@ export default function CoachSettingsPage() {
 
         <div className="space-y-3">
           <Link
-            href="/coach/edit-profile"
+            href="/coach/edit"
             className="text-indigo-600 hover:underline block"
           >
             ✏️ Modifier mon profil coach
