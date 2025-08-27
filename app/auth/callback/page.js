@@ -16,35 +16,53 @@ export default function AuthCallback() {
         const oauthError = search.get('error_description') || search.get('error')
         if (oauthError) throw new Error(oauthError)
 
+        // 🔄 Échange du code pour une session Supabase
         if (code) {
-          const { error: exchangeErr } =
-            await supabase.auth.exchangeCodeForSession(window.location.href)
+          const { error: exchangeErr } = await supabase.auth.exchangeCodeForSession(window.location.href)
           if (exchangeErr) throw exchangeErr
         }
 
+        // 🔐 Récupérer l'utilisateur connecté
         const { data: userData, error: userErr } = await supabase.auth.getUser()
         if (userErr || !userData?.user) {
           throw new Error('Erreur de connexion. Veuillez réessayer.')
         }
         const user = userData.user
 
+        // 📌 Déterminer le rôle
         let role = user.user_metadata?.role
         if (!role) {
           role = localStorage.getItem('pendingRole') || 'client'
           await supabase.auth.updateUser({ data: { role } })
         }
 
+        // 📆 Définir trial_start s’il n'existe pas déjà
+        const storedTrialStart = localStorage.getItem('pendingTrialStart')
+        const trialStart = storedTrialStart || new Date().toISOString()
+
+        // 🔁 Insérer dans la table users
         await supabase
           .from('users')
-          .upsert({ id: user.id, email: user.email, role }, { onConflict: 'id' })
+          .upsert(
+            {
+              id: user.id,
+              email: user.email,
+              role,
+              trial_start: trialStart,
+              is_subscribed: false,
+            },
+            { onConflict: 'id' }
+          )
 
+        // 🧹 Nettoyage localStorage
         localStorage.removeItem('pendingRole')
+        localStorage.removeItem('pendingRedirect')
+        localStorage.removeItem('pendingTrialStart')
         localStorage.setItem('isLoggedIn', 'true')
 
+        // 🔁 Redirection
         const qsRedirect = search.get('redirect') || search.get('next') || ''
         const storedRedirect = localStorage.getItem('pendingRedirect') || ''
-        localStorage.removeItem('pendingRedirect')
-
         const pick = (path) => (path && path.startsWith('/') && !path.startsWith('//') ? path : null)
 
         const target =

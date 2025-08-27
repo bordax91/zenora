@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -26,7 +26,6 @@ export default function RegisterPageInner() {
 
     try {
       const role = 'coach'
-
       const { data, error: signErr } = await supabase.auth.signUp({
         email,
         password,
@@ -35,18 +34,13 @@ export default function RegisterPageInner() {
       if (signErr) throw signErr
 
       const user = data?.user
-
       if (!user) {
         setInfo("Compte créé. Vérifiez votre boîte mail pour confirmer votre adresse, puis reconnectez‑vous.")
         return
       }
 
-      // ⏳ Définir la période d’essai de 7 jours
       const trialStart = new Date()
-      const trialEnd = new Date()
-      trialEnd.setDate(trialStart.getDate() + 7)
 
-      // 🔁 Enregistrer dans Supabase
       const { error: upsertErr } = await supabase
         .from('users')
         .upsert(
@@ -55,7 +49,7 @@ export default function RegisterPageInner() {
             email: user.email,
             role,
             trial_start: trialStart.toISOString(),
-            trial_end: trialEnd.toISOString(),
+            is_subscribed: false,
           },
           { onConflict: 'id' }
         )
@@ -73,7 +67,10 @@ export default function RegisterPageInner() {
 
   const handleGoogleSignup = async () => {
     const role = 'coach'
+    const trialStart = new Date().toISOString()
+
     localStorage.setItem('pendingRole', role)
+    localStorage.setItem('pendingTrialStart', trialStart)
     localStorage.setItem('pendingRedirect', '/coach/onboarding')
 
     const redirectTo = `${window.location.origin}/auth/callback?redirect=/coach/onboarding`
