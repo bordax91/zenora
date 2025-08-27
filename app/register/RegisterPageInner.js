@@ -41,12 +41,25 @@ export default function RegisterPageInner() {
         return
       }
 
+      // ⏳ Définir la période d’essai de 7 jours
+      const trialStart = new Date()
+      const trialEnd = new Date()
+      trialEnd.setDate(trialStart.getDate() + 7)
+
+      // 🔁 Enregistrer dans Supabase
       const { error: upsertErr } = await supabase
         .from('users')
         .upsert(
-          { id: user.id, email: user.email, role },
+          {
+            id: user.id,
+            email: user.email,
+            role,
+            trial_start: trialStart.toISOString(),
+            trial_end: trialEnd.toISOString(),
+          },
           { onConflict: 'id' }
         )
+
       if (upsertErr) throw upsertErr
 
       localStorage.setItem('isLoggedIn', 'true')
