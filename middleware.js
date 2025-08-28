@@ -5,7 +5,9 @@ export async function middleware(req) {
   const res = NextResponse.next()
   const supabase = createMiddlewareClient({ req, res })
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   // ✅ Si pas connecté → redirection login
   if (!user) {
@@ -15,7 +17,7 @@ export async function middleware(req) {
   // 🔍 Récupérer les infos de l'utilisateur
   const { data: profile, error } = await supabase
     .from('users')
-    .select('trial_start, is_subscribed')
+    .select('trial_start, trial_end, is_subscribed')
     .eq('id', user.id)
     .single()
 
@@ -24,11 +26,19 @@ export async function middleware(req) {
   }
 
   const now = new Date()
-  const trialStart = new Date(profile.trial_start)
-  const trialEnd = new Date(trialStart)
-  trialEnd.setDate(trialStart.getDate() + 7) // ✅ 7 jours d’essai
+  let trialEnd
 
-  const isTrialExpired = now > trialEnd
+  if (profile.trial_end) {
+    trialEnd = new Date(profile.trial_end)
+  } else if (profile.trial_start) {
+    const trialStart = new Date(profile.trial_start)
+    trialEnd = new Date(trialStart)
+    trialEnd.setDate(trialStart.getDate() + 7)
+  } else {
+    trialEnd = null // Aucun essai enregistré
+  }
+
+  const isTrialExpired = trialEnd ? now > trialEnd : true
   const isSubscribed = profile.is_subscribed
 
   // ✅ Si l'utilisateur n’a plus droit → redirection abonnement
