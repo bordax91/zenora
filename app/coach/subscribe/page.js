@@ -109,7 +109,7 @@ export default function AbonnementPage() {
       )}
 
       {!user.is_subscribed && (
-        <div className="space-y-4">
+        <div className="flex flex-col gap-4"> {/* ✅ Espacement vertical entre boutons */}
           <Link href="https://buy.stripe.com/6oU14od92a2Ebctg8v5os07" target="_blank">
             <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
               🔁 S’abonner au plan mensuel – 39€/mois
