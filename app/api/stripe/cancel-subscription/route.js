@@ -16,7 +16,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'customerId requis' }, { status: 400 })
     }
 
-    // 1. Récupérer l'abonnement actif
+    // 1. Récupérer l'abonnement actif du client
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
       status: 'active',
@@ -26,26 +26,28 @@ export async function POST(req) {
     const subscription = subscriptions.data[0]
 
     if (!subscription) {
-      return NextResponse.json({ error: 'Abonnement actif introuvable' }, { status: 404 })
+      return NextResponse.json({ error: 'Aucun abonnement actif trouvé' }, { status: 404 })
     }
 
-    // 2. Supprimer l’abonnement côté Stripe
-    await stripe.subscriptions.del(subscription.id)
+    // 2. Annuler à la fin de la période (pas immédiatement)
+    const updatedSubscription = await stripe.subscriptions.update(subscription.id, {
+      cancel_at_period_end: true
+    })
 
-    // 3. Supprimer le statut dans Supabase
-    const { error } = await supabase
+    // 3. (Facultatif) Mettre à jour Supabase pour stocker que l’abonnement est en cours d’annulation
+    const { error: updateError } = await supabase
       .from('users')
-      .update({ is_subscribed: false })
+      .update({ cancel_at_period_end: true }) // tu dois avoir cette colonne si tu veux suivre l'état
       .eq('stripe_customer_id', customerId)
 
-    if (error) {
-      console.error('Erreur Supabase :', error)
+    if (updateError) {
+      console.error('❌ Erreur Supabase update cancel_at_period_end :', updateError)
       return NextResponse.json({ error: 'Erreur mise à jour Supabase' }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, subscription: updatedSubscription })
   } catch (err) {
-    console.error('Erreur Stripe:', err.message)
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    console.error('❌ Erreur Stripe cancel_at_period_end:', err.message)
+    return NextResponse.json({ error: 'Erreur serveur Stripe' }, { status: 500 })
   }
 }
