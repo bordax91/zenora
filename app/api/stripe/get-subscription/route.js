@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import stripe from '@/lib/stripe'
 
-export async function GET(req: Request) {
+export async function GET(req) {
   const { searchParams } = new URL(req.url)
   const customerId = searchParams.get('customerId')
 
@@ -12,8 +12,8 @@ export async function GET(req: Request) {
   try {
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
-      status: 'all', // ou 'active' uniquement si tu veux filtrer
-      expand: ['data.items.data.price']
+      status: 'all',
+      expand: ['data.items.data.price'],
     })
 
     return NextResponse.json({ data: subscriptions.data })
