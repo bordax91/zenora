@@ -33,7 +33,7 @@ export async function middleware(req) {
 
   // ✅ Si l'utilisateur n’a plus droit → redirection abonnement
   if (isTrialExpired && !isSubscribed) {
-    return NextResponse.redirect(new URL('/coach/abonnement', req.url))
+    return NextResponse.redirect(new URL('/coach/subscribe', req.url))
   }
 
   return res
