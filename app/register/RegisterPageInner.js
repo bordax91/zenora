@@ -39,9 +39,12 @@ export default function RegisterPageInner() {
         return
       }
 
+      // 📆 Calcul des dates
       const trialStart = new Date()
-      const trialEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 jours
+      const trialEnd = new Date()
+      trialEnd.setDate(trialStart.getDate() + 7)
 
+      // ➕ Insertion dans Supabase
       const { error: upsertErr } = await supabase
         .from('users')
         .upsert(
@@ -55,7 +58,6 @@ export default function RegisterPageInner() {
           },
           { onConflict: 'id' }
         )
-
       if (upsertErr) throw upsertErr
 
       localStorage.setItem('isLoggedIn', 'true')
@@ -70,7 +72,8 @@ export default function RegisterPageInner() {
   const handleGoogleSignup = async () => {
     const role = 'coach'
     const trialStart = new Date()
-    const trialEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    const trialEnd = new Date()
+    trialEnd.setDate(trialStart.getDate() + 7)
 
     localStorage.setItem('pendingRole', role)
     localStorage.setItem('pendingTrialStart', trialStart.toISOString())

@@ -36,9 +36,10 @@ export default function AuthCallback() {
           await supabase.auth.updateUser({ data: { role } })
         }
 
-        // 📆 Période d'essai
-        const trialStart = localStorage.getItem('pendingTrialStart') || new Date().toISOString()
-        const trialEnd = localStorage.getItem('pendingTrialEnd') || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        // 📆 Calcul des dates d’essai
+        const trialStartDate = new Date()
+        const trialEndDate = new Date(trialStartDate)
+        trialEndDate.setDate(trialEndDate.getDate() + 7)
 
         // 🔁 Upsert dans la table 'users'
         const { error: upsertErr } = await supabase
@@ -48,8 +49,8 @@ export default function AuthCallback() {
               id: user.id,
               email: user.email,
               role,
-              trial_start: trialStart,
-              trial_end: trialEnd,
+              trial_start: trialStartDate.toISOString(),
+              trial_end: trialEndDate.toISOString(),
               is_subscribed: false,
             },
             { onConflict: 'id' }
@@ -60,7 +61,6 @@ export default function AuthCallback() {
         localStorage.removeItem('pendingRole')
         localStorage.removeItem('pendingRedirect')
         localStorage.removeItem('pendingTrialStart')
-        localStorage.removeItem('pendingTrialEnd')
         localStorage.setItem('isLoggedIn', 'true')
 
         // ↪️ Redirection
