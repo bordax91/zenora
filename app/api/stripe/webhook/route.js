@@ -26,7 +26,7 @@ export async function POST(req) {
     return NextResponse.json({ error: 'Signature invalide' }, { status: 400 })
   }
 
-  // 🎯 CAS 1 : Paiement session client (ton code actuel, inchangé)
+  // 🎯 CAS 1 : Paiement session client (inchangé)
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object
     const metadata = session.metadata || {}
@@ -84,7 +84,7 @@ export async function POST(req) {
     }
   }
 
-  // 🎯 CAS 2 : Abonnement coach (nouveau)
+  // 🎯 CAS 2 : Abonnement coach (ajout type d'abonnement)
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object
     const metadata = session.metadata || {}
@@ -92,20 +92,30 @@ export async function POST(req) {
 
     if (coachId && session.mode === 'subscription') {
       const stripeCustomerId = session.customer
+      const stripePriceId = session?.subscription_details?.plan?.id || session?.display_items?.[0]?.plan?.id || session?.items?.[0]?.plan?.id || null
+
+      // Déterminer le type d'abonnement
+      let subscriptionType = 'inconnu'
+      if (stripePriceId === process.env.STRIPE_PRICE_ID_MONTHLY) {
+        subscriptionType = 'mensuel'
+      } else if (stripePriceId === process.env.STRIPE_PRICE_ID_YEARLY) {
+        subscriptionType = 'annuel'
+      }
 
       const { error: subError } = await supabase
         .from('users')
         .update({
           is_subscribed: true,
           stripe_customer_id: stripeCustomerId,
-          subscription_started_at: new Date().toISOString()
+          subscription_started_at: new Date().toISOString(),
+          subscription_type: subscriptionType // Ignoré si colonne absente
         })
         .eq('id', coachId)
 
       if (subError) {
         console.error('❌ Erreur mise à jour abonnement coach :', subError)
       } else {
-        console.log(`✅ Abonnement coach activé pour ${coachId}`)
+        console.log(`✅ Abonnement coach activé (${subscriptionType}) pour ${coachId}`)
       }
     }
   }
