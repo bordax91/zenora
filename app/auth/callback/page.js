@@ -16,7 +16,7 @@ export default function AuthCallback() {
         const oauthError = search.get('error_description') || search.get('error')
         if (oauthError) throw new Error(oauthError)
 
-        // 🔄 Échange du code pour une session Supabase
+        // 🔄 Échange du code OAuth contre une session Supabase
         if (code) {
           const { error: exchangeErr } = await supabase.auth.exchangeCodeForSession(window.location.href)
           if (exchangeErr) throw exchangeErr
@@ -29,19 +29,19 @@ export default function AuthCallback() {
         }
         const user = userData.user
 
-        // 📌 Déterminer le rôle
+        // 📌 Rôle
         let role = user.user_metadata?.role
         if (!role) {
           role = localStorage.getItem('pendingRole') || 'client'
           await supabase.auth.updateUser({ data: { role } })
         }
 
-        // 📆 Définir trial_start s’il n'existe pas déjà
-        const storedTrialStart = localStorage.getItem('pendingTrialStart')
-        const trialStart = storedTrialStart || new Date().toISOString()
+        // 📆 Période d'essai
+        const trialStart = localStorage.getItem('pendingTrialStart') || new Date().toISOString()
+        const trialEnd = localStorage.getItem('pendingTrialEnd') || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
 
-        // 🔁 Insérer dans la table users
-        await supabase
+        // 🔁 Upsert dans la table 'users'
+        const { error: upsertErr } = await supabase
           .from('users')
           .upsert(
             {
@@ -49,18 +49,21 @@ export default function AuthCallback() {
               email: user.email,
               role,
               trial_start: trialStart,
+              trial_end: trialEnd,
               is_subscribed: false,
             },
             { onConflict: 'id' }
           )
+        if (upsertErr) throw upsertErr
 
-        // 🧹 Nettoyage localStorage
+        // 🧹 Nettoyage
         localStorage.removeItem('pendingRole')
         localStorage.removeItem('pendingRedirect')
         localStorage.removeItem('pendingTrialStart')
+        localStorage.removeItem('pendingTrialEnd')
         localStorage.setItem('isLoggedIn', 'true')
 
-        // 🔁 Redirection
+        // ↪️ Redirection
         const qsRedirect = search.get('redirect') || search.get('next') || ''
         const storedRedirect = localStorage.getItem('pendingRedirect') || ''
         const pick = (path) => (path && path.startsWith('/') && !path.startsWith('//') ? path : null)

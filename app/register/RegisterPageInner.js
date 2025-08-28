@@ -40,6 +40,7 @@ export default function RegisterPageInner() {
       }
 
       const trialStart = new Date()
+      const trialEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 jours
 
       const { error: upsertErr } = await supabase
         .from('users')
@@ -49,6 +50,7 @@ export default function RegisterPageInner() {
             email: user.email,
             role,
             trial_start: trialStart.toISOString(),
+            trial_end: trialEnd.toISOString(),
             is_subscribed: false,
           },
           { onConflict: 'id' }
@@ -67,10 +69,12 @@ export default function RegisterPageInner() {
 
   const handleGoogleSignup = async () => {
     const role = 'coach'
-    const trialStart = new Date().toISOString()
+    const trialStart = new Date()
+    const trialEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
     localStorage.setItem('pendingRole', role)
-    localStorage.setItem('pendingTrialStart', trialStart)
+    localStorage.setItem('pendingTrialStart', trialStart.toISOString())
+    localStorage.setItem('pendingTrialEnd', trialEnd.toISOString())
     localStorage.setItem('pendingRedirect', '/coach/onboarding')
 
     const redirectTo = `${window.location.origin}/auth/callback?redirect=/coach/onboarding`
