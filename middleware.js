@@ -9,12 +9,12 @@ export async function middleware(req) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // ✅ Si pas connecté → redirection login
+  // ✅ Rediriger vers /login si non connecté
   if (!user) {
     return NextResponse.redirect(new URL('/login', req.url))
   }
 
-  // 🔍 Récupérer les infos de l'utilisateur
+  // 🔍 Charger les infos utilisateur : trial_start, trial_end, is_subscribed
   const { data: profile, error } = await supabase
     .from('users')
     .select('trial_start, trial_end, is_subscribed')
@@ -28,20 +28,25 @@ export async function middleware(req) {
   const now = new Date()
   let trialEnd
 
+  // ✅ Si trial_end existe, on l’utilise
   if (profile.trial_end) {
     trialEnd = new Date(profile.trial_end)
-  } else if (profile.trial_start) {
+  }
+  // ✅ Sinon, on calcule depuis trial_start
+  else if (profile.trial_start) {
     const trialStart = new Date(profile.trial_start)
     trialEnd = new Date(trialStart)
     trialEnd.setDate(trialStart.getDate() + 7)
-  } else {
-    trialEnd = null // Aucun essai enregistré
+  }
+  // ❌ Aucun essai, accès interdit sauf si abonné
+  else {
+    trialEnd = null
   }
 
   const isTrialExpired = trialEnd ? now > trialEnd : true
   const isSubscribed = profile.is_subscribed
 
-  // ✅ Si l'utilisateur n’a plus droit → redirection abonnement
+  // ✅ Redirection vers l’abonnement si essai expiré et non abonné
   if (isTrialExpired && !isSubscribed) {
     return NextResponse.redirect(new URL('/coach/subscribe', req.url))
   }
@@ -49,7 +54,7 @@ export async function middleware(req) {
   return res
 }
 
-// ✅ Appliquer à /app/coach/** et /app/:username
+// ✅ Middleware actif sur les routes coach & profils publics
 export const config = {
   matcher: ['/app/coach/:path*', '/app/:username'],
 }
