@@ -60,14 +60,19 @@ export default function AbonnementPage() {
     const confirmed = confirm("Souhaitez-vous vraiment vous désabonner ?")
     if (!confirmed) return
 
-    const { error } = await supabase
-      .from('users')
-      .update({ is_subscribed: false })
-      .eq('id', user.id)
+    const res = await fetch('/api/stripe/cancel-subscription', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ customerId: user.stripe_customer_id })
+    })
 
-    if (!error) {
-      alert('Vous êtes désabonné.')
+    const result = await res.json()
+    if (result.success) {
+      alert('Vous avez été désabonné.')
       location.reload()
+    } else {
+      alert('Erreur lors du désabonnement.')
+      console.error(result.error)
     }
   }
 
@@ -80,38 +85,38 @@ export default function AbonnementPage() {
 
   return (
     <div className="max-w-xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-4">Abonnement</h1>
+      <h1 className="text-3xl font-bold mb-6 text-center">Abonnement</h1>
 
       {user.is_subscribed ? (
-        <div className="bg-green-100 text-green-800 p-4 rounded-lg mb-4">
+        <div className="bg-green-100 text-green-800 p-4 rounded-lg mb-6">
           ✅ Vous êtes actuellement abonné(e).
           {priceLabel && <p className="mt-2 font-medium">Plan : {priceLabel}</p>}
           <button
             onClick={handleUnsubscribe}
-            className="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+            className="mt-4 w-full bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
           >
             Se désabonner
           </button>
         </div>
       ) : isTrialActive ? (
-        <div className="bg-yellow-100 text-yellow-800 p-4 rounded-lg mb-4">
+        <div className="bg-yellow-100 text-yellow-800 p-4 rounded-lg mb-6">
           ⏳ Vous êtes en période d’essai jusqu’au <strong>{trialEnd.toLocaleDateString()}</strong>.
         </div>
       ) : (
-        <div className="bg-red-100 text-red-800 p-4 rounded-lg mb-4">
+        <div className="bg-red-100 text-red-800 p-4 rounded-lg mb-6">
           ❌ Votre période d’essai est terminée. Veuillez souscrire à une offre pour continuer.
         </div>
       )}
 
       {!user.is_subscribed && (
-        <div className="space-y-4 mt-4">
-          <Link href="https://buy.stripe.com/link_mensuel" target="_blank">
-            <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+        <div className="space-y-4">
+          <Link href="https://buy.stripe.com/6oU14od92a2Ebctg8v5os07" target="_blank">
+            <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
               🔁 S’abonner au plan mensuel – 39€/mois
             </button>
           </Link>
-          <Link href="https://buy.stripe.com/lien_annuel" target="_blank">
-            <button className="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
+          <Link href="https://buy.stripe.com/fZu6oI9WQ4Ik6Wd1dB5os08" target="_blank">
+            <button className="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
               📅 S’abonner au plan annuel – 349€/an
             </button>
           </Link>
