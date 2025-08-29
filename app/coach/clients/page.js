@@ -1,31 +1,59 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 
 export default function ClientsPage() {
+  const router = useRouter()
   const [clients, setClients] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchClients = async () => {
-      const { data: authData } = await supabase.auth.getUser()
-      const coach = authData?.user
-      if (!coach) return
+    const checkAccessAndFetch = async () => {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const user = sessionData?.session?.user
 
-      // On récupère les clients liés à ce coach via la table sessions
-      const { data, error } = await supabase
+      if (!user) return router.push('/login')
+
+      // 🔐 Vérifie abonnement ou essai
+      const { data: profile, error } = await supabase
+        .from('users')
+        .select('trial_start, trial_end, is_subscribed')
+        .eq('id', user.id)
+        .single()
+
+      if (error || !profile) return router.push('/login')
+
+      const now = new Date()
+      const trialEnd = profile.trial_end
+        ? new Date(profile.trial_end)
+        : profile.trial_start
+        ? new Date(new Date(profile.trial_start).getTime() + 7 * 24 * 60 * 60 * 1000)
+        : null
+
+      const isTrialExpired = trialEnd ? now > trialEnd : true
+      const isSubscribed = profile.is_subscribed === true
+
+      if (isTrialExpired && !isSubscribed) {
+        return router.push('/coach/subscribe')
+      }
+
+      // ✅ Fetch des clients liés aux sessions
+      const { data, error: clientError } = await supabase
         .from('sessions')
         .select(`
           client_id,
           client:client_id (id, name, email)
         `)
-        .eq('coach_id', coach.id)
+        .eq('coach_id', user.id)
 
-      if (error) return console.error('Erreur fetch clients', error)
+      if (clientError) {
+        console.error('Erreur fetch clients', clientError)
+        return
+      }
 
-      // Dédupliquons les clients (si plusieurs sessions)
       const uniqueClientsMap = new Map()
       data?.forEach((s) => {
         if (s.client?.id) {
@@ -37,7 +65,7 @@ export default function ClientsPage() {
       setLoading(false)
     }
 
-    fetchClients()
+    checkAccessAndFetch()
   }, [])
 
   if (loading) return <p className="text-center text-gray-500">Chargement...</p>
@@ -60,7 +88,10 @@ export default function ClientsPage() {
                 className="border-t hover:bg-gray-50 cursor-pointer"
               >
                 <td className="px-4 py-3">
-                  <Link href={`/coach/clients/${client.id}`} className="text-blue-600 hover:underline">
+                  <Link
+                    href={`/coach/clients/${client.id}`}
+                    className="text-blue-600 hover:underline"
+                  >
                     {client.name || '—'}
                   </Link>
                 </td>

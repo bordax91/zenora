@@ -1,17 +1,54 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { DateTime } from 'luxon'
 
 export default function CoachDashboard() {
+  const router = useRouter()
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [selectedDate, setSelectedDate] = useState(new Date())
+
+  // 🔐 Vérifie l’accès : essai ou abonnement
+  useEffect(() => {
+    const checkAccess = async () => {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const user = sessionData?.session?.user
+      if (!user) return router.push('/login')
+
+      const { data: profile, error } = await supabase
+        .from('users')
+        .select('trial_start, trial_end, is_subscribed')
+        .eq('id', user.id)
+        .single()
+
+      if (error || !profile) return router.push('/login')
+
+      const now = new Date()
+      let trialEnd = profile.trial_end
+        ? new Date(profile.trial_end)
+        : profile.trial_start
+        ? new Date(new Date(profile.trial_start).getTime() + 7 * 24 * 60 * 60 * 1000)
+        : null
+
+      const isTrialExpired = trialEnd ? now > trialEnd : true
+      const isSubscribed = profile.is_subscribed === true
+
+      if (isTrialExpired && !isSubscribed) {
+        router.push('/coach/subscribe')
+      } else {
+        fetchSessions()
+      }
+    }
+
+    checkAccess()
+  }, [])
 
   const fetchSessions = async () => {
     const { data: authData } = await supabase.auth.getUser()
@@ -29,20 +66,16 @@ export default function CoachDashboard() {
         )
       `)
       .eq('coach_id', user.id)
-      .order('date', { ascending: false }) // ✅ Les plus récentes d'abord
+      .order('date', { ascending: false })
 
     if (!error) setSessions(data || [])
     setLoading(false)
   }
 
-  useEffect(() => {
-    fetchSessions()
-  }, [])
-
   const handleAddSession = async () => {
     const { data: authData } = await supabase.auth.getUser()
     const coach = authData?.user
-    if (!coach) return alert("Coach non identifié")
+    if (!coach) return alert('Coach non identifié')
 
     const { data: existingClient } = await supabase
       .from('users')
@@ -80,19 +113,15 @@ export default function CoachDashboard() {
   }
 
   const handleDeleteSession = async (sessionId) => {
-    const confirmDelete = confirm('Supprimer cette session ?')
-    if (!confirmDelete) return
+    if (!confirm('Supprimer cette session ?')) return
 
     const { error } = await supabase
       .from('sessions')
       .delete()
       .eq('id', sessionId)
 
-    if (error) {
-      alert('Erreur lors de la suppression')
-    } else {
-      fetchSessions()
-    }
+    if (!error) fetchSessions()
+    else alert('Erreur lors de la suppression')
   }
 
   if (loading) return <p className="text-center text-gray-500">Chargement...</p>
@@ -106,13 +135,13 @@ export default function CoachDashboard() {
         <div className="flex flex-col md:flex-row gap-2">
           <input
             value={name}
-            onChange={e => setName(e.target.value)}
+            onChange={(e) => setName(e.target.value)}
             placeholder="Nom"
             className="border px-3 py-2 rounded w-full md:w-auto"
           />
           <input
             value={email}
-            onChange={e => setEmail(e.target.value)}
+            onChange={(e) => setEmail(e.target.value)}
             placeholder="Email"
             className="border px-3 py-2 rounded w-full md:w-auto"
           />
