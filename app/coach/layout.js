@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Menu, X } from 'lucide-react'
-import { createBrowserSupabaseClient } from '@supabase/auth-helpers-nextjs'
+import { supabase } from '@/lib/supabase/client' // ✅ utilise le client partagé
 
 export default function CoachLayout({ children }) {
   const router = useRouter()
@@ -13,7 +13,6 @@ export default function CoachLayout({ children }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [accessGranted, setAccessGranted] = useState(false)
   const [checking, setChecking] = useState(true)
-  const supabase = createBrowserSupabaseClient()
 
   const links = [
     { href: '/coach/dashboard', label: 'Rendez-vous' },
@@ -27,11 +26,8 @@ export default function CoachLayout({ children }) {
 
   useEffect(() => {
     const checkAccess = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-
-      const user = session?.user
+      const { data: sessionData } = await supabase.auth.getSession()
+      const user = sessionData?.session?.user
 
       if (!user) {
         router.push('/login')
@@ -75,8 +71,7 @@ export default function CoachLayout({ children }) {
     checkAccess()
   }, [])
 
-  if (checking) return null // ou <p>Chargement...</p>
-  if (!accessGranted) return null
+  if (checking || !accessGranted) return null
 
   const NavLinks = () => (
     <>
