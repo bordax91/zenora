@@ -1,7 +1,7 @@
 'use client'
 
 import { useSearchParams, useRouter } from 'next/navigation'
-import { useState, Suspense } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { supabase } from '@/lib/supabase/client'
 
 function ResetPasswordForm() {
@@ -11,8 +11,14 @@ function ResetPasswordForm() {
   const [success, setSuccess] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const token = searchParams.get('token')
+
+  const token = searchParams.get('token') || searchParams.get('code') // code = vrai param Supabase
   const type = searchParams.get('type')
+
+  // 👇 Forcer Supabase à prendre en compte le token
+  useEffect(() => {
+    supabase.auth.getSession()
+  }, [])
 
   const handleReset = async () => {
     if (password !== confirmPassword) {
