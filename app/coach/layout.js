@@ -5,14 +5,10 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Menu, X } from 'lucide-react'
-import { supabase } from '@/lib/supabase/client' // ✅ utilise le client partagé
 
 export default function CoachLayout({ children }) {
-  const router = useRouter()
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
-  const [accessGranted, setAccessGranted] = useState(false)
-  const [checking, setChecking] = useState(true)
 
   const links = [
     { href: '/coach/dashboard', label: 'Rendez-vous' },
@@ -23,55 +19,6 @@ export default function CoachLayout({ children }) {
     { href: '/coach/integrations', label: 'Intégrations' },
     { href: '/coach/settings', label: 'Paramètres' },
   ]
-
-  useEffect(() => {
-    const checkAccess = async () => {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const user = sessionData?.session?.user
-
-      if (!user) {
-        router.push('/login')
-        return
-      }
-
-      const { data: profile, error } = await supabase
-        .from('users')
-        .select('trial_start, trial_end, is_subscribed')
-        .eq('id', user.id)
-        .single()
-
-      if (!profile || error) {
-        router.push('/login')
-        return
-      }
-
-      const now = new Date()
-      let trialEnd = null
-
-      if (profile.trial_end) {
-        trialEnd = new Date(profile.trial_end)
-      } else if (profile.trial_start) {
-        const trialStart = new Date(profile.trial_start)
-        trialEnd = new Date(trialStart)
-        trialEnd.setDate(trialStart.getDate() + 7)
-      }
-
-      const isTrialExpired = trialEnd ? now > trialEnd : true
-      const isSubscribed = profile.is_subscribed === true
-
-      if (isTrialExpired && !isSubscribed) {
-        router.push('/coach/subscribe')
-      } else {
-        setAccessGranted(true)
-      }
-
-      setChecking(false)
-    }
-
-    checkAccess()
-  }, [])
-
-  if (checking || !accessGranted) return null
 
   const NavLinks = () => (
     <>
