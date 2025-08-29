@@ -2,7 +2,7 @@ import './globals.css'
 import { Analytics } from '@vercel/analytics/react'
 import Script from 'next/script'
 import CookieBanner from '@/components/CookieBanner'
-import SupabaseProvider from '@/components/SupabaseProvider' // à créer juste après
+import UserProviderWrapper from '@/components/UserProviderWrapper'
 
 export const metadata = {
   title: 'Zenora',
@@ -22,8 +22,6 @@ export default function RootLayout({ children }) {
         <link rel="apple-touch-icon" href="/favicon.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-
-        {/* Facebook Pixel */}
         <Script
           id="facebook-pixel"
           strategy="afterInteractive"
@@ -48,15 +46,13 @@ export default function RootLayout({ children }) {
             width="1"
             style={{ display: 'none' }}
             src="https://www.facebook.com/tr?id=613243461182951&ev=PageView&noscript=1"
-            alt="fb pixel"
           />
         </noscript>
       </head>
-
       <body>
-        <SupabaseProvider>
+        <UserProviderWrapper>
           {children}
-        </SupabaseProvider>
+        </UserProviderWrapper>
         <Analytics />
         <CookieBanner />
       </body>
