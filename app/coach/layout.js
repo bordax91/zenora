@@ -1,14 +1,17 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Menu, X } from 'lucide-react'
+import { supabase } from '@/lib/supabase/client'
 
 export default function CoachLayout({ children }) {
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [showTrialBanner, setShowTrialBanner] = useState(false)
+  const [trialEndFormatted, setTrialEndFormatted] = useState('')
 
   const links = [
     { href: '/coach/dashboard', label: 'Rendez-vous' },
@@ -19,6 +22,49 @@ export default function CoachLayout({ children }) {
     { href: '/coach/integrations', label: 'Intégrations' },
     { href: '/coach/settings', label: 'Paramètres' },
   ]
+
+  useEffect(() => {
+    const checkTrial = async () => {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const user = sessionData?.session?.user
+      if (!user) return
+
+      const { data: profile } = await supabase
+        .from('users')
+        .select('trial_start, trial_end, is_subscribed')
+        .eq('id', user.id)
+        .single()
+
+      if (!profile || profile.is_subscribed) return
+
+      const now = new Date()
+      let trialEnd = null
+
+      if (profile.trial_end) {
+        trialEnd = new Date(profile.trial_end)
+      } else if (profile.trial_start) {
+        const trialStart = new Date(profile.trial_start)
+        trialEnd = new Date(trialStart)
+        trialEnd.setDate(trialStart.getDate() + 7)
+      }
+
+      const daysLeft = trialEnd ? Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24)) : null
+
+      if (daysLeft !== null && daysLeft <= 3 && daysLeft >= 0) {
+        setShowTrialBanner(true)
+        setTrialEndFormatted(
+          trialEnd.toLocaleDateString('fr-FR', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          })
+        )
+      }
+    }
+
+    checkTrial()
+  }, [])
 
   const NavLinks = () => (
     <>
@@ -85,6 +131,15 @@ export default function CoachLayout({ children }) {
           </div>
         )}
       </nav>
+
+      {showTrialBanner && (
+        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 px-4 py-3 text-sm">
+          🎁 Votre période d’essai se termine le <strong>{trialEndFormatted}</strong>.
+          <Link href="/coach/subscribe" className="ml-1 underline text-blue-600">
+            Passer à l’abonnement
+          </Link>
+        </div>
+      )}
 
       <main className="max-w-6xl mx-auto px-4 py-6">
         {children}
