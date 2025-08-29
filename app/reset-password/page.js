@@ -9,28 +9,38 @@ function ResetPasswordForm() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [loading, setLoading] = useState(true)
   const router = useRouter()
   const searchParams = useSearchParams()
 
   const token = searchParams.get('token') || searchParams.get('code')
   const type = searchParams.get('type')
 
-  // 👇 Important : échanger le code et sauvegarder la session temporaire
   useEffect(() => {
     const exchange = async () => {
       const code = searchParams.get('code')
       if (code) {
         const { data, error } = await supabase.auth.exchangeCodeForSession(code)
         if (error) {
-          console.error('Erreur échange de code :', error)
-          setError("Lien invalide ou expiré. Veuillez recommencer.")
-        } else if (data?.session) {
-          await supabase.auth.setSession(data.session)
+          console.error('Erreur échange de code :', error.message)
+          setError('Lien invalide ou expiré. Veuillez recommencer.')
+        } else {
+          // Session stockée automatiquement (pas besoin de setSession)
+          setLoading(false)
         }
+      } else {
+        setError('Code manquant dans le lien.')
+        setLoading(false)
       }
     }
-    exchange()
-  }, [searchParams])
+
+    if (type === 'recovery') {
+      exchange()
+    } else {
+      setError('Lien invalide.')
+      setLoading(false)
+    }
+  }, [searchParams, type])
 
   const handleReset = async () => {
     if (password !== confirmPassword) {
@@ -63,6 +73,7 @@ function ResetPasswordForm() {
     <div className="min-h-screen flex items-center justify-center">
       <div className="max-w-md w-full p-6 bg-white rounded shadow">
         <h2 className="text-2xl font-semibold mb-4">Nouveau mot de passe</h2>
+        {loading && <p className="text-gray-500 mb-2">Chargement du lien de récupération…</p>}
         {error && <p className="text-red-500 mb-2">{error}</p>}
         {success && <p className="text-green-500 mb-2">Mot de passe modifié. Redirection…</p>}
         <input
@@ -71,6 +82,7 @@ function ResetPasswordForm() {
           className="w-full mb-3 border rounded px-4 py-2"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          disabled={loading}
         />
         <input
           type="password"
@@ -78,10 +90,12 @@ function ResetPasswordForm() {
           className="w-full mb-4 border rounded px-4 py-2"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
+          disabled={loading}
         />
         <button
           onClick={handleReset}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded disabled:opacity-50"
+          disabled={loading}
         >
           Réinitialiser le mot de passe
         </button>
