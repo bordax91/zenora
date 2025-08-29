@@ -2,7 +2,7 @@ import './globals.css'
 import { Analytics } from '@vercel/analytics/react'
 import Script from 'next/script'
 import CookieBanner from '@/components/CookieBanner'
-import { UserProvider } from '@/lib/supabase/user-context'
+import SupabaseProvider from '@/components/SupabaseProvider' // à créer juste après
 
 export const metadata = {
   title: 'Zenora',
@@ -16,16 +16,9 @@ export default function RootLayout({ children }) {
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="description" content={metadata.description} />
-        <title>{metadata.title}</title>
-
-        {/* Favicon */}
         <link rel="icon" href="/favicon.png" type="image/png" />
-
-        {/* PWA Manifest */}
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#2563eb" />
-
-        {/* iOS */}
         <link rel="apple-touch-icon" href="/favicon.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -55,14 +48,15 @@ export default function RootLayout({ children }) {
             width="1"
             style={{ display: 'none' }}
             src="https://www.facebook.com/tr?id=613243461182951&ev=PageView&noscript=1"
+            alt="fb pixel"
           />
         </noscript>
       </head>
 
       <body>
-        <UserProvider>
+        <SupabaseProvider>
           {children}
-        </UserProvider>
+        </SupabaseProvider>
         <Analytics />
         <CookieBanner />
       </body>
