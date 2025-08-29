@@ -13,6 +13,7 @@ export default function CoachLayout({ children }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [showTrialBanner, setShowTrialBanner] = useState(false)
   const [trialEndFormatted, setTrialEndFormatted] = useState('')
+  const [trialExpired, setTrialExpired] = useState(false)
 
   const links = [
     { href: '/coach/dashboard', label: 'Rendez-vous' },
@@ -56,8 +57,10 @@ export default function CoachLayout({ children }) {
 
       const daysLeft = trialEnd ? Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24)) : null
 
-      if (daysLeft !== null && daysLeft <= 3 && daysLeft >= 0) {
+      if (daysLeft !== null && daysLeft <= 3) {
         setShowTrialBanner(true)
+        setTrialExpired(daysLeft < 0)
+
         setTrialEndFormatted(
           trialEnd.toLocaleDateString('fr-FR', {
             weekday: 'long',
@@ -156,16 +159,25 @@ export default function CoachLayout({ children }) {
 
       {showTrialBanner && (
         <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 px-4 py-3 text-sm">
-          🎁 Votre période d’essai se termine le <strong>{trialEndFormatted}</strong>.
-          <Link href="/coach/subscribe" className="ml-1 underline text-blue-600">
-            Passer à l’abonnement
-          </Link>
+          {trialExpired ? (
+            <>
+              ❌ Votre période d’essai est terminée.{' '}
+              <Link href="/coach/subscribe" className="underline text-blue-600">
+                Souscrivez à une offre pour continuer
+              </Link>.
+            </>
+          ) : (
+            <>
+              🎁 Votre période d’essai se termine le <strong>{trialEndFormatted}</strong>.{' '}
+              <Link href="/coach/subscribe" className="underline text-blue-600">
+                Passer à l’abonnement
+              </Link>.
+            </>
+          )}
         </div>
       )}
 
-      <main className="max-w-6xl mx-auto px-4 py-6">
-        {children}
-      </main>
+      <main className="max-w-6xl mx-auto px-4 py-6">{children}</main>
     </div>
   )
 }
