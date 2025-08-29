@@ -12,6 +12,7 @@ export default function CoachLayout({ children }) {
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
   const [accessGranted, setAccessGranted] = useState(false)
+  const [checking, setChecking] = useState(true)
   const supabase = createBrowserSupabaseClient()
 
   const links = [
@@ -27,8 +28,10 @@ export default function CoachLayout({ children }) {
   useEffect(() => {
     const checkAccess = async () => {
       const {
-        data: { user },
-      } = await supabase.auth.getUser()
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      const user = session?.user
 
       if (!user) {
         router.push('/login')
@@ -65,14 +68,15 @@ export default function CoachLayout({ children }) {
       } else {
         setAccessGranted(true)
       }
+
+      setChecking(false)
     }
 
     checkAccess()
   }, [])
 
-  if (!accessGranted) {
-    return null // ou <p>Chargement...</p>
-  }
+  if (checking) return null // ou <p>Chargement...</p>
+  if (!accessGranted) return null
 
   const NavLinks = () => (
     <>
