@@ -12,13 +12,22 @@ function ResetPasswordForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const token = searchParams.get('token') || searchParams.get('code') // code = vrai param Supabase
+  const token = searchParams.get('token') || searchParams.get('code') // Supabase utilise ?code=
   const type = searchParams.get('type')
 
-  // 👇 Forcer Supabase à prendre en compte le token
+  // 👇 Important : échanger le code pour une session temporaire
   useEffect(() => {
-    supabase.auth.getSession()
-  }, [])
+    const exchange = async () => {
+      const code = searchParams.get('code')
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        if (error) {
+          console.error('Erreur échange de code :', error)
+        }
+      }
+    }
+    exchange()
+  }, [searchParams])
 
   const handleReset = async () => {
     if (password !== confirmPassword) {
@@ -36,6 +45,7 @@ function ResetPasswordForm() {
     }
   }
 
+  // Si le lien n'a pas le bon format
   if (!token || type !== 'recovery') {
     return (
       <div className="min-h-screen flex items-center justify-center">
