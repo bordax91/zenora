@@ -4,11 +4,12 @@ import { useState, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { supabase } from '@/lib/supabase/client'
+import { createBrowserSupabaseClient } from '@supabase/auth-helpers-nextjs'
 
 export default function LoginPageClient() {
   const router = useRouter()
   const search = useSearchParams()
+  const supabase = useMemo(() => createBrowserSupabaseClient(), [])
 
   const rawRedirect = useMemo(() => {
     const r = search.get('redirect')
@@ -29,13 +30,9 @@ export default function LoginPageClient() {
   const [loading, setLoading] = useState(false)
 
   const goAfterLogin = async () => {
-    if (safeRedirect) {
-      router.replace(safeRedirect)
-      return
-    }
     const { data } = await supabase.auth.getUser()
     const role = data?.user?.user_metadata?.role || 'client'
-    router.replace(role === 'coach' ? '/coach/dashboard' : '/client/dashboard')
+    router.replace(safeRedirect || (role === 'coach' ? '/coach/dashboard' : '/client/dashboard'))
   }
 
   const handleLogin = async (e) => {
@@ -48,7 +45,7 @@ export default function LoginPageClient() {
         throw new Error(error?.message || 'Connexion impossible')
       }
       localStorage.setItem('isLoggedIn', 'true')
-      goAfterLogin()
+      await goAfterLogin()
     } catch (err) {
       setError(err?.message || 'Connexion impossible')
     } finally {
