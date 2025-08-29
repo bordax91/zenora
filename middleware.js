@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
 
 export async function middleware(req) {
   // 👇 important pour que les cookies soient bien lus
