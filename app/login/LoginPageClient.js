@@ -113,6 +113,15 @@ export default function LoginPageClient() {
             />
           </div>
 
+          <div className="text-right -mt-4">
+            <Link
+              href="/forgot-password"
+              className="text-sm text-blue-600 hover:underline"
+            >
+              Mot de passe oublié ?
+            </Link>
+          </div>
+
           {error && <p className="text-red-500 text-sm">{error}</p>}
 
           <button
