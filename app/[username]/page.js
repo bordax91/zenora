@@ -11,6 +11,7 @@ export default function CoachProfilePage() {
   const [coach, setCoach] = useState(null)
   const [packages, setPackages] = useState([])
   const [loading, setLoading] = useState(true)
+  const [isCoachActive, setIsCoachActive] = useState(true)
 
   useEffect(() => {
     if (!username) return
@@ -18,13 +19,35 @@ export default function CoachProfilePage() {
     const fetchData = async () => {
       const { data: coachData, error: coachError } = await supabase
         .from('users')
-        .select('*')
+        .select('id, name, username, photo_url, specialty, bio, trial_start, trial_end, is_subscribed')
         .eq('username', username)
         .eq('role', 'coach')
         .single()
 
-      if (coachError) {
+      if (coachError || !coachData) {
         console.error('Erreur récupération coach:', coachError)
+        setCoach(null)
+        setLoading(false)
+        return
+      }
+
+      // Vérification de l’abonnement ou période d’essai
+      const now = new Date()
+      let trialEnd = null
+
+      if (coachData.trial_end) {
+        trialEnd = new Date(coachData.trial_end)
+      } else if (coachData.trial_start) {
+        const start = new Date(coachData.trial_start)
+        trialEnd = new Date(start)
+        trialEnd.setDate(start.getDate() + 7)
+      }
+
+      const isTrialExpired = trialEnd ? now > trialEnd : true
+      const isSubscribed = coachData.is_subscribed === true
+
+      if (isTrialExpired && !isSubscribed) {
+        setIsCoachActive(false)
         setCoach(null)
         setLoading(false)
         return
@@ -54,7 +77,13 @@ export default function CoachProfilePage() {
   }
 
   if (!coach) {
-    return <p className="text-center py-10 text-red-500">Coach introuvable.</p>
+    return (
+      <div className="text-center py-10 text-red-500">
+        {isCoachActive === false
+          ? 'Ce coach n’est plus disponible actuellement.'
+          : 'Coach introuvable.'}
+      </div>
+    )
   }
 
   return (
