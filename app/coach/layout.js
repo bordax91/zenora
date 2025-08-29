@@ -60,7 +60,7 @@ export default function CoachLayout({ children }) {
       const isSubscribed = profile.is_subscribed === true
 
       if (isTrialExpired && !isSubscribed) {
-        router.push('/subscribe')
+        router.push('/coach/subscribe')
       } else {
         setAccessGranted(true)
       }
