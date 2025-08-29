@@ -1,7 +1,7 @@
 'use client'
 
 import { useSearchParams, useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
 
 export default function ResetPasswordPage() {
@@ -9,35 +9,51 @@ export default function ResetPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [loading, setLoading] = useState(true)
+
   const router = useRouter()
   const searchParams = useSearchParams()
-  const token = searchParams.get('token')
+  const token = searchParams.get('code') || searchParams.get('token') // parfois "code" dans l'URL
   const type = searchParams.get('type')
 
+  // 🔐 Vérifie et échange le token contre une session
+  useEffect(() => {
+    const verifyToken = async () => {
+      if (token && type === 'recovery') {
+        const { error } = await supabase.auth.exchangeCodeForSession({ code: token })
+        if (error) {
+          setError('Lien invalide ou expiré.')
+        }
+      } else {
+        setError('Lien invalide ou expiré.')
+      }
+      setLoading(false)
+    }
+
+    verifyToken()
+  }, [token, type])
+
   const handleReset = async () => {
+    setError('')
     if (password !== confirmPassword) {
       setError('Les mots de passe ne correspondent pas.')
       return
     }
 
-    const { data, error } = await supabase.auth.updateUser({ password })
+    const { error } = await supabase.auth.updateUser({ password })
 
     if (error) {
-      setError('Lien invalide ou expiré. Veuillez recommencer.')
+      setError(error.message || 'Erreur lors de la mise à jour.')
     } else {
       setSuccess(true)
       setTimeout(() => router.push('/login'), 3000)
     }
   }
 
-  // Si token manquant (ou type invalide), afficher l'erreur directement
-  if (!token || type !== 'recovery') {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="p-6 bg-white rounded shadow">
-          <h1 className="text-xl font-bold text-red-600 mb-2">Lien invalide ou expiré</h1>
-          <p className="text-gray-600">Veuillez recommencer la procédure de récupération.</p>
-        </div>
+        <p className="text-gray-600">Chargement…</p>
       </div>
     )
   }
