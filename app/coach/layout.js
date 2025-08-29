@@ -1,13 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { usePathname } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Menu, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 
 export default function CoachLayout({ children }) {
+  const router = useRouter()
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
   const [showTrialBanner, setShowTrialBanner] = useState(false)
@@ -22,6 +23,11 @@ export default function CoachLayout({ children }) {
     { href: '/coach/integrations', label: 'Intégrations' },
     { href: '/coach/settings', label: 'Paramètres' },
   ]
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
 
   useEffect(() => {
     const checkTrial = async () => {
@@ -105,8 +111,14 @@ export default function CoachLayout({ children }) {
             </button>
           </div>
 
-          <div className="hidden md:flex gap-6">
+          <div className="hidden md:flex items-center gap-6">
             <NavLinks />
+            <button
+              onClick={handleLogout}
+              className="text-sm text-gray-500 hover:text-red-600 ml-4"
+            >
+              Se déconnecter
+            </button>
           </div>
         </div>
 
@@ -127,6 +139,16 @@ export default function CoachLayout({ children }) {
                   {link.label}
                 </Link>
               ))}
+
+              <button
+                onClick={() => {
+                  setMenuOpen(false)
+                  handleLogout()
+                }}
+                className="text-left w-full py-2 px-3 text-red-600 hover:bg-gray-100"
+              >
+                Se déconnecter
+              </button>
             </div>
           </div>
         )}
