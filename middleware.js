@@ -56,5 +56,5 @@ export async function middleware(req) {
 
 // ✅ Middleware actif sur les routes coach & profils publics
 export const config = {
-  matcher: ['/app/coach/:path*', '/app/:username'],
+  matcher: ['/coach/:path*', '/:username'],
 }
