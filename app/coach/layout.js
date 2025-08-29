@@ -21,6 +21,24 @@ export default function CoachLayout({ children }) {
     { href: '/coach/settings', label: 'Paramètres' },
   ]
 
+  const NavLinks = () => (
+    <>
+      {links.map(link => (
+        <Link
+          key={link.href}
+          href={link.href}
+          className={`pb-1 transition ${
+            pathname === link.href
+              ? 'text-blue-600 font-semibold border-b-2 border-blue-600'
+              : 'text-gray-600 hover:text-gray-800'
+          }`}
+        >
+          {link.label}
+        </Link>
+      ))}
+    </>
+  )
+
   return (
     <TrialProtector>
       <div className="min-h-screen bg-gray-50">
@@ -44,19 +62,7 @@ export default function CoachLayout({ children }) {
             </div>
 
             <div className="hidden md:flex gap-6">
-              {links.map(link => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`pb-1 transition ${
-                    pathname === link.href
-                      ? 'text-blue-600 font-semibold border-b-2 border-blue-600'
-                      : 'text-gray-600 hover:text-gray-800'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
+              <NavLinks />
             </div>
           </div>
 
