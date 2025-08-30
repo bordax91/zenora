@@ -10,11 +10,12 @@ function ResetPasswordForm() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(true)
+
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const token = searchParams.get('token') // Supabase envoie bien ?token= dans l'URL
-  const type = searchParams.get('type')
+  const token = searchParams.get('token') // récupère le token de l'URL
+  const type = searchParams.get('type')   // doit être "recovery"
 
   useEffect(() => {
     const establishSession = async () => {
@@ -47,7 +48,7 @@ function ResetPasswordForm() {
     const { error } = await supabase.auth.updateUser({ password })
 
     if (error) {
-      setError('Lien invalide ou expiré. Veuillez recommencer.')
+      setError('Erreur lors de la mise à jour du mot de passe.')
     } else {
       setSuccess(true)
       setTimeout(() => router.push('/login'), 3000)
