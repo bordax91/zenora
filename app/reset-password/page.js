@@ -13,34 +13,30 @@ function ResetPasswordForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const token = searchParams.get('token') || searchParams.get('code')
+  const token = searchParams.get('token') // Supabase envoie bien ?token= dans l'URL
   const type = searchParams.get('type')
 
   useEffect(() => {
-    const exchange = async () => {
-      const code = searchParams.get('code')
-      if (code) {
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    const establishSession = async () => {
+      if (token && type === 'recovery') {
+        const { error } = await supabase.auth.setSession({
+          access_token: token,
+          refresh_token: token,
+        })
+
         if (error) {
-          console.error('Erreur échange de code :', error.message)
+          console.error('Erreur setSession :', error.message)
           setError('Lien invalide ou expiré. Veuillez recommencer.')
-        } else {
-          // Session stockée automatiquement (pas besoin de setSession)
-          setLoading(false)
         }
+        setLoading(false)
       } else {
-        setError('Code manquant dans le lien.')
+        setError('Lien invalide.')
         setLoading(false)
       }
     }
 
-    if (type === 'recovery') {
-      exchange()
-    } else {
-      setError('Lien invalide.')
-      setLoading(false)
-    }
-  }, [searchParams, type])
+    establishSession()
+  }, [token, type])
 
   const handleReset = async () => {
     if (password !== confirmPassword) {
