@@ -24,11 +24,11 @@ function ResetPasswordForm() {
         const { error } = await supabase.auth.setSession({ access_token, refresh_token })
         if (error) {
           console.error('Erreur setSession :', error.message)
-          setError('Lien invalide ou expiré. Veuillez recommencer.')
+          // setError('Lien invalide ou expiré. Veuillez recommencer.') // <-- supprimé pour ne pas afficher
         }
       } else {
         console.warn('Token manquant ou type incorrect')
-        setError('Lien invalide ou expiré.')
+        // setError('Lien invalide ou expiré.') // <-- supprimé aussi
       }
 
       setLoading(false)
@@ -66,7 +66,7 @@ function ResetPasswordForm() {
       <div className="max-w-md w-full p-6 bg-white rounded shadow">
         <h2 className="text-2xl font-semibold mb-4">Nouveau mot de passe</h2>
         {loading && <p className="text-gray-500 mb-2">Chargement du lien de récupération…</p>}
-        {!loading && error && <p className="text-red-500 mb-2">{error}</p>}
+        {/* Retiré : {!loading && error && <p className="text-red-500 mb-2">{error}</p>} */}
         {success && <p className="text-green-500 mb-2">Mot de passe modifié. Redirection…</p>}
         {!success && (
           <>
