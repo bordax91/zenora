@@ -98,7 +98,7 @@ export async function POST(req) {
       // ✅ Envoi email confirmation (client & coach)
       try {
         if (client?.email && coach?.email) {
-          await resendConfirmationEmail({
+          await sendConfirmationEmail({
             to: client.email,
             name: client.name,
             date,
