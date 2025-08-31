@@ -62,7 +62,7 @@ export default function RegisterPageInner() {
       if (upsertErr) throw upsertErr
 
       // 📧 Envoi email de bienvenue
-      await sendWelcomeEmail({ to: email })
+      await sendWelcomeCoachEmail({ to: email })
 
       localStorage.setItem('isLoggedIn', 'true')
       router.replace(resolveRedirect())
