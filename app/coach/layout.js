@@ -22,8 +22,8 @@ export default function CoachLayout({ children }) {
     { href: '/coach/packages', label: 'Offres / Forfaits' },
     { href: '/coach/sales', label: 'Ventes' },
     { href: '/coach/integrations', label: 'Intégrations' },
+    { href: '/coach/email-campaign', label: 'Campagne' },
     { href: '/coach/settings', label: 'Paramètres' },
-    { href: '/coach/email-campaign', label: 'Nouvelle campagne' },
   ]
 
   const handleLogout = async () => {
