@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase/client'
-import { sendWelcomeEmail } from '@/lib/emails/send-welcome-coach-email'
+import { sendWelcomeCoachEmail } from '@/lib/emails/send-welcome-coach-email'
 
 export default function RegisterPageInner() {
   const router = useRouter()
