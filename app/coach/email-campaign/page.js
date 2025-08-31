@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function CoachEmailCampaignPage() {
   const [recipient, setRecipient] = useState('')
@@ -42,9 +42,21 @@ export default function CoachEmailCampaignPage() {
     }
   }
 
+  useEffect(() => {
+    if (success || error) {
+      const timer = setTimeout(() => {
+        setSuccess(false)
+        setError(null)
+      }, 4000)
+      return () => clearTimeout(timer)
+    }
+  }, [success, error])
+
+  const isDisabled = loading || !recipient || !subject || !message
+
   return (
     <div className="max-w-2xl mx-auto mt-12 bg-white p-6 rounded-xl shadow">
-      <h1 className="text-2xl font-bold mb-6">📢 Envoi d’une campagne email</h1>
+      <h1 className="text-2xl font-bold mb-6">📢 Campagne Email</h1>
 
       <form onSubmit={handleSend} className="space-y-5">
         <div>
@@ -85,14 +97,22 @@ export default function CoachEmailCampaignPage() {
 
         <button
           type="submit"
-          disabled={loading}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg disabled:opacity-60 transition"
+          disabled={isDisabled}
+          className={`w-full text-white font-semibold px-6 py-2 rounded-lg transition ${
+            isDisabled
+              ? 'bg-gray-400 cursor-not-allowed'
+              : 'bg-blue-600 hover:bg-blue-700'
+          }`}
         >
           {loading ? 'Envoi en cours…' : 'Envoyer l’email'}
         </button>
 
-        {success && <p className="text-green-600 mt-3">✅ Email envoyé avec succès.</p>}
-        {error && <p className="text-red-600 mt-3">{error}</p>}
+        {success && (
+          <p className="text-green-600 mt-3 animate-pulse">✅ Email envoyé avec succès.</p>
+        )}
+        {error && (
+          <p className="text-red-600 mt-3">{error}</p>
+        )}
       </form>
     </div>
   )
