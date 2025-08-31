@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase/client'
+import { sendWelcomeEmail } from '@/lib/emails/send-welcome-coach-email'
 
 export default function RegisterPageInner() {
   const router = useRouter()
@@ -39,7 +40,7 @@ export default function RegisterPageInner() {
         return
       }
 
-      // 📆 Calcul des dates
+      // 🗖 Calcul des dates
       const trialStart = new Date()
       const trialEnd = new Date()
       trialEnd.setDate(trialStart.getDate() + 7)
@@ -59,6 +60,9 @@ export default function RegisterPageInner() {
           { onConflict: 'id' }
         )
       if (upsertErr) throw upsertErr
+
+      // 📧 Envoi email de bienvenue
+      await sendWelcomeEmail({ to: email })
 
       localStorage.setItem('isLoggedIn', 'true')
       router.replace(resolveRedirect())
@@ -169,3 +173,4 @@ export default function RegisterPageInner() {
     </div>
   )
 }
+
