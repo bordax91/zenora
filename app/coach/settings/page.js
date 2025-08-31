@@ -59,13 +59,20 @@ export default function CoachSettingsPage() {
         <p><strong>Email :</strong> {coach.email}</p>
         <p><strong>Nom d’utilisateur :</strong> {coach.username}</p>
 
-        <div className="mt-4">
+        <div className="mt-4 space-y-3">
           <button
             onClick={handlePasswordReset}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           >
             Modifier le mot de passe
           </button>
+
+          <a
+            href="mailto:contact@zenoraapp.com?subject=Demande%20de%20support%20Zenora"
+            className="w-full block text-center bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
+          >
+            Contacter Zenora
+          </a>
         </div>
 
         <hr className="my-6" />
