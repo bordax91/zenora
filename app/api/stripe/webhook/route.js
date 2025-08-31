@@ -3,7 +3,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import stripe from '@/lib/stripe'
-import { resendConfirmationEmail } from '@/lib/emails/send-confirmation-email'
+import { sendConfirmationEmail } from '@/lib/emails/send-confirmation-email'
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET
 
