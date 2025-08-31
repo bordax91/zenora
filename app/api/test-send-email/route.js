@@ -4,7 +4,7 @@ export async function GET() {
   try {
     const result = await resend.emails.send({
       from: 'Zenora <contact@zenoraapp.com>',
-      to: 'ton@email.com', // Mets ton adresse réelle ici
+      to: 'axld971@hotmail.fr', // Mets ton adresse réelle ici
       subject: '✅ Test email depuis Zenora',
       html: `<p>Ceci est un email de test depuis Vercel avec Resend.</p>`,
     })
