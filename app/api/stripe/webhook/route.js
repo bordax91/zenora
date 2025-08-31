@@ -1,6 +1,9 @@
+// /app/api/stripe/webhook/route.js
+
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import stripe from '@/lib/stripe'
+import { resendConfirmationEmail } from '@/lib/emails/send-confirmation-email'
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET
 
@@ -26,7 +29,7 @@ export async function POST(req) {
     return NextResponse.json({ error: 'Signature invalide' }, { status: 400 })
   }
 
-  // 🎯 CAS 1 : Paiement session client (inchangé)
+  // 🎯 CAS 1 : Paiement session client
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object
     const metadata = session.metadata || {}
@@ -56,6 +59,18 @@ export async function POST(req) {
 
       const { coach_id, date } = availability
 
+      const { data: coach } = await supabase
+        .from('users')
+        .select('name, email')
+        .eq('id', coach_id)
+        .single()
+
+      const { data: client } = await supabase
+        .from('users')
+        .select('name, email')
+        .eq('id', clientId)
+        .single()
+
       const { error: insertError } = await supabase.from('sessions').insert({
         coach_id,
         client_id: clientId,
@@ -80,11 +95,31 @@ export async function POST(req) {
         return NextResponse.json({ error: 'Impossible de bloquer la disponibilité' }, { status: 500 })
       }
 
-      console.log('✅ Session créée et créneau réservé 👍')
+      // ✅ Envoi email confirmation (client & coach)
+      try {
+        if (client?.email && coach?.email) {
+          await resendConfirmationEmail({
+            to: client.email,
+            name: client.name,
+            date,
+            coachName: coach.name
+          })
+          await resendConfirmationEmail({
+            to: coach.email,
+            name: coach.name,
+            date,
+            clientName: client.name
+          })
+        }
+      } catch (emailErr) {
+        console.error('❌ Erreur envoi email confirmation :', emailErr)
+      }
+
+      console.log('✅ Session créée, créneau réservé, email envoyé')
     }
   }
 
-  // 🎯 CAS 2 : Abonnement coach (ajout type d'abonnement)
+  // 🎯 CAS 2 : Abonnement coach
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object
     const metadata = session.metadata || {}
@@ -94,7 +129,6 @@ export async function POST(req) {
       const stripeCustomerId = session.customer
       const stripePriceId = session?.subscription_details?.plan?.id || session?.display_items?.[0]?.plan?.id || session?.items?.[0]?.plan?.id || null
 
-      // Déterminer le type d'abonnement
       let subscriptionType = 'inconnu'
       if (stripePriceId === process.env.STRIPE_PRICE_ID_MONTHLY) {
         subscriptionType = 'mensuel'
@@ -108,7 +142,7 @@ export async function POST(req) {
           is_subscribed: true,
           stripe_customer_id: stripeCustomerId,
           subscription_started_at: new Date().toISOString(),
-          subscription_type: subscriptionType // Ignoré si colonne absente
+          subscription_type: subscriptionType
         })
         .eq('id', coachId)
 
@@ -139,3 +173,4 @@ export async function POST(req) {
 
   return NextResponse.json({ received: true }, { status: 200 })
 }
+
