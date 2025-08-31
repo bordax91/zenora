@@ -1,14 +1,12 @@
-// app/api/test-send-email/route.js
-
 import { resend } from '@/lib/resend'
 
-export async function POST() {
+export async function GET() {
   try {
     const result = await resend.emails.send({
       from: 'Zenora <contact@zenoraapp.com>',
-      to: 'ton-adresse@test.com',
-      subject: 'Test Email Zenora',
-      html: `<p>Ceci est un email test depuis Vercel</p>`,
+      to: 'ton@email.com', // Mets ton adresse réelle ici
+      subject: '✅ Test email depuis Zenora',
+      html: `<p>Ceci est un email de test depuis Vercel avec Resend.</p>`,
     })
 
     return Response.json({ success: true, result })
