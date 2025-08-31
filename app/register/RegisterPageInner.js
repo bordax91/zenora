@@ -1,15 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase/client'
-import { sendWelcomeCoachEmail } from '@/lib/emails/send-welcome-coach-email'
 
 export default function RegisterPageInner() {
   const router = useRouter()
-  const searchParams = useSearchParams()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -40,12 +38,10 @@ export default function RegisterPageInner() {
         return
       }
 
-      // 🗖 Calcul des dates
       const trialStart = new Date()
       const trialEnd = new Date()
       trialEnd.setDate(trialStart.getDate() + 7)
 
-      // ➕ Insertion dans Supabase
       const { error: upsertErr } = await supabase
         .from('users')
         .upsert(
@@ -61,8 +57,12 @@ export default function RegisterPageInner() {
         )
       if (upsertErr) throw upsertErr
 
-      // 📧 Envoi email de bienvenue
-      await sendWelcomeCoachEmail({ to: email })
+      // ✅ Appel au serveur pour envoyer l'email de bienvenue
+      await fetch('/api/emails/send-welcome-coach-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: email }),
+      })
 
       localStorage.setItem('isLoggedIn', 'true')
       router.replace(resolveRedirect())
@@ -173,4 +173,3 @@ export default function RegisterPageInner() {
     </div>
   )
 }
-

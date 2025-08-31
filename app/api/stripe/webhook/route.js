@@ -3,7 +3,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import stripe from '@/lib/stripe'
-import { sendConfirmationEmail } from '@/lib/emails/send-confirmation-email'
+import { sendClientConfirmationEmail } from '@/app/api/emails/send-confirmation-email/route'
+import { sendCoachConfirmationEmail } from '@/app/api/emails/send-confirmation-email/route'
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET
 
@@ -39,7 +40,7 @@ export async function POST(req) {
     const availabilityId = metadata.availability_id
 
     if (!clientId || !packageId || !availabilityId) {
-      console.error('❌ Metadata incomplète pour session, on ignore ce webhook.')
+      console.error('❌ Metadata incomplète, on ignore ce webhook.')
     } else {
       const { data: availability, error: availabilityError } = await supabase
         .from('availabilities')
@@ -53,7 +54,7 @@ export async function POST(req) {
       }
 
       if (availability.is_booked) {
-        console.warn('⚠️ Créneau déjà réservé, pas de double insertion.')
+        console.warn('⚠️ Créneau déjà réservé.')
         return NextResponse.json({ message: 'Déjà réservé' }, { status: 200 })
       }
 
@@ -71,6 +72,12 @@ export async function POST(req) {
         .eq('id', clientId)
         .single()
 
+      const { data: packageData } = await supabase
+        .from('packages')
+        .select('title')
+        .eq('id', packageId)
+        .single()
+
       const { error: insertError } = await supabase.from('sessions').insert({
         coach_id,
         client_id: clientId,
@@ -85,37 +92,36 @@ export async function POST(req) {
         return NextResponse.json({ error: 'Impossible de créer la session' }, { status: 500 })
       }
 
-      const { error: updateError } = await supabase
+      await supabase
         .from('availabilities')
         .update({ is_booked: true })
         .eq('id', availabilityId)
 
-      if (updateError) {
-        console.error('❌ Erreur update disponibilité :', updateError)
-        return NextResponse.json({ error: 'Impossible de bloquer la disponibilité' }, { status: 500 })
-      }
-
-      // ✅ Envoi email confirmation (client & coach)
       try {
         if (client?.email && coach?.email) {
-          await sendConfirmationEmail({
+          await sendClientConfirmationEmail({
             to: client.email,
-            name: client.name,
+            clientName: client.name,
+            coachName: coach.name,
             date,
-            coachName: coach.name
+            time: new Date(date).toLocaleTimeString(),
+            packageTitle: packageData.title
           })
-          await resendConfirmationEmail({
+
+          await sendCoachConfirmationEmail({
             to: coach.email,
-            name: coach.name,
+            coachName: coach.name,
+            clientName: client.name,
             date,
-            clientName: client.name
+            time: new Date(date).toLocaleTimeString(),
+            packageTitle: packageData.title
           })
         }
       } catch (emailErr) {
         console.error('❌ Erreur envoi email confirmation :', emailErr)
       }
 
-      console.log('✅ Session créée, créneau réservé, email envoyé')
+      console.log('✅ Session créée + créneau réservé + emails envoyés')
     }
   }
 
@@ -127,7 +133,7 @@ export async function POST(req) {
 
     if (coachId && session.mode === 'subscription') {
       const stripeCustomerId = session.customer
-      const stripePriceId = session?.subscription_details?.plan?.id || session?.display_items?.[0]?.plan?.id || session?.items?.[0]?.plan?.id || null
+      const stripePriceId = session.subscription_details?.plan?.id || null
 
       let subscriptionType = 'inconnu'
       if (stripePriceId === process.env.STRIPE_PRICE_ID_MONTHLY) {
@@ -149,15 +155,14 @@ export async function POST(req) {
       if (subError) {
         console.error('❌ Erreur mise à jour abonnement coach :', subError)
       } else {
-        console.log(`✅ Abonnement coach activé (${subscriptionType}) pour ${coachId}`)
+        console.log(`✅ Abonnement ${subscriptionType} activé pour coach ${coachId}`)
       }
     }
   }
 
   // 🎯 CAS 3 : Annulation abonnement coach
   if (event.type === 'customer.subscription.deleted') {
-    const subscription = event.data.object
-    const customerId = subscription.customer
+    const customerId = event.data.object.customer
 
     const { error: unsubError } = await supabase
       .from('users')
@@ -173,4 +178,3 @@ export async function POST(req) {
 
   return NextResponse.json({ received: true }, { status: 200 })
 }
-
