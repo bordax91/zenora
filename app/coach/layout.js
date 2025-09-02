@@ -22,7 +22,7 @@ export default function CoachLayout({ children }) {
     { href: '/coach/packages', label: 'Offres / Forfaits' },
     { href: '/coach/sales', label: 'Ventes' },
     { href: '/coach/integrations', label: 'Intégrations' },
-    { href: '/coach/email-campaign', label: 'Campagne' },
+    { href: '/coach/prospection', label: 'Prospection' },
     { href: '/coach/settings', label: 'Paramètres' },
   ]
 
