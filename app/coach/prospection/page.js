@@ -40,7 +40,7 @@ export default function LinkedInSearchPage() {
 
   return (
     <div className="max-w-3xl mx-auto mt-12 bg-white p-6 rounded-xl shadow">
-      <h1 className="text-2xl font-bold mb-6">🔍 Recherche LinkedIn (via Phantom)</h1>
+      <h1 className="text-2xl font-bold mb-6">🔍 Recherche de Prospects via LinkedIn</h1>
 
       <form onSubmit={handleSearch} className="space-y-4">
         <div>
