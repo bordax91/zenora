@@ -1,28 +1,26 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-)
+import { cookies } from 'next/headers'
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 
 const PHANTOMBUSTER_API_KEY = process.env.PHANTOMBUSTER_API_KEY
 const PHANTOM_AGENT_ID = process.env.PHANTOM_AGENT_ID
 const DAILY_LIMIT = 10
 
 export async function POST(req) {
-  const { query } = await req.json()
+  const supabase = createServerComponentClient({ cookies })
 
-  // Authentifier l'utilisateur
-  const { data: sessionData, error: authError } = await supabase.auth.getUser()
-  const user = sessionData?.user
-  if (!user || authError) {
+  const {
+    data: { user },
+    error: authError
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) {
     return NextResponse.json({ error: 'Utilisateur non authentifié' }, { status: 401 })
   }
 
   const coachId = user.id
+  const { query } = await req.json()
 
-  // Vérifie le nombre de recherches aujourd’hui
   const todayStart = new Date()
   todayStart.setUTCHours(0, 0, 0, 0)
 
@@ -41,55 +39,57 @@ export async function POST(req) {
   }
 
   try {
-    // Lancer le Phantom avec l’ID
+    // 🟢 Lancer le Phantom
     const launchRes = await fetch(`https://api.phantombuster.com/api/v2/agents/launch`, {
       method: 'POST',
       headers: {
         'X-Phantombuster-Key-1': PHANTOMBUSTER_API_KEY,
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         id: PHANTOM_AGENT_ID,
         argument: {
           search: query,
-          numberOfProfiles: 10,
-        },
-      }),
+          numberOfProfiles: 10
+        }
+      })
     })
 
     const launchData = await launchRes.json()
     const containerId = launchData?.containerId
-
     if (!containerId) {
       return NextResponse.json({ error: 'Échec du lancement du Phantom' }, { status: 500 })
     }
 
-    // Attendre que le Phantom termine (20s)
-    await new Promise((resolve) => setTimeout(resolve, 20000))
+    // ⏳ Attendre les résultats (20s)
+    await new Promise(resolve => setTimeout(resolve, 20000))
 
-    // Récupérer les résultats
-    const resultRes = await fetch(`https://api.phantombuster.com/api/v2/containers/fetch-output?id=${containerId}`, {
-      headers: {
-        'X-Phantombuster-Key-1': PHANTOMBUSTER_API_KEY,
-      },
-    })
+    // 🟢 Récupérer les résultats
+    const resultRes = await fetch(
+      `https://api.phantombuster.com/api/v2/containers/fetch-output?id=${containerId}`,
+      {
+        headers: {
+          'X-Phantombuster-Key-1': PHANTOMBUSTER_API_KEY
+        }
+      }
+    )
 
     const resultData = await resultRes.json()
-    const results = resultData?.output?.flatMap((item) => item?.results || []) || []
+    const results = resultData?.output?.flatMap(item => item?.results || []) || []
 
-    // Log la recherche
+    // ✅ Log dans Supabase
     await supabase.from('search_logs').insert([{ coach_id: coachId, query }])
 
-    // Format des résultats
-    const formatted = results.map((p) => ({
+    // ✂️ Format final
+    const formatted = results.map(p => ({
       name: p.name,
       title: p.jobTitle,
-      profileUrl: p.profileUrl,
+      profileUrl: p.profileUrl
     }))
 
     return NextResponse.json({ results: formatted.slice(0, 10) })
   } catch (err) {
-    console.error('❌ Erreur Phantom:', err)
+    console.error('Erreur Phantom:', err)
     return NextResponse.json({ error: 'Erreur lors de la récupération des résultats' }, { status: 500 })
   }
 }
