@@ -13,12 +13,14 @@ export default function ProspectionPage() {
     painPoint: '',
     offer: '',
     platform: 'LinkedIn',
-    role: 'coach'
+    role: 'coach',
+    customMessage: ''
   })
 
   const [loading, setLoading] = useState(false)
   const [response, setResponse] = useState('')
   const [error, setError] = useState('')
+  const [copied, setCopied] = useState(false)
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -29,6 +31,7 @@ export default function ProspectionPage() {
     setLoading(true)
     setError('')
     setResponse('')
+    setCopied(false)
 
     try {
       const res = await fetch('/api/prospection', {
@@ -50,6 +53,12 @@ export default function ProspectionPage() {
     }
   }
 
+  const handleCopy = () => {
+    navigator.clipboard.writeText(response)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   const fieldLabels = {
     firstName: 'Prénom',
     lastName: 'Nom',
@@ -60,6 +69,7 @@ export default function ProspectionPage() {
     painPoint: 'Problème identifié',
     offer: 'Offre',
     platform: 'Plateforme',
+    customMessage: 'Ajout libre (facultatif)'
   }
 
   return (
@@ -69,17 +79,27 @@ export default function ProspectionPage() {
       <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {Object.entries(formData).map(([key, value]) => (
           key !== 'role' && (
-            <div key={key} className="col-span-1">
+            <div key={key} className={`col-span-1 ${key === 'customMessage' ? 'md:col-span-2' : ''}`}>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {fieldLabels[key] || key}
               </label>
-              <input
-                name={key}
-                value={value}
-                onChange={handleChange}
-                required={false}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              {key === 'customMessage' ? (
+                <textarea
+                  name={key}
+                  value={value}
+                  onChange={handleChange}
+                  rows={3}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Vous pouvez ajouter une précision, un angle, un style ou une idée à inclure..."
+                />
+              ) : (
+                <input
+                  name={key}
+                  value={value}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              )}
             </div>
           )
         ))}
@@ -100,7 +120,13 @@ export default function ProspectionPage() {
       {response && (
         <div className="mt-6 bg-gray-50 border border-gray-300 p-4 rounded-lg">
           <h2 className="font-semibold mb-2">🎯 Message généré :</h2>
-          <p className="whitespace-pre-wrap text-sm text-gray-800">{response}</p>
+          <p className="whitespace-pre-wrap text-sm text-gray-800 mb-4">{response}</p>
+          <button
+            onClick={handleCopy}
+            className="text-sm text-blue-600 hover:underline"
+          >
+            {copied ? '✅ Copié !' : '📋 Copier le message'}
+          </button>
         </div>
       )}
     </div>

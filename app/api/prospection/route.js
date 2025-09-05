@@ -15,7 +15,12 @@ export async function POST(req) {
       offer = '',
       platform = 'LinkedIn',
       role = 'coach',
+      customMessage = ''
     } = body
+
+    const additional = customMessage
+      ? `\n\n📝 À inclure également : ${customMessage}`
+      : ''
 
     const userMessage = `
 Tu es un expert en prospection digitale. Génère un message court, engageant et personnalisé pour entrer en contact avec une personne sur ${platform} en tant que ${role}.
@@ -31,6 +36,7 @@ Voici les infos sur la cible :
 - Bio ou activité récente : ${recentActivity}
 - Problème principal identifié : ${painPoint}
 - Offre à proposer : ${offer}
+${additional}
 
 Règles :
 - Utilise un ton humain, amical et bienveillant.
@@ -40,48 +46,52 @@ Règles :
 - Ne parle pas de vente ou d'appel dès le premier message.
 
 Génère 1 message parfaitement adapté à cette cible.
-    `
+    `.trim()
 
     const response = await fetch('https://api.fireworks.ai/inference/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
-        Authorization: `Bearer ${process.env.FIREWORKS_API_KEY}`,
+        Authorization: `Bearer ${process.env.FIREWORKS_API_KEY}`
       },
       body: JSON.stringify({
         model: 'accounts/fireworks/models/deepseek-v3p1',
-        messages: [
-          {
-            role: 'user',
-            content: userMessage,
-          },
-        ],
+        messages: [{ role: 'user', content: userMessage }],
         max_tokens: 600,
         temperature: 0.6,
         top_p: 1,
         top_k: 40,
         presence_penalty: 0,
-        frequency_penalty: 0,
-      }),
+        frequency_penalty: 0
+      })
     })
 
     const data = await response.json()
 
     if (!response.ok) {
       console.error('Fireworks API error:', data)
-      return NextResponse.json({ error: data.error?.message || 'Erreur Fireworks' }, { status: 500 })
+      return NextResponse.json(
+        { error: data.error?.message || 'Erreur Fireworks' },
+        { status: 500 }
+      )
     }
 
     const message = data.choices?.[0]?.message?.content?.trim()
 
     if (!message) {
-      return NextResponse.json({ error: 'Réponse vide du modèle.' }, { status: 500 })
+      return NextResponse.json(
+        { error: 'Réponse vide du modèle.' },
+        { status: 500 }
+      )
     }
 
     return NextResponse.json({ message })
   } catch (err) {
     console.error('Erreur API Prospection:', err)
-    return NextResponse.json({ error: 'Erreur serveur interne' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Erreur serveur interne' },
+      { status: 500 }
+    )
   }
 }
