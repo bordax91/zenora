@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 
-// Initialise Supabase client (à adapter si déjà fait ailleurs dans ton app)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -30,7 +30,6 @@ export default function ProspectionPage() {
   const [copied, setCopied] = useState(false)
   const [userId, setUserId] = useState(null)
 
-  // Récupère l'ID du coach connecté
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -62,7 +61,6 @@ export default function ProspectionPage() {
 
       setResponse(data.message)
 
-      // Enregistre dans Supabase
       if (userId) {
         await supabase.from('prospection_messages').insert([
           {
@@ -155,6 +153,15 @@ export default function ProspectionPage() {
           </button>
         </div>
       )}
+
+      <div className="mt-8 text-center">
+        <Link
+          href="/coach/prospection/history"
+          className="inline-block bg-gray-100 hover:bg-gray-200 text-gray-800 px-6 py-2 rounded-lg text-sm font-medium"
+        >
+          📜 Voir l’historique des messages générés
+        </Link>
+      </div>
     </div>
   )
 }
