@@ -5,6 +5,7 @@ import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 export async function POST(req) {
   try {
     const supabase = createServerComponentClient({ cookies })
+
     const {
       data: { user },
       error: authError
@@ -99,8 +100,8 @@ Génère 1 message parfaitement adapté à cette cible.
       )
     }
 
-    // ✅ Insertion dans Supabase
-    const { error: insertError } = await supabase.from('prospection_logs').insert([
+    // ✅ Insertion dans la bonne table : prospection_messages
+    const { error: insertError } = await supabase.from('prospection_messages').insert([
       {
         coach_id: coachId,
         first_name: firstName || null,
@@ -126,6 +127,7 @@ Génère 1 message parfaitement adapté à cette cible.
       message,
       saved: !insertError
     })
+
   } catch (err) {
     console.error('Erreur API Prospection:', err)
     return NextResponse.json(
