@@ -1,67 +1,46 @@
-'use client'
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
 
-import { useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+export default async function ProspectionHistoryPage() {
+  const supabase = createServerComponentClient({ cookies })
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-)
+  const {
+    data: { user },
+    error: authError
+  } = await supabase.auth.getUser()
 
-export default function ProspectionHistoryPage() {
-  const [messages, setMessages] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [userId, setUserId] = useState(null)
-  const [copiedIndex, setCopiedIndex] = useState(null)
+  if (authError || !user) {
+    return <p className="text-center mt-10 text-red-500">Erreur d’authentification.</p>
+  }
 
-  useEffect(() => {
-    const fetchUserAndMessages = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      setUserId(user.id)
+  const { data: messages, error } = await supabase
+    .from('prospection_messages') // ou 'prospection_logs' si tu as renommé la table
+    .select('*')
+    .eq('coach_id', user.id)
+    .order('created_at', { ascending: false })
 
-      const { data, error } = await supabase
-        .from('prospection_messages')
-        .select('*')
-        .eq('coach_id', user.id)
-        .order('created_at', { ascending: false })
+  if (error) {
+    return <p className="text-center mt-10 text-red-500">Erreur lors du chargement de l’historique.</p>
+  }
 
-      if (!error) setMessages(data)
-      setLoading(false)
-    }
-
-    fetchUserAndMessages()
-  }, [])
-
-  const handleCopy = (text, index) => {
-    navigator.clipboard.writeText(text)
-    setCopiedIndex(index)
-    setTimeout(() => setCopiedIndex(null), 2000)
+  if (!messages || messages.length === 0) {
+    return <p className="text-center mt-10 text-gray-500">Aucun message généré pour l’instant.</p>
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4 md:p-8">
-      <h1 className="text-2xl font-bold mb-6 text-center">📜 Historique des messages générés</h1>
+    <div className="max-w-4xl mx-auto px-4 py-10">
+      <h1 className="text-2xl font-bold mb-6 text-center">📜 Historique de Prospection</h1>
 
-      {loading && <p className="text-center">Chargement...</p>}
-
-      {!loading && messages.length === 0 && (
-        <p className="text-center text-gray-500">Aucun message généré pour l'instant.</p>
-      )}
-
-      <div className="space-y-4">
-        {messages.map((msg, index) => (
-          <div key={msg.id} className="bg-white border border-gray-200 p-4 rounded-lg shadow-sm">
-            <p className="text-sm whitespace-pre-wrap text-gray-800 mb-2">{msg.message}</p>
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>{new Date(msg.created_at).toLocaleString()}</span>
-              <button onClick={() => handleCopy(msg.message, index)} className="text-blue-600 hover:underline">
-                {copiedIndex === index ? '✅ Copié' : '📋 Copier'}
-              </button>
-            </div>
-          </div>
+      <ul className="space-y-6">
+        {messages.map((msg) => (
+          <li key={msg.id} className="p-4 border border-gray-200 rounded-lg bg-white shadow-sm">
+            <p className="text-sm text-gray-500 mb-1">
+              🎯 Cible : {msg.first_name} {msg.last_name} ({msg.job_title}, {msg.industry})
+            </p>
+            <p className="text-gray-800 whitespace-pre-wrap">{msg.generated_message}</p>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   )
 }
