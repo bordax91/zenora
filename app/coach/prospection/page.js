@@ -3,13 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
-
-// Supabase client public
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-)
+import { supabase } from '@/lib/supabase/client'
 
 export default function ProspectionPage() {
   const router = useRouter()
@@ -34,11 +28,11 @@ export default function ProspectionPage() {
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
 
-  // ✅ Vérifie l'accès (auth + période d’essai ou abonnement)
+  // 🔐 Vérifie accès (connexion + abonnement ou essai actif)
   useEffect(() => {
     const checkAccess = async () => {
-      const { data: authData } = await supabase.auth.getUser()
-      const user = authData?.user
+      const { data: sessionData } = await supabase.auth.getSession()
+      const user = sessionData?.session?.user
       if (!user) return router.push('/login')
 
       setUserId(user.id)
@@ -52,13 +46,11 @@ export default function ProspectionPage() {
       if (error || !profile) return router.push('/login')
 
       const now = new Date()
-      let trialEnd = null
-
-      if (profile.trial_end) {
-        trialEnd = new Date(profile.trial_end)
-      } else if (profile.trial_start) {
-        trialEnd = new Date(new Date(profile.trial_start).getTime() + 7 * 24 * 60 * 60 * 1000)
-      }
+      const trialEnd = profile.trial_end
+        ? new Date(profile.trial_end)
+        : profile.trial_start
+        ? new Date(new Date(profile.trial_start).getTime() + 7 * 24 * 60 * 60 * 1000)
+        : null
 
       const isTrialExpired = trialEnd ? now > trialEnd : true
       const isSubscribed = profile.is_subscribed === true
@@ -94,15 +86,19 @@ export default function ProspectionPage() {
 
       setResponse(data.message)
 
-      // 💾 Enregistrement dans la base
+      // ✅ Sauvegarde dans la base
       if (userId) {
-        await supabase.from('prospection_messages').insert([
+        const { error: insertError } = await supabase.from('prospection_messages').insert([
           {
             coach_id: userId,
             message: data.message,
             ...formData
           }
         ])
+
+        if (insertError) {
+          console.error('Erreur insertion prospection_messages :', insertError)
+        }
       }
     } catch (err) {
       setError(err.message || 'Une erreur est survenue.')
