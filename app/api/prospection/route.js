@@ -5,16 +5,16 @@ export async function POST(req) {
     const body = await req.json()
 
     const {
-      firstName,
-      lastName,
-      jobTitle,
-      industry,
-      location,
-      recentActivity,
-      painPoint,
-      offer,
-      platform,
-      role,
+      firstName = '',
+      lastName = '',
+      jobTitle = '',
+      industry = '',
+      location = '',
+      recentActivity = '',
+      painPoint = '',
+      offer = '',
+      platform = 'LinkedIn',
+      role = 'coach',
     } = body
 
     const prompt = `
@@ -49,7 +49,7 @@ Génère 1 message parfaitement adapté à cette cible.
         Authorization: `Bearer ${process.env.FIREWORKS_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'accounts/fireworks/models/deepseek-chat',
+        model: process.env.FIREWORKS_MODEL || 'accounts/fireworks/models/deepseek-chat',
         prompt,
         max_tokens: 400,
         temperature: 0.7,
@@ -60,10 +60,22 @@ Génère 1 message parfaitement adapté à cette cible.
     const data = await response.json()
 
     if (!response.ok) {
-      return NextResponse.json({ error: data.error || 'Erreur Fireworks' }, { status: 500 })
+      const errorMsg =
+        typeof data.error === 'string'
+          ? data.error
+          : JSON.stringify(data.error || 'Erreur Fireworks')
+      console.error('Fireworks API Error:', errorMsg)
+      return NextResponse.json({ error: errorMsg }, { status: 500 })
     }
 
-    return NextResponse.json({ message: data.choices?.[0]?.text?.trim() || '' })
+    const message = data.choices?.[0]?.text?.trim()
+
+    if (!message) {
+      console.error('Fireworks API: Réponse vide')
+      return NextResponse.json({ error: 'Réponse vide du modèle.' }, { status: 500 })
+    }
+
+    return NextResponse.json({ message })
   } catch (err) {
     console.error('Erreur API Prospection:', err)
     return NextResponse.json({ error: 'Erreur serveur interne' }, { status: 500 })

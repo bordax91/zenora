@@ -15,6 +15,7 @@ export default function ProspectionPage() {
     platform: 'LinkedIn',
     role: 'coach'
   })
+
   const [loading, setLoading] = useState(false)
   const [response, setResponse] = useState('')
   const [error, setError] = useState('')
@@ -32,14 +33,14 @@ export default function ProspectionPage() {
     try {
       const res = await fetch('/api/prospection', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
       })
 
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
+      if (!res.ok) {
+        throw new Error(typeof data.error === 'string' ? data.error : JSON.stringify(data.error))
+      }
 
       setResponse(data.message)
     } catch (err) {
@@ -47,6 +48,18 @@ export default function ProspectionPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const fieldLabels = {
+    firstName: 'Prénom',
+    lastName: 'Nom',
+    jobTitle: 'Poste',
+    industry: 'Secteur',
+    location: 'Ville',
+    recentActivity: 'Activité récente',
+    painPoint: 'Problème identifié',
+    offer: 'Offre',
+    platform: 'Plateforme',
   }
 
   return (
@@ -57,12 +70,14 @@ export default function ProspectionPage() {
         {Object.entries(formData).map(([key, value]) => (
           key !== 'role' && (
             <div key={key} className="col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">{key.replace(/([A-Z])/g, ' $1')}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {fieldLabels[key] || key}
+              </label>
               <input
                 name={key}
                 value={value}
                 onChange={handleChange}
-                required={key !== 'recentActivity'}
+                required={false}
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
