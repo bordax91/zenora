@@ -1,5 +1,3 @@
-// ✅ Composant de planification hebdomadaire + calendrier de visualisation des disponibilités
-
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -188,11 +186,10 @@ export default function WeeklyAvailability() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {Object.entries(
               availabilities.reduce((acc, slot) => {
-                const date = new Date(slot.date).toLocaleDateString('fr-FR', {
-                  weekday: 'long',
-                  day: '2-digit',
-                  month: 'short'
-                })
+                const date = DateTime
+                  .fromISO(slot.date)
+                  .setZone('Europe/Paris')
+                  .toFormat("cccc dd LLL", { locale: 'fr' })
                 if (!acc[date]) acc[date] = []
                 acc[date].push(slot)
                 return acc
@@ -210,10 +207,9 @@ export default function WeeklyAvailability() {
                           : 'bg-green-100 text-green-700'
                       }`}
                     >
-                      {new Date(slot.date).toLocaleTimeString('fr-FR', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
+                      {DateTime.fromISO(slot.date)
+                        .setZone('Europe/Paris')
+                        .toFormat('HH:mm')}
                     </li>
                   ))}
                 </ul>
