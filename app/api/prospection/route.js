@@ -1,7 +1,20 @@
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 
 export async function POST(req) {
   try {
+    const supabase = createServerComponentClient({ cookies })
+    const {
+      data: { user },
+      error: authError
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Utilisateur non authentifié' }, { status: 401 })
+    }
+
+    const coachId = user.id
     const body = await req.json()
 
     const {
@@ -84,6 +97,30 @@ Génère 1 message parfaitement adapté à cette cible.
         { error: 'Réponse vide du modèle.' },
         { status: 500 }
       )
+    }
+
+    // ✅ Enregistrement dans Supabase
+    const { error: insertError } = await supabase.from('prospection_logs').insert([
+      {
+        coach_id: coachId,
+        first_name: firstName,
+        last_name: lastName,
+        job_title: jobTitle,
+        industry,
+        location,
+        recent_activity: recentActivity,
+        pain_point: painPoint,
+        offer,
+        platform,
+        role,
+        custom_message: customMessage,
+        generated_message: message
+      }
+    ])
+
+    if (insertError) {
+      console.error('Erreur insertion Supabase:', insertError)
+      // on retourne quand même le message à l’utilisateur, même si l'insertion échoue
     }
 
     return NextResponse.json({ message })

@@ -1,6 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createClient } from '@supabase/supabase-js'
+
+// Initialise Supabase client (à adapter si déjà fait ailleurs dans ton app)
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+)
 
 export default function ProspectionPage() {
   const [formData, setFormData] = useState({
@@ -21,6 +28,16 @@ export default function ProspectionPage() {
   const [response, setResponse] = useState('')
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
+  const [userId, setUserId] = useState(null)
+
+  // Récupère l'ID du coach connecté
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUserId(user?.id || null)
+    }
+    getUser()
+  }, [])
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -41,11 +58,20 @@ export default function ProspectionPage() {
       })
 
       const data = await res.json()
-      if (!res.ok) {
-        throw new Error(typeof data.error === 'string' ? data.error : JSON.stringify(data.error))
-      }
+      if (!res.ok) throw new Error(data.error || 'Erreur API')
 
       setResponse(data.message)
+
+      // Enregistre dans Supabase
+      if (userId) {
+        await supabase.from('prospection_messages').insert([
+          {
+            coach_id: userId,
+            message: data.message,
+            ...formData,
+          },
+        ])
+      }
     } catch (err) {
       setError(err.message || 'Une erreur est survenue.')
     } finally {
