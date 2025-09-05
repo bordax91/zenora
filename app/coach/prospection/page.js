@@ -36,8 +36,8 @@ export default function ProspectionPage() {
   // ✅ Vérifie l'accès à la page (connexion + essai ou abonnement)
   useEffect(() => {
     const checkAccess = async () => {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const user = sessionData?.session?.user
+      const { data: authData } = await supabase.auth.getUser()
+      const user = authData?.user
       if (!user) return router.push('/login')
 
       setUserId(user.id)
@@ -51,15 +51,13 @@ export default function ProspectionPage() {
       if (error || !profile) return router.push('/login')
 
       const now = new Date()
-      let trialEnd = null
-      if (profile.trial_end) {
-        trialEnd = new Date(profile.trial_end)
-      } else if (profile.trial_start) {
-        trialEnd = new Date(profile.trial_start)
-        trialEnd.setDate(trialEnd.getDate() + 7)
-      }
+      let trialEnd = profile.trial_end
+        ? new Date(profile.trial_end)
+        : profile.trial_start
+        ? new Date(new Date(profile.trial_start).getTime() + 7 * 24 * 60 * 60 * 1000)
+        : null
 
-      const isTrialExpired = trialEnd ? now.getTime() > trialEnd.getTime() : true
+      const isTrialExpired = trialEnd ? now > trialEnd : true
       const isSubscribed = profile.is_subscribed === true
 
       if (isTrialExpired && !isSubscribed) {
@@ -93,6 +91,7 @@ export default function ProspectionPage() {
 
       setResponse(data.message)
 
+      // 💾 Sauvegarde dans la base
       if (userId) {
         await supabase.from('prospection_messages').insert([
           {
@@ -146,7 +145,7 @@ export default function ProspectionPage() {
                   onChange={handleChange}
                   rows={3}
                   className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Vous pouvez ajouter une précision, un angle, un style ou une idée à inclure..."
+                  placeholder="Ajoutez un angle, un style ou une idée à inclure..."
                 />
               ) : (
                 <input
