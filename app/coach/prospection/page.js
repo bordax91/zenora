@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -10,6 +11,8 @@ const supabase = createClient(
 )
 
 export default function ProspectionPage() {
+  const router = useRouter()
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -30,12 +33,41 @@ export default function ProspectionPage() {
   const [copied, setCopied] = useState(false)
   const [userId, setUserId] = useState(null)
 
+  // ✅ Vérifie l'accès à la page (connexion + essai ou abonnement)
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUserId(user?.id || null)
+    const checkAccess = async () => {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const user = sessionData?.session?.user
+      if (!user) return router.push('/login')
+
+      setUserId(user.id)
+
+      const { data: profile, error } = await supabase
+        .from('users')
+        .select('trial_start, trial_end, is_subscribed')
+        .eq('id', user.id)
+        .single()
+
+      if (error || !profile) return router.push('/login')
+
+      const now = new Date()
+      let trialEnd = null
+      if (profile.trial_end) {
+        trialEnd = new Date(profile.trial_end)
+      } else if (profile.trial_start) {
+        trialEnd = new Date(profile.trial_start)
+        trialEnd.setDate(trialEnd.getDate() + 7)
+      }
+
+      const isTrialExpired = trialEnd ? now.getTime() > trialEnd.getTime() : true
+      const isSubscribed = profile.is_subscribed === true
+
+      if (isTrialExpired && !isSubscribed) {
+        router.push('/coach/subscribe')
+      }
     }
-    getUser()
+
+    checkAccess()
   }, [])
 
   const handleChange = (e) => {
