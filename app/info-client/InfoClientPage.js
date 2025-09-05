@@ -10,7 +10,7 @@ export default function InfoClientPage() {
   const packageId = searchParams.get('package')
   const availabilityId = searchParams.get('availabilityId')
 
-  const [mode, setMode] = useState('signup')
+  const [mode, setMode] = useState('signup') // ✅ affichage par défaut : formulaire de création
   const [form, setForm] = useState({
     email: '',
     password: '',
@@ -65,7 +65,7 @@ export default function InfoClientPage() {
         return
       }
 
-      // Vérifier et insérer dans table users (si signup)
+      // 🔄 Insertion dans table "users" si nouveau client
       if (mode === 'signup') {
         const { data: existingUser } = await supabase
           .from('users')
@@ -92,7 +92,7 @@ export default function InfoClientPage() {
         }
       }
 
-      // Créer la session de paiement Stripe
+      // 🧾 Création de la session Stripe
       const response = await fetch('/api/checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
