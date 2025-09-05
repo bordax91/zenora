@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, Calendar, Clock, Users, Package, BarChart, Plug, MessageSquare, Settings } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 
 export default function CoachLayout({ children }) {
@@ -16,14 +16,14 @@ export default function CoachLayout({ children }) {
   const [trialExpired, setTrialExpired] = useState(false)
 
   const links = [
-    { href: '/coach/dashboard', label: 'Rendez-vous' },
-    { href: '/coach/availability', label: 'Disponibilités' },
-    { href: '/coach/clients', label: 'Clients' },
-    { href: '/coach/packages', label: 'Offres / Forfaits' },
-    { href: '/coach/sales', label: 'Ventes' },
-    { href: '/coach/integrations', label: 'Intégrations' },
-    { href: '/coach/prospection', label: 'Prospection' },
-    { href: '/coach/settings', label: 'Paramètres' },
+    { href: '/coach/dashboard', label: 'Rendez-vous', icon: Calendar },
+    { href: '/coach/availability', label: 'Disponibilités', icon: Clock },
+    { href: '/coach/clients', label: 'Clients', icon: Users },
+    { href: '/coach/packages', label: 'Offres / Forfaits', icon: Package },
+    { href: '/coach/sales', label: 'Ventes', icon: BarChart },
+    { href: '/coach/integrations', label: 'Intégrations', icon: Plug },
+    { href: '/coach/prospection', label: 'Prospection', icon: MessageSquare },
+    { href: '/coach/settings', label: 'Paramètres', icon: Settings },
   ]
 
   const handleLogout = async () => {
@@ -76,109 +76,108 @@ export default function CoachLayout({ children }) {
     checkTrial()
   }, [])
 
-  const NavLinks = () => (
-    <>
-      {links.map(link => (
-        <Link
-          key={link.href}
-          href={link.href}
-          className={`pb-1 transition ${
-            pathname === link.href
-              ? 'text-blue-600 font-semibold border-b-2 border-blue-600'
-              : 'text-gray-600 hover:text-gray-800'
-          }`}
-        >
-          {link.label}
-        </Link>
-      ))}
-    </>
-  )
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-14">
-          <Link href="/coach/dashboard" className="flex items-center gap-2">
-            <Image
-              src="/logo.png"
-              alt="Zenora Logo"
-              width={36}
-              height={36}
-              className="rounded"
-            />
-            <span className="font-bold text-lg text-gray-800">Zenora</span>
-          </Link>
+    <div className="min-h-screen flex flex-col md:flex-row bg-white">
+      {/* Sidebar */}
+      <aside className="w-full md:w-64 bg-gray-50 border-r p-4 hidden md:block">
+        <Link href="/coach/dashboard" className="flex items-center gap-2 mb-8">
+          <Image src="/logo.png" alt="Zenora Logo" width={36} height={36} className="rounded" />
+          <span className="font-bold text-lg text-gray-800">Zenora</span>
+        </Link>
 
-          <div className="md:hidden">
-            <button onClick={() => setMenuOpen(!menuOpen)}>
-              {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
+        <nav className="flex flex-col gap-4">
+          {links.map(({ href, label, icon: Icon }) => (
+            <Link
+              key={href}
+              href={href}
+              className={`flex items-center gap-2 text-sm px-3 py-2 rounded transition ${
+                pathname === href
+                  ? 'bg-blue-100 text-blue-600 font-semibold'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              {label}
+            </Link>
+          ))}
 
-          <div className="hidden md:flex items-center gap-6">
-            <NavLinks />
+          <button
+            onClick={handleLogout}
+            className="mt-4 text-sm text-red-600 hover:underline"
+          >
+            Se déconnecter
+          </button>
+        </nav>
+      </aside>
+
+      {/* Mobile header */}
+      <header className="md:hidden bg-white border-b px-4 py-3 flex items-center justify-between">
+        <Link href="/coach/dashboard" className="flex items-center gap-2">
+          <Image src="/logo.png" alt="Zenora Logo" width={30} height={30} className="rounded" />
+          <span className="font-bold text-lg text-gray-800">Zenora</span>
+        </Link>
+
+        <button onClick={() => setMenuOpen(!menuOpen)}>
+          {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+      </header>
+
+      {/* Mobile menu */}
+      {menuOpen && (
+        <div className="md:hidden bg-gray-50 border-b px-4 py-3">
+          <nav className="flex flex-col gap-2">
+            {links.map(({ href, label, icon: Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                onClick={() => setMenuOpen(false)}
+                className={`flex items-center gap-2 text-sm px-3 py-2 rounded ${
+                  pathname === href
+                    ? 'bg-blue-100 text-blue-600 font-semibold'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {label}
+              </Link>
+            ))}
+
             <button
-              onClick={handleLogout}
-              className="text-sm text-gray-500 hover:text-red-600 ml-4"
+              onClick={() => {
+                setMenuOpen(false)
+                handleLogout()
+              }}
+              className="text-left w-full py-2 px-3 text-red-600 hover:bg-gray-100"
             >
               Se déconnecter
             </button>
-          </div>
-        </div>
-
-        {menuOpen && (
-          <div className="md:hidden px-4 pb-4">
-            <div className="flex flex-col gap-2">
-              {links.map(link => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMenuOpen(false)}
-                  className={`block py-2 px-3 rounded ${
-                    pathname === link.href
-                      ? 'bg-blue-100 text-blue-600 font-semibold'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
-
-              <button
-                onClick={() => {
-                  setMenuOpen(false)
-                  handleLogout()
-                }}
-                className="text-left w-full py-2 px-3 text-red-600 hover:bg-gray-100"
-              >
-                Se déconnecter
-              </button>
-            </div>
-          </div>
-        )}
-      </nav>
-
-      {showTrialBanner && (
-        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 px-4 py-3 text-sm">
-          {trialExpired ? (
-            <>
-              ❌ Votre période d’essai est terminée.{' '}
-              <Link href="/coach/subscribe" className="underline text-blue-600">
-                Souscrivez à une offre pour continuer
-              </Link>.
-            </>
-          ) : (
-            <>
-              🎁 Votre période d’essai se termine le <strong>{trialEndFormatted}</strong>.{' '}
-              <Link href="/coach/subscribe" className="underline text-blue-600">
-                Passer à l’abonnement
-              </Link>.
-            </>
-          )}
+          </nav>
         </div>
       )}
 
-      <main className="max-w-6xl mx-auto px-4 py-6">{children}</main>
+      <div className="flex-1 min-h-screen">
+        {showTrialBanner && (
+          <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 px-4 py-3 text-sm">
+            {trialExpired ? (
+              <>
+                ❌ Votre période d’essai est terminée.{' '}
+                <Link href="/coach/subscribe" className="underline text-blue-600">
+                  Souscrivez à une offre pour continuer
+                </Link>.
+              </>
+            ) : (
+              <>
+                🎁 Votre période d’essai se termine le <strong>{trialEndFormatted}</strong>.{' '}
+                <Link href="/coach/subscribe" className="underline text-blue-600">
+                  Passer à l’abonnement
+                </Link>.
+              </>
+            )}
+          </div>
+        )}
+
+        <main className="p-4 md:p-6 max-w-6xl mx-auto">{children}</main>
+      </div>
     </div>
   )
 }
