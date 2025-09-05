@@ -17,7 +17,7 @@ export async function POST(req) {
       role = 'coach',
     } = body
 
-    const prompt = `
+    const userMessage = `
 Tu es un expert en prospection digitale. Génère un message court, engageant et personnalisé pour entrer en contact avec une personne sur ${platform} en tant que ${role}.
 
 🎯 Objectif : initier une discussion autour de ${offer} de manière naturelle, sans paraître commercial.
@@ -42,36 +42,40 @@ Règles :
 Génère 1 message parfaitement adapté à cette cible.
     `
 
-    const response = await fetch('https://api.fireworks.ai/inference/v1/completions', {
+    const response = await fetch('https://api.fireworks.ai/inference/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        Accept: 'application/json',
         Authorization: `Bearer ${process.env.FIREWORKS_API_KEY}`,
       },
       body: JSON.stringify({
-        model: process.env.FIREWORKS_MODEL || 'accounts/fireworks/models/deepseek-chat',
-        prompt,
-        max_tokens: 400,
-        temperature: 0.7,
-        top_p: 0.9,
+        model: 'accounts/fireworks/models/deepseek-v3p1',
+        messages: [
+          {
+            role: 'user',
+            content: userMessage,
+          },
+        ],
+        max_tokens: 600,
+        temperature: 0.6,
+        top_p: 1,
+        top_k: 40,
+        presence_penalty: 0,
+        frequency_penalty: 0,
       }),
     })
 
     const data = await response.json()
 
     if (!response.ok) {
-      const errorMsg =
-        typeof data.error === 'string'
-          ? data.error
-          : JSON.stringify(data.error || 'Erreur Fireworks')
-      console.error('Fireworks API Error:', errorMsg)
-      return NextResponse.json({ error: errorMsg }, { status: 500 })
+      console.error('Fireworks API error:', data)
+      return NextResponse.json({ error: data.error?.message || 'Erreur Fireworks' }, { status: 500 })
     }
 
-    const message = data.choices?.[0]?.text?.trim()
+    const message = data.choices?.[0]?.message?.content?.trim()
 
     if (!message) {
-      console.error('Fireworks API: Réponse vide')
       return NextResponse.json({ error: 'Réponse vide du modèle.' }, { status: 500 })
     }
 
