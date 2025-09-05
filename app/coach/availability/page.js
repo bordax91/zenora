@@ -1,4 +1,4 @@
-// ✅ Nouveau composant de planification hebdomadaire façon Calendly avec durée personnalisable
+// ✅ Composant de planification hebdomadaire + calendrier de visualisation des disponibilités
 
 'use client'
 
@@ -22,6 +22,7 @@ export default function WeeklyAvailability() {
   const [userId, setUserId] = useState('')
   const [loading, setLoading] = useState(true)
   const [slotDuration, setSlotDuration] = useState(60)
+  const [availabilities, setAvailabilities] = useState([])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -46,7 +47,23 @@ export default function WeeklyAvailability() {
       setLoading(false)
     }
 
+    const fetchAvailabilities = async () => {
+      const { data: authData } = await supabase.auth.getUser()
+      const user = authData?.user
+      if (!user) return
+
+      const { data } = await supabase
+        .from('availabilities')
+        .select('*')
+        .eq('coach_id', user.id)
+        .gte('date', new Date().toISOString())
+        .order('date', { ascending: true })
+
+      setAvailabilities(data || [])
+    }
+
     fetchData()
+    fetchAvailabilities()
   }, [])
 
   const handleTimeChange = (day, index, field, value) => {
@@ -124,7 +141,7 @@ export default function WeeklyAvailability() {
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-6 max-w-6xl mx-auto">
       <h1 className="text-3xl font-bold mb-8">🗓️ Planning hebdomadaire</h1>
 
       <div className="mb-6">
@@ -161,6 +178,50 @@ export default function WeeklyAvailability() {
           <button onClick={saveTemplate} className="mt-6 bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">💾 Enregistrer le planning & générer</button>
         </div>
       )}
+
+      {/* 📅 Calendrier des créneaux générés */}
+      <div className="mt-16">
+        <h2 className="text-xl font-bold mb-4">📆 Créneaux disponibles</h2>
+        {availabilities.length === 0 ? (
+          <p className="text-gray-500">Aucun créneau généré pour les 2 prochaines semaines.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Object.entries(
+              availabilities.reduce((acc, slot) => {
+                const date = new Date(slot.date).toLocaleDateString('fr-FR', {
+                  weekday: 'long',
+                  day: '2-digit',
+                  month: 'short'
+                })
+                if (!acc[date]) acc[date] = []
+                acc[date].push(slot)
+                return acc
+              }, {})
+            ).map(([date, slots]) => (
+              <div key={date} className="bg-white rounded shadow p-4">
+                <h3 className="font-semibold mb-2">{date}</h3>
+                <ul className="space-y-1 text-sm">
+                  {slots.map((slot) => (
+                    <li
+                      key={slot.date}
+                      className={`px-3 py-1 rounded ${
+                        slot.is_booked
+                          ? 'bg-red-100 text-red-700 line-through'
+                          : 'bg-green-100 text-green-700'
+                      }`}
+                    >
+                      {new Date(slot.date).toLocaleTimeString('fr-FR', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
