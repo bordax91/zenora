@@ -99,31 +99,33 @@ Génère 1 message parfaitement adapté à cette cible.
       )
     }
 
-    // ✅ Enregistrement dans Supabase
+    // ✅ Insertion dans Supabase
     const { error: insertError } = await supabase.from('prospection_logs').insert([
       {
         coach_id: coachId,
-        first_name: firstName,
-        last_name: lastName,
-        job_title: jobTitle,
-        industry,
-        location,
-        recent_activity: recentActivity,
-        pain_point: painPoint,
-        offer,
-        platform,
-        role,
-        custom_message: customMessage,
+        first_name: firstName || null,
+        last_name: lastName || null,
+        job_title: jobTitle || null,
+        industry: industry || null,
+        location: location || null,
+        recent_activity: recentActivity || null,
+        pain_point: painPoint || null,
+        offer: offer || null,
+        platform: platform || null,
+        role: role || null,
+        custom_message: customMessage || null,
         generated_message: message
       }
     ])
 
     if (insertError) {
       console.error('Erreur insertion Supabase:', insertError)
-      // on retourne quand même le message à l’utilisateur, même si l'insertion échoue
     }
 
-    return NextResponse.json({ message })
+    return NextResponse.json({
+      message,
+      saved: !insertError
+    })
   } catch (err) {
     console.error('Erreur API Prospection:', err)
     return NextResponse.json(
