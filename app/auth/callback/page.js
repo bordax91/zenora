@@ -19,29 +19,34 @@ export default function AuthCallback() {
         // 🔄 Échange du code OAuth contre une session Supabase
         if (code) {
           const { error: exchangeErr } = await supabase.auth.exchangeCodeForSession(window.location.href)
-          if (exchangeErr) throw exchangeErr
+          if (exchangeErr) {
+            console.error('[exchangeCodeForSession error]', exchangeErr)
+            throw exchangeErr
+          }
         }
 
         // 🔐 Récupérer l'utilisateur connecté
         const { data: userData, error: userErr } = await supabase.auth.getUser()
         if (userErr || !userData?.user) {
+          console.error('[getUser error]', userErr)
           throw new Error('Erreur de connexion. Veuillez réessayer.')
         }
+
         const user = userData.user
 
-        // 📌 Rôle
+        // 📌 Récupération ou définition du rôle
         let role = user.user_metadata?.role
         if (!role) {
           role = localStorage.getItem('pendingRole') || 'client'
           await supabase.auth.updateUser({ data: { role } })
         }
 
-        // 📆 Calcul des dates d’essai
+        // 📆 Dates d’essai
         const trialStartDate = new Date()
         const trialEndDate = new Date(trialStartDate)
         trialEndDate.setDate(trialEndDate.getDate() + 7)
 
-        // 🔁 Upsert dans la table 'users'
+        // 🔁 Upsert dans 'users'
         const { error: upsertErr } = await supabase
           .from('users')
           .upsert(
@@ -55,29 +60,33 @@ export default function AuthCallback() {
             },
             { onConflict: 'id' }
           )
-        if (upsertErr) throw upsertErr
+
+        if (upsertErr) {
+          console.error('[upsert error]', upsertErr)
+          throw upsertErr
+        }
 
         // 🧹 Nettoyage
+        const qsRedirect = search.get('redirect') || search.get('next') || ''
+        const storedRedirect = localStorage.getItem('pendingRedirect') || ''
+        const pick = (path) => (path && path.startsWith('/') && !path.startsWith('//') ? path : null)
+
+        const redirectTarget =
+          pick(qsRedirect) ||
+          pick(storedRedirect) ||
+          (role === 'coach' ? '/coach/dashboard' : '/client/dashboard')
+
         localStorage.removeItem('pendingRole')
         localStorage.removeItem('pendingRedirect')
         localStorage.removeItem('pendingTrialStart')
         localStorage.setItem('isLoggedIn', 'true')
 
-        // ↪️ Redirection
-        const qsRedirect = search.get('redirect') || search.get('next') || ''
-        const storedRedirect = localStorage.getItem('pendingRedirect') || ''
-        const pick = (path) => (path && path.startsWith('/') && !path.startsWith('//') ? path : null)
+        console.log('✅ Redirection vers :', redirectTarget)
+        router.replace(redirectTarget)
 
-        const target =
-          pick(qsRedirect) ||
-          pick(storedRedirect) ||
-          (role === 'coach' ? '/coach/dashboard' : '/client/dashboard')
-
-        router.replace(target)
       } catch (e) {
-        console.error('[auth/callback]', e)
+        console.error('[auth/callback ERROR]', e)
         setError(e?.message || 'Erreur de connexion. Veuillez réessayer.')
-        router.replace('/login')
       }
     }
 
