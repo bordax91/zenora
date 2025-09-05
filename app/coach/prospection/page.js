@@ -1,87 +1,91 @@
 'use client'
 
 import { useState } from 'react'
-import { useParams } from 'next/navigation'
 
-export default function LinkedInSearchPage() {
-  const [query, setQuery] = useState('')
-  const [results, setResults] = useState([])
+export default function ProspectionPage() {
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    jobTitle: '',
+    industry: '',
+    location: '',
+    recentActivity: '',
+    painPoint: '',
+    offer: '',
+    platform: 'LinkedIn',
+    role: 'coach'
+  })
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+  const [response, setResponse] = useState('')
+  const [error, setError] = useState('')
 
-  const handleSearch = async (e) => {
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value })
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
-    setError(null)
-    setResults([])
+    setError('')
+    setResponse('')
 
     try {
-      const res = await fetch('/api/phantom/linkedin-search', {
+      const res = await fetch('/api/prospection', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ query })
+        body: JSON.stringify(formData)
       })
 
       const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
 
-      if (!res.ok) {
-        throw new Error(data.error || 'Erreur inconnue')
-      }
-
-      setResults(data.results || [])
+      setResponse(data.message)
     } catch (err) {
-      setError(err.message)
+      setError(err.message || 'Une erreur est survenue.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="max-w-3xl mx-auto mt-12 bg-white p-6 rounded-xl shadow">
-      <h1 className="text-2xl font-bold mb-6">🔍 Recherche de Prospects via LinkedIn</h1>
+    <div className="max-w-4xl mx-auto p-4 md:p-8">
+      <h1 className="text-2xl font-bold mb-6 text-center">🤖 Générateur de message de prospection IA</h1>
 
-      <form onSubmit={handleSearch} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Requête LinkedIn
-          </label>
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            required
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Ex : coach business Paris"
-          />
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {Object.entries(formData).map(([key, value]) => (
+          key !== 'role' && (
+            <div key={key} className="col-span-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">{key.replace(/([A-Z])/g, ' $1')}</label>
+              <input
+                name={key}
+                value={value}
+                onChange={handleChange}
+                required={key !== 'recentActivity'}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          )
+        ))}
+
+        <div className="col-span-full">
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg disabled:opacity-50"
+          >
+            {loading ? 'Génération en cours…' : 'Générer le message'}
+          </button>
         </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg disabled:opacity-60"
-        >
-          {loading ? 'Recherche…' : 'Lancer la recherche'}
-        </button>
-
-        {error && <p className="text-red-600 mt-3">{error}</p>}
       </form>
 
-      {results.length > 0 && (
-        <div className="mt-8">
-          <h2 className="text-xl font-semibold mb-4">📋 Résultats :</h2>
-          <ul className="space-y-2 text-sm">
-            {results.map((r, idx) => (
-              <li key={idx} className="bg-gray-50 p-3 rounded-lg border">
-                <p className="font-medium">{r.name}</p>
-                <p className="text-gray-600">{r.title}</p>
-                <a href={r.profileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600">
-                  Voir le profil
-                </a>
-              </li>
-            ))}
-          </ul>
+      {error && <p className="mt-4 text-red-600 text-sm text-center">❌ {error}</p>}
+
+      {response && (
+        <div className="mt-6 bg-gray-50 border border-gray-300 p-4 rounded-lg">
+          <h2 className="font-semibold mb-2">🎯 Message généré :</h2>
+          <p className="whitespace-pre-wrap text-sm text-gray-800">{response}</p>
         </div>
       )}
     </div>
