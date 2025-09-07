@@ -29,28 +29,28 @@ export default function CoachCalendar({ coachId, packageId }) {
 
     if (!error) setAvailabilities(data || [])
     else console.error('❌ availabilities:', error)
+
     setLoading(false)
   }
 
   const groupedDates = availabilities.reduce((acc, slot) => {
     const parisDate = DateTime.fromISO(slot.date, { zone: 'utc' }).setZone('Europe/Paris')
     const dateKey = parisDate.toFormat('yyyy-MM-dd')
+
     if (!acc[dateKey]) acc[dateKey] = []
     acc[dateKey].push({
       id: slot.id,
       time: parisDate.toFormat('HH:mm')
     })
+
     return acc
   }, {})
 
   const sortedDates = Object.keys(groupedDates).sort()
 
-  const handleClick = async (slotId) => {
-    const { data: { user } } = await supabase.auth.getUser()
+  const handleClick = (slotId) => {
     const target = `/info-client?availabilityId=${slotId}&package=${packageId}`
-
-    if (!user) window.location.href = `/login?next=${encodeURIComponent(target)}`
-    else window.location.href = target
+    window.location.href = target // 🔁 Toujours rediriger vers /info-client, connecté ou non
   }
 
   return (
