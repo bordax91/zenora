@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import Link from 'next/link'
 
 export default function AbonnementPage() {
   const [user, setUser] = useState(null)
@@ -79,6 +78,29 @@ export default function AbonnementPage() {
     }
   }
 
+  const handleSubscribe = async (priceId) => {
+    try {
+      const res = await fetch('/api/stripe/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          priceId
+        })
+      })
+
+      const result = await res.json()
+      if (result?.url) {
+        window.location.href = result.url
+      } else {
+        alert('Erreur de redirection vers Stripe.')
+        console.error(result.error)
+      }
+    } catch (err) {
+      console.error('Erreur abonnement Stripe :', err)
+    }
+  }
+
   if (loading) return <div className="p-6">Chargement...</div>
   if (!user) return <div className="p-6">Utilisateur non trouvé.</div>
 
@@ -113,21 +135,24 @@ export default function AbonnementPage() {
 
       {!user.is_subscribed && (
         <div className="flex flex-col gap-4">
-          <Link href="https://buy.stripe.com/6oU14od92a2Ebctg8v5os07" target="_blank">
-            <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-              🔁 S’abonner au plan mensuel – 39€/mois
-            </button>
-          </Link>
-          <Link href="https://buy.stripe.com/fZu6oI9WQ4Ik6Wd1dB5os08" target="_blank">
-            <button className="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
-              📅 S’abonner au plan annuel – 349€/an
-            </button>
-          </Link>
-          <Link href="https://buy.stripe.com/8x2fZifha2Ac0xP9K75os09" target="_blank">
-            <button className="w-full bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition">
-              🧪 Plan test – 1€/mois
-            </button>
-          </Link>
+          <button
+            onClick={() => handleSubscribe(process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_MONTHLY)}
+            className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+          >
+            🔁 S’abonner au plan mensuel – 39€/mois
+          </button>
+          <button
+            onClick={() => handleSubscribe(process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_YEARLY)}
+            className="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
+          >
+            📅 S’abonner au plan annuel – 349€/an
+          </button>
+          <button
+            onClick={() => handleSubscribe(process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_TEST_MONTHLY)}
+            className="w-full bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition"
+          >
+            🧪 Plan test – 1€/mois
+          </button>
         </div>
       )}
     </div>
