@@ -30,18 +30,15 @@ export async function POST(req) {
     return NextResponse.json({ error: 'Signature invalide' }, { status: 400 })
   }
 
-  // 🎯 CAS 1 : Paiement session client
+  // 🎯 CAS UNIQUE : checkout.session.completed
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object
     const metadata = session.metadata || {}
 
-    const clientId = metadata.client_id
-    const packageId = metadata.package_id
-    const availabilityId = metadata.availability_id
+    // CAS 1 : Paiement de session client (metadata contient client_id + package_id)
+    if (metadata.client_id && metadata.package_id && metadata.availability_id) {
+      const { client_id: clientId, package_id: packageId, availability_id: availabilityId } = metadata
 
-    if (!clientId || !packageId || !availabilityId) {
-      console.error('❌ Metadata incomplète, on ignore ce webhook.')
-    } else {
       const { data: availability, error: availabilityError } = await supabase
         .from('availabilities')
         .select('date, coach_id, is_booked')
@@ -123,23 +120,23 @@ export async function POST(req) {
 
       console.log('✅ Session créée + créneau réservé + emails envoyés')
     }
-  }
 
-  // 🎯 CAS 2 : Abonnement coach
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object
-    const metadata = session.metadata || {}
-    const coachId = metadata.coach_id || metadata.user_id
-
-    if (coachId && session.mode === 'subscription') {
+    // CAS 2 : Paiement abonnement coach (metadata contient coach_id ou user_id)
+    if ((metadata.coach_id || metadata.user_id) && session.mode === 'subscription') {
+      const coachId = metadata.coach_id || metadata.user_id
       const stripeCustomerId = session.customer
-      const stripePriceId = session.subscription_details?.plan?.id || null
+
+      // Récupérer les détails d’abonnement via l’API Stripe (plus sûr)
+      const subscription = await stripe.subscriptions.retrieve(session.subscription)
+      const priceId = subscription?.items?.data?.[0]?.price?.id || null
 
       let subscriptionType = 'inconnu'
-      if (stripePriceId === process.env.STRIPE_PRICE_ID_MONTHLY) {
+      if (priceId === process.env.STRIPE_PRICE_ID_MONTHLY) {
         subscriptionType = 'mensuel'
-      } else if (stripePriceId === process.env.STRIPE_PRICE_ID_YEARLY) {
+      } else if (priceId === process.env.STRIPE_PRICE_ID_YEARLY) {
         subscriptionType = 'annuel'
+      } else {
+        subscriptionType = 'autre'
       }
 
       const { error: subError } = await supabase
