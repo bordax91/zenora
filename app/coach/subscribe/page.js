@@ -29,11 +29,14 @@ export default function AbonnementPage() {
 
           const monthlyId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_MONTHLY
           const yearlyId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_YEARLY
+          const testMonthlyId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_TEST_MONTHLY
 
           if (priceId === monthlyId) {
             setPriceLabel('Mensuel – 39€/mois')
           } else if (priceId === yearlyId) {
             setPriceLabel('Annuel – 349€/an')
+          } else if (priceId === testMonthlyId) {
+            setPriceLabel('Test – 1€/mois')
           } else {
             setPriceLabel('Abonnement actif')
           }
@@ -109,7 +112,7 @@ export default function AbonnementPage() {
       )}
 
       {!user.is_subscribed && (
-        <div className="flex flex-col gap-4"> {/* ✅ Espacement vertical entre boutons */}
+        <div className="flex flex-col gap-4">
           <Link href="https://buy.stripe.com/6oU14od92a2Ebctg8v5os07" target="_blank">
             <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
               🔁 S’abonner au plan mensuel – 39€/mois
@@ -118,6 +121,11 @@ export default function AbonnementPage() {
           <Link href="https://buy.stripe.com/fZu6oI9WQ4Ik6Wd1dB5os08" target="_blank">
             <button className="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
               📅 S’abonner au plan annuel – 349€/an
+            </button>
+          </Link>
+          <Link href="https://buy.stripe.com/8x2fZifha2Ac0xP9K75os09" target="_blank">
+            <button className="w-full bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition">
+              🧪 Plan test – 1€/mois
             </button>
           </Link>
         </div>
