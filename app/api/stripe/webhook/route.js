@@ -173,7 +173,7 @@ export async function POST(req) {
     }
   }
 
-  // 🆕 CAS 2B : Création de l'abonnement → pour récupérer customer_id au cas où il manque dans checkout.session
+  // 🆕 CAS 2B : customer.subscription.created
   if (event.type === 'customer.subscription.created') {
     const subscription = event.data.object
     const customerId = subscription.customer
@@ -192,8 +192,28 @@ export async function POST(req) {
     const customer = await stripe.customers.retrieve(customerId)
     const customerEmail = customer?.email
 
+    console.log('🧩 Event customer.subscription.created')
+    console.log('📧 Email récupéré :', customerEmail)
+    console.log('🆔 Stripe customer ID :', customerId)
+    console.log('💳 Abonnement :', subscriptionType)
+
+    if (!customerEmail) {
+      console.warn('⚠️ Aucun email récupéré pour ce customer.')
+    }
+
+    const { data: usersWithEmail, error: fetchError } = await supabase
+      .from('users')
+      .select('id, email')
+      .eq('email', customerEmail)
+
+    if (fetchError) {
+      console.error('❌ Erreur lors de la recherche de l’utilisateur :', fetchError)
+    } else {
+      console.log('🔎 Utilisateur(s) trouvé(s) :', usersWithEmail)
+    }
+
     if (customerEmail) {
-      const { error: updateError } = await supabase
+      const { data, error: updateError } = await supabase
         .from('users')
         .update({
           is_subscribed: true,
@@ -202,11 +222,12 @@ export async function POST(req) {
           subscription_type: subscriptionType
         })
         .eq('email', customerEmail)
+        .select()
 
       if (updateError) {
         console.error('❌ Erreur MAJ depuis customer.subscription.created :', updateError)
       } else {
-        console.log(`✅ Abonnement ${subscriptionType} mis à jour via event "customer.subscription.created"`)
+        console.log('✅ MAJ réussie pour :', data)
       }
     }
   }
