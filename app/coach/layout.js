@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Menu, X, Calendar, Clock, Users, Package, BarChart, Plug, MessageSquare, Settings, Copy } from 'lucide-react'
+import { Menu, X, Calendar, Clock, Users, Package, BarChart, Plug, MessageSquare, Settings, Clipboard } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 
 export default function CoachLayout({ children }) {
@@ -14,8 +14,8 @@ export default function CoachLayout({ children }) {
   const [showTrialBanner, setShowTrialBanner] = useState(false)
   const [trialEndFormatted, setTrialEndFormatted] = useState('')
   const [trialExpired, setTrialExpired] = useState(false)
-  const [publicLink, setPublicLink] = useState('')
-  const [copied, setCopied] = useState(false)
+  const [username, setUsername] = useState(null)
+  const [copySuccess, setCopySuccess] = useState(false)
 
   const links = [
     { href: '/coach/dashboard', label: 'Rendez-vous', icon: Calendar },
@@ -33,7 +33,28 @@ export default function CoachLayout({ children }) {
     router.push('/login')
   }
 
+  const copyToClipboard = () => {
+    if (username) {
+      navigator.clipboard.writeText(`https://zenoraapp.com/${username}`)
+      setCopySuccess(true)
+      setTimeout(() => setCopySuccess(false), 2000)
+    }
+  }
+
   useEffect(() => {
+    const fetchUsername = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data, error } = await supabase
+        .from('users')
+        .select('username')
+        .eq('id', user.id)
+        .single()
+
+      if (data?.username) setUsername(data.username)
+    }
+
     const checkTrial = async () => {
       const { data: sessionData } = await supabase.auth.getSession()
       const user = sessionData?.session?.user
@@ -75,28 +96,9 @@ export default function CoachLayout({ children }) {
       }
     }
 
-    const fetchUsername = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      const { data, error } = await supabase
-        .from('coaches')
-        .select('username')
-        .eq('user_id', user.id)
-        .single()
-
-      if (data?.username) setPublicLink(`${window.location.origin}/${data.username}`)
-    }
-
-    checkTrial()
     fetchUsername()
+    checkTrial()
   }, [])
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(publicLink)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-white">
@@ -106,6 +108,28 @@ export default function CoachLayout({ children }) {
           <Image src="/logo.png" alt="Zenora Logo" width={36} height={36} className="rounded" />
           <span className="font-bold text-lg text-gray-800">Zenora</span>
         </Link>
+
+        {username && (
+          <div className="mb-6">
+            <p className="text-sm text-gray-600 mb-1">🔗 Lien public</p>
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/${username}`}
+                target="_blank"
+                className="text-blue-600 text-sm truncate"
+              >
+                zenoraapp.com/{username}
+              </Link>
+              <button
+                onClick={copyToClipboard}
+                className="text-gray-500 hover:text-blue-600"
+              >
+                <Clipboard className="w-4 h-4" />
+              </button>
+              {copySuccess && <span className="text-green-600 text-xs">✔️ Copié</span>}
+            </div>
+          </div>
+        )}
 
         <nav className="flex flex-col gap-4">
           {links.map(({ href, label, icon: Icon }) => (
@@ -139,21 +163,36 @@ export default function CoachLayout({ children }) {
           <span className="font-bold text-lg text-gray-800">Zenora</span>
         </Link>
 
-        <div className="flex items-center gap-3">
-          {publicLink && (
-            <button onClick={copyToClipboard} className="text-blue-600 text-sm font-medium flex items-center gap-1">
-              {copied ? 'Copié !' : 'Lien public'} <Copy className="w-4 h-4" />
-            </button>
-          )}
-          <button onClick={() => setMenuOpen(!menuOpen)}>
-            {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </div>
+        <button onClick={() => setMenuOpen(!menuOpen)}>
+          {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
       </header>
 
       {/* Mobile menu */}
       {menuOpen && (
         <div className="md:hidden bg-gray-50 border-b px-4 py-3">
+          {username && (
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-1">🔗 Lien public</p>
+              <div className="flex items-center gap-2">
+                <Link
+                  href={`/${username}`}
+                  target="_blank"
+                  className="text-blue-600 text-sm truncate"
+                >
+                  zenoraapp.com/{username}
+                </Link>
+                <button
+                  onClick={copyToClipboard}
+                  className="text-gray-500 hover:text-blue-600"
+                >
+                  <Clipboard className="w-4 h-4" />
+                </button>
+                {copySuccess && <span className="text-green-600 text-xs">✔️ Copié</span>}
+              </div>
+            </div>
+          )}
+
           <nav className="flex flex-col gap-2">
             {links.map(({ href, label, icon: Icon }) => (
               <Link
