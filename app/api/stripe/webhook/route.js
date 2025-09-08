@@ -1,5 +1,3 @@
-// /app/api/stripe/webhook/route.js
-
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import stripe from '@/lib/stripe'
@@ -33,7 +31,7 @@ export async function POST(req) {
   const session = event.data.object
   const metadata = session.metadata || {}
 
-  // 🎯 CAS 1 : Paiement de session client (booking RDV)
+  // 🎯 CAS 1 : Paiement RDV client
   if (
     event.type === 'checkout.session.completed' &&
     metadata.client_id && metadata.package_id && metadata.availability_id
@@ -47,7 +45,7 @@ export async function POST(req) {
       .single()
 
     if (availabilityError || !availability) {
-      console.error('❌ Disponibilité non trouvée :', availabilityError)
+      console.error('❌ Créneau non trouvé :', availabilityError)
       return NextResponse.json({ error: 'Créneau non trouvé' }, { status: 404 })
     }
 
@@ -122,14 +120,14 @@ export async function POST(req) {
     console.log('✅ Session créée + créneau réservé + emails envoyés')
   }
 
-  // 🎯 CAS 2 : Paiement abonnement coach (mode = subscription)
+  // 🎯 CAS 2 : Paiement abonnement coach
   if (
     event.type === 'checkout.session.completed' &&
-    session.mode === 'subscription' &&
-    (metadata.coach_id || metadata.user_id)
+    session.mode === 'subscription'
   ) {
-    const coachId = metadata.coach_id || metadata.user_id
     const stripeCustomerId = session.customer
+    const coachId = metadata.coach_id || metadata.user_id || null
+    const customerEmail = session.customer_email || null
 
     const subscription = await stripe.subscriptions.retrieve(session.subscription)
     const priceId = subscription?.items?.data?.[0]?.price?.id || null
@@ -139,28 +137,42 @@ export async function POST(req) {
       subscriptionType = 'mensuel'
     } else if (priceId === process.env.STRIPE_PRICE_ID_YEARLY) {
       subscriptionType = 'annuel'
-    } else {
-      subscriptionType = 'autre'
     }
 
-    const { error: subError } = await supabase
-      .from('users')
-      .update({
-        is_subscribed: true,
-        stripe_customer_id: stripeCustomerId,
-        subscription_started_at: new Date().toISOString(),
-        subscription_type: subscriptionType
-      })
-      .eq('id', coachId)
+    let updateError
 
-    if (subError) {
-      console.error('❌ Erreur mise à jour abonnement coach :', subError)
+    if (coachId) {
+      // 🎯 MAJ par ID
+      ({ error: updateError } = await supabase
+        .from('users')
+        .update({
+          is_subscribed: true,
+          stripe_customer_id: stripeCustomerId,
+          subscription_started_at: new Date().toISOString(),
+          subscription_type: subscriptionType
+        })
+        .eq('id', coachId))
+    } else if (customerEmail) {
+      // 🎯 MAJ par email
+      ({ error: updateError } = await supabase
+        .from('users')
+        .update({
+          is_subscribed: true,
+          stripe_customer_id: stripeCustomerId,
+          subscription_started_at: new Date().toISOString(),
+          subscription_type: subscriptionType
+        })
+        .eq('email', customerEmail))
+    }
+
+    if (updateError) {
+      console.error('❌ Erreur MAJ abonnement coach :', updateError)
     } else {
-      console.log(`✅ Abonnement ${subscriptionType} activé pour coach ${coachId}`)
+      console.log(`✅ Abonnement ${subscriptionType} activé pour coach via ${coachId || customerEmail}`)
     }
   }
 
-  // 🎯 CAS 3 : Annulation abonnement (customer.subscription.deleted)
+  // 🎯 CAS 3 : Désabonnement (annulation)
   if (event.type === 'customer.subscription.deleted') {
     const customerId = event.data.object.customer
 
