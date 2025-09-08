@@ -120,7 +120,7 @@ export async function POST(req) {
     console.log('✅ Session créée + créneau réservé + emails envoyés')
   }
 
-  // 🎯 CAS 2 : Paiement abonnement coach
+  // 🎯 CAS 2 : checkout.session.completed pour abonnement
   if (
     event.type === 'checkout.session.completed' &&
     session.mode === 'subscription'
@@ -131,6 +131,7 @@ export async function POST(req) {
 
     const subscription = await stripe.subscriptions.retrieve(session.subscription)
     const priceId = subscription?.items?.data?.[0]?.price?.id || null
+    const subscriptionId = subscription?.id
 
     let subscriptionType = 'inconnu'
     if (
@@ -150,6 +151,7 @@ export async function POST(req) {
         .update({
           is_subscribed: true,
           stripe_customer_id: stripeCustomerId,
+          stripe_subscription_id: subscriptionId,
           subscription_started_at: new Date().toISOString(),
           subscription_type: subscriptionType
         })
@@ -160,6 +162,7 @@ export async function POST(req) {
         .update({
           is_subscribed: true,
           stripe_customer_id: stripeCustomerId,
+          stripe_subscription_id: subscriptionId,
           subscription_started_at: new Date().toISOString(),
           subscription_type: subscriptionType
         })
@@ -173,10 +176,11 @@ export async function POST(req) {
     }
   }
 
-  // 🆕 CAS 2B : customer.subscription.created
+  // 🎯 CAS 2B : customer.subscription.created
   if (event.type === 'customer.subscription.created') {
     const subscription = event.data.object
     const customerId = subscription.customer
+    const subscriptionId = subscription.id
     const priceId = subscription.items?.data?.[0]?.price?.id || null
 
     let subscriptionType = 'inconnu'
@@ -192,43 +196,25 @@ export async function POST(req) {
     const customer = await stripe.customers.retrieve(customerId)
     const customerEmail = customer?.email
 
-    console.log('🧩 Event customer.subscription.created')
-    console.log('📧 Email récupéré :', customerEmail)
-    console.log('🆔 Stripe customer ID :', customerId)
-    console.log('💳 Abonnement :', subscriptionType)
-
-    if (!customerEmail) {
-      console.warn('⚠️ Aucun email récupéré pour ce customer.')
-    }
-
-    const { data: usersWithEmail, error: fetchError } = await supabase
-      .from('users')
-      .select('id, email')
-      .eq('email', customerEmail)
-
-    if (fetchError) {
-      console.error('❌ Erreur lors de la recherche de l’utilisateur :', fetchError)
-    } else {
-      console.log('🔎 Utilisateur(s) trouvé(s) :', usersWithEmail)
-    }
-
     if (customerEmail) {
-      const { data, error: updateError } = await supabase
+      const { error: updateError } = await supabase
         .from('users')
         .update({
           is_subscribed: true,
           stripe_customer_id: customerId,
+          stripe_subscription_id: subscriptionId,
           subscription_started_at: new Date().toISOString(),
           subscription_type: subscriptionType
         })
         .eq('email', customerEmail)
-        .select()
 
       if (updateError) {
         console.error('❌ Erreur MAJ depuis customer.subscription.created :', updateError)
       } else {
-        console.log('✅ MAJ réussie pour :', data)
+        console.log(`✅ Abonnement ${subscriptionType} mis à jour via event "customer.subscription.created"`)
       }
+    } else {
+      console.warn('⚠️ Email non trouvé pour le customer ID :', customerId)
     }
   }
 
@@ -238,7 +224,10 @@ export async function POST(req) {
 
     const { error: unsubError } = await supabase
       .from('users')
-      .update({ is_subscribed: false })
+      .update({
+        is_subscribed: false,
+        stripe_subscription_id: null
+      })
       .eq('stripe_customer_id', customerId)
 
     if (unsubError) {
