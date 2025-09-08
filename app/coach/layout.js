@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Menu, X, Calendar, Clock, Users, Package, BarChart, Plug, MessageSquare, Settings } from 'lucide-react'
+import { Menu, X, Calendar, Clock, Users, Package, BarChart, Plug, MessageSquare, Settings, Copy } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 
 export default function CoachLayout({ children }) {
@@ -14,6 +14,8 @@ export default function CoachLayout({ children }) {
   const [showTrialBanner, setShowTrialBanner] = useState(false)
   const [trialEndFormatted, setTrialEndFormatted] = useState('')
   const [trialExpired, setTrialExpired] = useState(false)
+  const [publicLink, setPublicLink] = useState('')
+  const [copied, setCopied] = useState(false)
 
   const links = [
     { href: '/coach/dashboard', label: 'Rendez-vous', icon: Calendar },
@@ -73,8 +75,28 @@ export default function CoachLayout({ children }) {
       }
     }
 
+    const fetchUsername = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data, error } = await supabase
+        .from('coaches')
+        .select('username')
+        .eq('user_id', user.id)
+        .single()
+
+      if (data?.username) setPublicLink(`${window.location.origin}/${data.username}`)
+    }
+
     checkTrial()
+    fetchUsername()
   }, [])
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(publicLink)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-white">
@@ -117,9 +139,16 @@ export default function CoachLayout({ children }) {
           <span className="font-bold text-lg text-gray-800">Zenora</span>
         </Link>
 
-        <button onClick={() => setMenuOpen(!menuOpen)}>
-          {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
+        <div className="flex items-center gap-3">
+          {publicLink && (
+            <button onClick={copyToClipboard} className="text-blue-600 text-sm font-medium flex items-center gap-1">
+              {copied ? 'Copié !' : 'Lien public'} <Copy className="w-4 h-4" />
+            </button>
+          )}
+          <button onClick={() => setMenuOpen(!menuOpen)}>
+            {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
       </header>
 
       {/* Mobile menu */}
