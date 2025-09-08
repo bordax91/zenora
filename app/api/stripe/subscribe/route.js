@@ -15,34 +15,37 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Champs requis manquants (userId, priceId)' }, { status: 400 })
     }
 
-    // 🔍 Récupérer l'utilisateur pour l'email
+    // 🔍 Récupérer l'utilisateur
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('email')
       .eq('id', userId)
       .single()
 
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 })
+    if (userError || !user || !user.email) {
+      console.error('❌ Utilisateur non trouvé ou email manquant :', userError)
+      return NextResponse.json({ error: 'Utilisateur non trouvé ou email manquant' }, { status: 404 })
     }
 
-    // ✅ Créer la session Stripe pour abonnement
+    // ✅ Créer la session Stripe
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'subscription',
+      customer_email: user.email,
       line_items: [
         {
           price: priceId,
           quantity: 1,
         },
       ],
-      customer_email: user.email,
       metadata: {
-        coach_id: userId
+        coach_id: userId, // optionnel
       },
       success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/coach/subscribe`,
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/coach/subscribe`,
     })
+
+    console.log('✅ Session Stripe créée :', session.id)
 
     return NextResponse.json({ url: session.url }, { status: 200 })
 
