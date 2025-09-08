@@ -133,7 +133,10 @@ export async function POST(req) {
     const priceId = subscription?.items?.data?.[0]?.price?.id || null
 
     let subscriptionType = 'inconnu'
-    if (priceId === process.env.STRIPE_PRICE_ID_MONTHLY) {
+    if (
+      priceId === process.env.STRIPE_PRICE_ID_MONTHLY ||
+      priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_TEST_MONTHLY
+    ) {
       subscriptionType = 'mensuel'
     } else if (priceId === process.env.STRIPE_PRICE_ID_YEARLY) {
       subscriptionType = 'annuel'
@@ -142,7 +145,6 @@ export async function POST(req) {
     let updateError
 
     if (coachId) {
-      // 🎯 MAJ par ID
       ({ error: updateError } = await supabase
         .from('users')
         .update({
@@ -153,7 +155,6 @@ export async function POST(req) {
         })
         .eq('id', coachId))
     } else if (customerEmail) {
-      // 🎯 MAJ par email
       ({ error: updateError } = await supabase
         .from('users')
         .update({
