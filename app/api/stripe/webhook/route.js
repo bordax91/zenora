@@ -173,7 +173,45 @@ export async function POST(req) {
     }
   }
 
-  // 🎯 CAS 3 : Désabonnement (annulation)
+  // 🆕 CAS 2B : Création de l'abonnement → pour récupérer customer_id au cas où il manque dans checkout.session
+  if (event.type === 'customer.subscription.created') {
+    const subscription = event.data.object
+    const customerId = subscription.customer
+    const priceId = subscription.items?.data?.[0]?.price?.id || null
+
+    let subscriptionType = 'inconnu'
+    if (
+      priceId === process.env.STRIPE_PRICE_ID_MONTHLY ||
+      priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_TEST_MONTHLY
+    ) {
+      subscriptionType = 'mensuel'
+    } else if (priceId === process.env.STRIPE_PRICE_ID_YEARLY) {
+      subscriptionType = 'annuel'
+    }
+
+    const customer = await stripe.customers.retrieve(customerId)
+    const customerEmail = customer?.email
+
+    if (customerEmail) {
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          is_subscribed: true,
+          stripe_customer_id: customerId,
+          subscription_started_at: new Date().toISOString(),
+          subscription_type: subscriptionType
+        })
+        .eq('email', customerEmail)
+
+      if (updateError) {
+        console.error('❌ Erreur MAJ depuis customer.subscription.created :', updateError)
+      } else {
+        console.log(`✅ Abonnement ${subscriptionType} mis à jour via event "customer.subscription.created"`)
+      }
+    }
+  }
+
+  // 🎯 CAS 3 : Désabonnement
   if (event.type === 'customer.subscription.deleted') {
     const customerId = event.data.object.customer
 
