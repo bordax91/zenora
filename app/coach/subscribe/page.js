@@ -8,6 +8,11 @@ export default function AbonnementPage() {
   const [loading, setLoading] = useState(true)
   const [priceLabel, setPriceLabel] = useState(null)
 
+  // ✅ Définir les priceId une seule fois
+  const STRIPE_MONTHLY = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_MONTHLY
+  const STRIPE_YEARLY = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_YEARLY
+  const STRIPE_TEST = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_TEST_MONTHLY
+
   useEffect(() => {
     const fetchProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -26,15 +31,11 @@ export default function AbonnementPage() {
         if (subscriptions?.data?.length) {
           const priceId = subscriptions.data[0]?.items?.data[0]?.price?.id
 
-          const monthlyId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_MONTHLY
-          const yearlyId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_YEARLY
-          const testMonthlyId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_TEST_MONTHLY
-
-          if (priceId === monthlyId) {
+          if (priceId === STRIPE_MONTHLY) {
             setPriceLabel('Mensuel – 39€/mois')
-          } else if (priceId === yearlyId) {
+          } else if (priceId === STRIPE_YEARLY) {
             setPriceLabel('Annuel – 349€/an')
-          } else if (priceId === testMonthlyId) {
+          } else if (priceId === STRIPE_TEST) {
             setPriceLabel('Test – 1€/mois')
           } else {
             setPriceLabel('Abonnement actif')
@@ -105,8 +106,8 @@ export default function AbonnementPage() {
   if (!user) return <div className="p-6">Utilisateur non trouvé.</div>
 
   const now = new Date()
-  const trialEnd = new Date(user.trial_end)
-  const isTrialActive = now < trialEnd
+  const trialEnd = user.trial_end ? new Date(user.trial_end) : null
+  const isTrialActive = trialEnd && now < trialEnd
 
   return (
     <div className="max-w-xl mx-auto p-6">
@@ -136,19 +137,19 @@ export default function AbonnementPage() {
       {!user.is_subscribed && (
         <div className="flex flex-col gap-4">
           <button
-            onClick={() => handleSubscribe(process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_MONTHLY)}
+            onClick={() => handleSubscribe(STRIPE_MONTHLY)}
             className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
           >
             🔁 S’abonner au plan mensuel – 39€/mois
           </button>
           <button
-            onClick={() => handleSubscribe(process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_YEARLY)}
+            onClick={() => handleSubscribe(STRIPE_YEARLY)}
             className="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
           >
             📅 S’abonner au plan annuel – 349€/an
           </button>
           <button
-            onClick={() => handleSubscribe(process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_TEST_MONTHLY)}
+            onClick={() => handleSubscribe(STRIPE_TEST)}
             className="w-full bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition"
           >
             🧪 Plan test – 1€/mois
