@@ -4,7 +4,7 @@ import stripe from '@/lib/stripe'
 import { sendClientConfirmationEmail } from '@/app/api/emails/send-confirmation-email/route'
 import { sendCoachConfirmationEmail } from '@/app/api/emails/send-confirmation-email/route'
 
-// Secrets des deux comptes Stripe
+// Secrets Stripe (compte principal et connecté)
 const secretMain = process.env.STRIPE_WEBHOOK_SECRET_MAIN
 const secretConnected = process.env.STRIPE_WEBHOOK_SECRET_CONNECTED
 
@@ -22,7 +22,7 @@ export async function POST(req) {
   const rawBody = await req.text()
   let event
 
-  // ✅ Détection dynamique du bon secret à utiliser
+  // Choix du secret Stripe selon le compte (main ou connecté)
   const isConnectedAccount = req.headers.get('stripe-account') !== null
   const secretToUse = isConnectedAccount ? secretConnected : secretMain
 
@@ -130,7 +130,7 @@ export async function POST(req) {
     console.log('✅ RDV confirmé + emails envoyés')
   }
 
-  // === CAS 2 : Abonnement (checkout.session.completed)
+  // === CAS 2 : Abonnement (checkout)
   if (
     event.type === 'checkout.session.completed' &&
     session.mode === 'subscription' &&
@@ -170,7 +170,7 @@ export async function POST(req) {
     }
   }
 
-  // === CAS 3 : Désabonnement (customer.subscription.deleted)
+  // === CAS 3 : Désabonnement (event déclenché par Stripe automatiquement)
   if (event.type === 'customer.subscription.deleted') {
     const customerId = event.data.object.customer
 
@@ -178,7 +178,6 @@ export async function POST(req) {
       .from('users')
       .update({
         is_subscribed: false,
-        stripe_subscription_id: null,
       })
       .eq('stripe_customer_id', customerId)
 
