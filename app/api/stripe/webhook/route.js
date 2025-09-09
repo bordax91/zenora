@@ -4,11 +4,10 @@ import stripe from '@/lib/stripe'
 import { sendClientConfirmationEmail } from '@/app/api/emails/send-confirmation-email/route'
 import { sendCoachConfirmationEmail } from '@/app/api/emails/send-confirmation-email/route'
 
-// Secrets webhook selon le compte utilisé
+// Secrets des deux comptes Stripe
 const secretMain = process.env.STRIPE_WEBHOOK_SECRET_MAIN
 const secretConnected = process.env.STRIPE_WEBHOOK_SECRET_CONNECTED
 
-// Supabase
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -23,24 +22,22 @@ export async function POST(req) {
   const rawBody = await req.text()
   let event
 
-  // Choix du secret : par défaut le connected
-  let secretToUse = secretConnected
-  if (req.url.includes('main')) {
-    secretToUse = secretMain
-  }
+  // ✅ Détection dynamique du bon secret à utiliser
+  const isConnectedAccount = req.headers.get('stripe-account') !== null
+  const secretToUse = isConnectedAccount ? secretConnected : secretMain
 
   try {
     event = stripe.webhooks.constructEvent(rawBody, sig, secretToUse)
     console.log('✅ Webhook Stripe reçu :', event.type)
   } catch (err) {
-    console.error('❌ Erreur vérification signature :', err.message)
+    console.error('❌ Signature Stripe invalide :', err.message)
     return NextResponse.json({ error: 'Signature Stripe invalide' }, { status: 400 })
   }
 
   const session = event.data.object
   const metadata = session.metadata || {}
 
-  // === CAS 1 : Paiement RDV client (coach connecté)
+  // === CAS 1 : Paiement RDV (coach connecté)
   if (
     event.type === 'checkout.session.completed' &&
     metadata.client_id &&
@@ -133,7 +130,7 @@ export async function POST(req) {
     console.log('✅ RDV confirmé + emails envoyés')
   }
 
-  // === CAS 2 : Abonnement coach (via Checkout)
+  // === CAS 2 : Abonnement (checkout.session.completed)
   if (
     event.type === 'checkout.session.completed' &&
     session.mode === 'subscription' &&
@@ -173,7 +170,7 @@ export async function POST(req) {
     }
   }
 
-  // === CAS 3 : Désabonnement
+  // === CAS 3 : Désabonnement (customer.subscription.deleted)
   if (event.type === 'customer.subscription.deleted') {
     const customerId = event.data.object.customer
 
