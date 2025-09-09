@@ -135,62 +135,7 @@ export async function POST(req) {
     console.log('✅ RDV enregistré + emails envoyés')
   }
 
-  // === CAS 2 : Paiement abonnement ===
-  if (
-    event.type === 'checkout.session.completed' &&
-    session.mode === 'subscription'
-  ) {
-    const stripeCustomerId = session.customer
-    const subscriptionId = session.subscription
-    const coachId = metadata.coach_id || metadata.user_id || null
-    const customerEmail = session.customer_email || null
-
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId)
-    const priceId = subscription?.items?.data?.[0]?.price?.id || null
-
-    let subscriptionType = 'inconnu'
-    if (
-      priceId === process.env.STRIPE_PRICE_ID_MONTHLY ||
-      priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_TEST_MONTHLY
-    ) {
-      subscriptionType = 'mensuel'
-    } else if (priceId === process.env.STRIPE_PRICE_ID_YEARLY) {
-      subscriptionType = 'annuel'
-    }
-
-    let updateError
-    if (coachId) {
-      ({ error: updateError } = await supabase
-        .from('users')
-        .update({
-          is_subscribed: true,
-          stripe_customer_id: stripeCustomerId,
-          stripe_subscription_id: subscriptionId,
-          subscription_started_at: new Date().toISOString(),
-          subscription_type: subscriptionType,
-        })
-        .eq('id', coachId))
-    } else if (customerEmail) {
-      ({ error: updateError } = await supabase
-        .from('users')
-        .update({
-          is_subscribed: true,
-          stripe_customer_id: stripeCustomerId,
-          stripe_subscription_id: subscriptionId,
-          subscription_started_at: new Date().toISOString(),
-          subscription_type: subscriptionType,
-        })
-        .eq('email', customerEmail))
-    }
-
-    if (updateError) {
-      console.error('❌ Erreur MAJ abonnement :', updateError)
-    } else {
-      console.log(`✅ Abonnement ${subscriptionType} activé`)
-    }
-  }
-
-  // === CAS 2B : customer.subscription.created ===
+  // === CAS 2 : Activation abonnement via customer.subscription.created ===
   if (event.type === 'customer.subscription.created') {
     const subscription = event.data.object
     const customerId = subscription.customer
@@ -225,7 +170,7 @@ export async function POST(req) {
       if (updateError) {
         console.error('❌ Erreur MAJ abonnement (created) :', updateError)
       } else {
-        console.log(`✅ Abonnement ${subscriptionType} mis à jour via subscription.created`)
+        console.log(`✅ Abonnement ${subscriptionType} activé`)
       }
     } else {
       console.warn('⚠️ Email non trouvé pour customer_id :', customerId)
