@@ -4,6 +4,13 @@ import stripe from '@/lib/stripe'
 import { sendClientConfirmationEmail } from '@/app/api/emails/send-confirmation-email/route'
 import { sendCoachConfirmationEmail } from '@/app/api/emails/send-confirmation-email/route'
 
+// 🛑 Nécessaire pour Stripe avec Next.js App Router
+export const config = {
+  api: {
+    bodyParser: false
+  }
+}
+
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET
 
 const supabase = createClient(
@@ -17,41 +24,43 @@ export async function POST(req) {
     return NextResponse.json({ error: 'Signature manquante' }, { status: 400 })
   }
 
-  const rawBody = await req.text()
+  const buffer = await req.arrayBuffer()
+  const rawBody = Buffer.from(buffer).toString()
+
   let event
 
   try {
     event = stripe.webhooks.constructEvent(rawBody, sig, endpointSecret)
     console.log('✅ Webhook reçu :', event.type)
   } catch (err) {
-    console.error('❌ Signature Stripe invalide :', err.message)
-    return NextResponse.json({ error: 'Signature Stripe invalide' }, { status: 400 })
+    console.error('❌ Erreur de vérification Stripe :', err.message)
+    return NextResponse.json({ error: 'Signature invalide' }, { status: 400 })
   }
 
   const session = event.data.object
   const metadata = session.metadata || {}
 
-  // ========== CAS 1 : Paiement d'une session de RDV ==========
+  // 🎯 CAS 1 : Paiement RDV client
   if (
     event.type === 'checkout.session.completed' &&
     metadata.client_id && metadata.package_id && metadata.availability_id
   ) {
-    const { client_id, package_id, availability_id } = metadata
+    const { client_id: clientId, package_id: packageId, availability_id: availabilityId } = metadata
 
     const { data: availability, error: availabilityError } = await supabase
       .from('availabilities')
       .select('date, coach_id, is_booked')
-      .eq('id', availability_id)
+      .eq('id', availabilityId)
       .single()
 
     if (availabilityError || !availability) {
-      console.error('❌ Créneau indisponible :', availabilityError)
-      return NextResponse.json({ error: 'Créneau indisponible' }, { status: 404 })
+      console.error('❌ Créneau non trouvé :', availabilityError)
+      return NextResponse.json({ error: 'Créneau non trouvé' }, { status: 404 })
     }
 
     if (availability.is_booked) {
       console.warn('⚠️ Créneau déjà réservé.')
-      return NextResponse.json({ message: 'Créneau déjà réservé' }, { status: 200 })
+      return NextResponse.json({ message: 'Déjà réservé' }, { status: 200 })
     }
 
     const { coach_id, date } = availability
@@ -65,35 +74,36 @@ export async function POST(req) {
     const { data: client } = await supabase
       .from('users')
       .select('name, email')
-      .eq('id', client_id)
+      .eq('id', clientId)
       .single()
 
     const { data: packageData } = await supabase
       .from('packages')
       .select('title')
-      .eq('id', package_id)
+      .eq('id', packageId)
       .single()
 
-    const { error: insertError } = await supabase.from('sessions').insert({
-      coach_id,
-      client_id,
-      package_id,
-      date,
-      availability_id,
-      statut: 'réservé'
-    })
+    const { error: insertError } = await supabase
+      .from('sessions')
+      .insert({
+        coach_id,
+        client_id: clientId,
+        package_id: packageId,
+        date,
+        availability_id: availabilityId,
+        statut: 'réservé'
+      })
 
     if (insertError) {
       console.error('❌ Erreur insertion session :', insertError)
-      return NextResponse.json({ error: 'Erreur création session' }, { status: 500 })
+      return NextResponse.json({ error: 'Impossible de créer la session' }, { status: 500 })
     }
 
     await supabase
       .from('availabilities')
       .update({ is_booked: true })
-      .eq('id', availability_id)
+      .eq('id', availabilityId)
 
-    // Emails
     try {
       if (client?.email && coach?.email) {
         await sendClientConfirmationEmail({
@@ -102,7 +112,7 @@ export async function POST(req) {
           coachName: coach.name,
           date,
           time: new Date(date).toLocaleTimeString(),
-          packageTitle: packageData?.title || 'Votre session'
+          packageTitle: packageData.title
         })
 
         await sendCoachConfirmationEmail({
@@ -111,25 +121,28 @@ export async function POST(req) {
           clientName: client.name,
           date,
           time: new Date(date).toLocaleTimeString(),
-          packageTitle: packageData?.title || 'Session réservée'
+          packageTitle: packageData.title
         })
       }
-    } catch (err) {
-      console.error('❌ Envoi d’email échoué :', err)
+    } catch (emailErr) {
+      console.error('❌ Erreur envoi email confirmation :', emailErr)
     }
 
-    console.log('✅ Session RDV réservée + Emails envoyés')
+    console.log('✅ Session créée + créneau réservé + emails envoyés')
   }
 
-  // ========== CAS 2 : Paiement abonnement (checkout) ==========
-  if (event.type === 'checkout.session.completed' && session.mode === 'subscription') {
+  // 🎯 CAS 2 : checkout.session.completed (abonnement)
+  if (
+    event.type === 'checkout.session.completed' &&
+    session.mode === 'subscription'
+  ) {
     const stripeCustomerId = session.customer
-    const customerEmail = session.customer_email
     const coachId = metadata.coach_id || metadata.user_id || null
+    const customerEmail = session.customer_email || null
 
     const subscription = await stripe.subscriptions.retrieve(session.subscription)
-    const priceId = subscription.items?.data?.[0]?.price?.id
-    const subscriptionId = subscription.id
+    const priceId = subscription?.items?.data?.[0]?.price?.id || null
+    const subscriptionId = subscription?.id
 
     let subscriptionType = 'inconnu'
     if (
@@ -142,6 +155,7 @@ export async function POST(req) {
     }
 
     let updateError
+
     if (coachId) {
       ({ error: updateError } = await supabase
         .from('users')
@@ -167,21 +181,18 @@ export async function POST(req) {
     }
 
     if (updateError) {
-      console.error('❌ Erreur MAJ abonnement :', updateError)
+      console.error('❌ Erreur MAJ abonnement coach :', updateError)
     } else {
-      console.log(`✅ Abonnement ${subscriptionType} activé pour ${coachId || customerEmail}`)
+      console.log(`✅ Abonnement ${subscriptionType} activé pour coach via ${coachId || customerEmail}`)
     }
   }
 
-  // ========== CAS 2B : Subscription créée sans checkout ==========
+  // 🎯 CAS 2B : customer.subscription.created
   if (event.type === 'customer.subscription.created') {
     const subscription = event.data.object
     const customerId = subscription.customer
-    const priceId = subscription.items?.data?.[0]?.price?.id
     const subscriptionId = subscription.id
-
-    const customer = await stripe.customers.retrieve(customerId)
-    const customerEmail = customer?.email
+    const priceId = subscription.items?.data?.[0]?.price?.id || null
 
     let subscriptionType = 'inconnu'
     if (
@@ -193,8 +204,11 @@ export async function POST(req) {
       subscriptionType = 'annuel'
     }
 
+    const customer = await stripe.customers.retrieve(customerId)
+    const customerEmail = customer?.email
+
     if (customerEmail) {
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from('users')
         .update({
           is_subscribed: true,
@@ -205,21 +219,21 @@ export async function POST(req) {
         })
         .eq('email', customerEmail)
 
-      if (error) {
-        console.error('❌ Erreur MAJ abonnement via event.created :', error)
+      if (updateError) {
+        console.error('❌ Erreur MAJ depuis customer.subscription.created :', updateError)
       } else {
-        console.log(`✅ Abonnement ${subscriptionType} mis à jour via event.created`)
+        console.log(`✅ Abonnement ${subscriptionType} mis à jour via event "customer.subscription.created"`)
       }
     } else {
-      console.warn('⚠️ Email client introuvable pour customer ID :', customerId)
+      console.warn('⚠️ Email non trouvé pour le customer ID :', customerId)
     }
   }
 
-  // ========== CAS 3 : Désabonnement ==========
+  // 🎯 CAS 3 : Désabonnement
   if (event.type === 'customer.subscription.deleted') {
     const customerId = event.data.object.customer
 
-    const { error } = await supabase
+    const { error: unsubError } = await supabase
       .from('users')
       .update({
         is_subscribed: false,
@@ -227,10 +241,10 @@ export async function POST(req) {
       })
       .eq('stripe_customer_id', customerId)
 
-    if (error) {
-      console.error('❌ Erreur désabonnement :', error)
+    if (unsubError) {
+      console.error('❌ Erreur désabonnement coach :', unsubError)
     } else {
-      console.log(`🚫 Abonnement annulé pour customer ${customerId}`)
+      console.log(`🚫 Coach désabonné (customer ${customerId})`)
     }
   }
 
