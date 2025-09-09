@@ -15,6 +15,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Champs requis manquants (userId, priceId)' }, { status: 400 })
     }
 
+    // 🔍 Récupération de l'utilisateur
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('email')
@@ -26,11 +27,12 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Utilisateur non trouvé ou email manquant' }, { status: 404 })
     }
 
+    // ✅ Création session Stripe
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
       mode: 'subscription',
+      payment_method_types: ['card'],
       customer_email: user.email,
-      client_reference_id: userId,
+      client_reference_id: userId, // optionnel, pour traçabilité
       line_items: [
         {
           price: priceId,
@@ -38,15 +40,15 @@ export async function POST(req) {
         },
       ],
       metadata: {
-        coach_id: userId
+        coach_id: userId, // sera utile dans checkout.session.completed
       },
       subscription_data: {
         metadata: {
-          coach_id: userId
-        }
+          coach_id: userId, // sera transmis dans customer.subscription.created
+        },
       },
-      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/coach/subscribe`,
-      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/coach/subscribe`,
+      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/coach/subscribe?success=true`,
+      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/coach/subscribe?canceled=true`,
     })
 
     console.log('✅ Session Stripe créée :', session.id)
