@@ -4,7 +4,8 @@ import stripe from '@/lib/stripe'
 import { sendClientConfirmationEmail } from '@/app/api/emails/send-confirmation-email/route'
 import { sendCoachConfirmationEmail } from '@/app/api/emails/send-confirmation-email/route'
 
-const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET
+const secretMain = process.env.STRIPE_WEBHOOK_SECRET_MAIN
+const secretConnected = process.env.STRIPE_WEBHOOK_SECRET_CONNECTED
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -18,32 +19,42 @@ export async function POST(req) {
   }
 
   const rawBody = await req.text()
-  let event
+  let event = null
 
-  try {
-    event = stripe.webhooks.constructEvent(rawBody, sig, endpointSecret)
-    console.log('✅ Webhook reçu :', event.type)
-  } catch (err) {
-    console.error('❌ Erreur de vérification Stripe :', err.message)
-    return NextResponse.json({ error: 'Signature invalide' }, { status: 400 })
+  // Essayer avec les deux secrets
+  const secrets = [
+    { name: 'CONNECTED', key: secretConnected },
+    { name: 'MAIN', key: secretMain }
+  ]
+
+  for (const { name, key } of secrets) {
+    try {
+      event = stripe.webhooks.constructEvent(rawBody, sig, key)
+      console.log(`✅ Webhook reçu (${name}) :`, event.type)
+      break
+    } catch (err) {
+      console.warn(`❌ Signature invalide pour secret ${name}`)
+    }
+  }
+
+  if (!event) {
+    return NextResponse.json({ error: 'Signature invalide pour tous les secrets' }, { status: 400 })
   }
 
   const session = event.data.object
   const metadata = session.metadata || {}
 
-  // 🎯 CAS 1 : Paiement RDV client
+  // 🎯 CAS 1 : Paiement RDV client (compte connecté)
   if (
     event.type === 'checkout.session.completed' &&
-    metadata.client_id &&
-    metadata.package_id &&
-    metadata.availability_id
+    metadata.client_id && metadata.package_id && metadata.availability_id
   ) {
-    const { client_id, package_id, availability_id } = metadata
+    const { client_id: clientId, package_id: packageId, availability_id: availabilityId } = metadata
 
     const { data: availability, error: availabilityError } = await supabase
       .from('availabilities')
       .select('date, coach_id, is_booked')
-      .eq('id', availability_id)
+      .eq('id', availabilityId)
       .single()
 
     if (availabilityError || !availability) {
@@ -52,11 +63,11 @@ export async function POST(req) {
     }
 
     if (availability.is_booked) {
-      console.warn('⚠️ Créneau déjà réservé')
+      console.warn('⚠️ Créneau déjà réservé.')
       return NextResponse.json({ message: 'Déjà réservé' }, { status: 200 })
     }
 
-    const { date, coach_id } = availability
+    const { coach_id, date } = availability
 
     const { data: coach } = await supabase
       .from('users')
@@ -67,35 +78,33 @@ export async function POST(req) {
     const { data: client } = await supabase
       .from('users')
       .select('name, email')
-      .eq('id', client_id)
+      .eq('id', clientId)
       .single()
 
     const { data: packageData } = await supabase
       .from('packages')
       .select('title')
-      .eq('id', package_id)
+      .eq('id', packageId)
       .single()
 
-    const { error: insertError } = await supabase
-      .from('sessions')
-      .insert({
-        coach_id,
-        client_id,
-        package_id,
-        date,
-        availability_id,
-        statut: 'réservé',
-      })
+    const { error: insertError } = await supabase.from('sessions').insert({
+      coach_id,
+      client_id: clientId,
+      package_id: packageId,
+      date,
+      availability_id: availabilityId,
+      statut: 'réservé'
+    })
 
     if (insertError) {
       console.error('❌ Erreur insertion session :', insertError)
-      return NextResponse.json({ error: 'Erreur création session' }, { status: 500 })
+      return NextResponse.json({ error: 'Impossible de créer la session' }, { status: 500 })
     }
 
     await supabase
       .from('availabilities')
       .update({ is_booked: true })
-      .eq('id', availability_id)
+      .eq('id', availabilityId)
 
     try {
       if (client?.email && coach?.email) {
@@ -104,8 +113,8 @@ export async function POST(req) {
           clientName: client.name,
           coachName: coach.name,
           date,
-          time: new Date(date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-          packageTitle: packageData?.title || '',
+          time: new Date(date).toLocaleTimeString(),
+          packageTitle: packageData.title
         })
 
         await sendCoachConfirmationEmail({
@@ -113,18 +122,18 @@ export async function POST(req) {
           coachName: coach.name,
           clientName: client.name,
           date,
-          time: new Date(date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-          packageTitle: packageData?.title || '',
+          time: new Date(date).toLocaleTimeString(),
+          packageTitle: packageData.title
         })
       }
-    } catch (err) {
-      console.error('❌ Erreur envoi d’emails :', err)
+    } catch (emailErr) {
+      console.error('❌ Erreur envoi email confirmation :', emailErr)
     }
 
-    console.log('✅ Session enregistrée + emails envoyés')
+    console.log('✅ Session créée + créneau réservé + emails envoyés')
   }
 
-  // 🎯 CAS 2 : Paiement abonnement coach
+  // 🎯 CAS 2 : Paiement abonnement coach (compte principal)
   if (
     event.type === 'checkout.session.completed' &&
     session.mode === 'subscription'
@@ -174,7 +183,7 @@ export async function POST(req) {
     }
   }
 
-  // 🎯 CAS 3 : Désabonnement (annulation)
+  // 🎯 CAS 3 : Désabonnement
   if (event.type === 'customer.subscription.deleted') {
     const customerId = event.data.object.customer
 
