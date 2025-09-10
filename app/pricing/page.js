@@ -67,13 +67,18 @@ export default function TarifsPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+            {/* Plan Mensuel */}
             <div className="border p-6 rounded-2xl shadow hover:shadow-lg transition">
               <h2 className="text-2xl font-semibold mb-2">Plan Mensuel</h2>
               <p className="text-gray-600 mb-4">💳 39€/mois, sans engagement</p>
               <ul className="text-sm text-gray-700 space-y-1 mb-4">
-                <li>✔️ Accès complet à toutes les fonctionnalités</li>
-                <li>✔️ Paiement mensuel simple</li>
-                <li>✔️ Résiliable à tout moment</li>
+                <li>🤖 Outil de prospection IA</li>
+                <li>📈 Suivi des ventes et rendez-vous</li>
+                <li>🌐 Page publique personnalisée</li>
+                <li>📅 Prise de RDV avec calendrier</li>
+                <li>💳 Paiement sécurisé par Stripe</li>
+                <li>🧾 Création d’offres coaching</li>
+                <li>📝 Notes sur vos clients</li>
               </ul>
               <button
                 onClick={() => handleSubscribe(STRIPE_MONTHLY)}
@@ -84,13 +89,18 @@ export default function TarifsPage() {
               </button>
             </div>
 
-            <div className="border p-6 rounded-2xl shadow hover:shadow-lg transition bg-gray-50">
+            {/* Plan Annuel */}
+            <div className="border p-6 rounded-2xl shadow hover:shadow-lg transition bg-gray-50 border-2 border-indigo-500">
               <h2 className="text-2xl font-semibold mb-2">Plan Annuel</h2>
               <p className="text-gray-600 mb-4">📅 349€/an (soit 2 mois offerts)</p>
               <ul className="text-sm text-gray-700 space-y-1 mb-4">
-                <li>💸 20% d’économie sur l’année</li>
-                <li>✔️ Support prioritaire</li>
-                <li>✔️ Paiement unique annuel</li>
+                <li>🤖 Outil de prospection IA</li>
+                <li>📈 Suivi des ventes et rendez-vous</li>
+                <li>🌐 Page publique personnalisée</li>
+                <li>📅 Prise de RDV avec calendrier</li>
+                <li>💳 Paiement sécurisé par Stripe</li>
+                <li>🧾 Création d’offres coaching</li>
+                <li>📝 Notes sur vos clients</li>
               </ul>
               <button
                 onClick={() => handleSubscribe(STRIPE_YEARLY)}
@@ -103,14 +113,7 @@ export default function TarifsPage() {
           </div>
 
           <div className="text-center text-gray-600 text-sm">
-            Tous les abonnements donnent accès à :
-            <ul className="mt-2 space-y-1">
-              <li>✅ Réservation de rendez-vous simplifiée</li>
-              <li>✅ Paiement sécurisé avec Stripe</li>
-              <li>✅ Espace client personnalisé</li>
-              <li>✅ Intégrations (Calendly, emails, etc.)</li>
-              <li>✅ Historique & gestion des clients</li>
-            </ul>
+            Tous les abonnements donnent un accès complet à toutes les fonctionnalités de Zenora.
           </div>
         </>
       )}
