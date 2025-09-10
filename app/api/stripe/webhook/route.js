@@ -21,7 +21,7 @@ export async function POST(req) {
   const rawBody = await req.text()
   let event = null
 
-  // Essayer avec les deux secrets
+  // Essayer avec les deux secrets (connecté ou principal)
   const secrets = [
     { name: 'CONNECTED', key: secretConnected },
     { name: 'MAIN', key: secretMain }
@@ -44,13 +44,26 @@ export async function POST(req) {
   const session = event.data.object
   const metadata = session.metadata || {}
 
-  // 🎯 CAS 1 : Paiement RDV client (compte connecté)
+  // 🎯 CAS 1 : Paiement de session client (compte connecté)
   if (
     event.type === 'checkout.session.completed' &&
     metadata.client_id && metadata.package_id && metadata.availability_id
   ) {
     const { client_id: clientId, package_id: packageId, availability_id: availabilityId } = metadata
 
+    // 🔎 Vérifier que le client existe
+    const { data: client, error: clientError } = await supabase
+      .from('users')
+      .select('name, email')
+      .eq('id', clientId)
+      .single()
+
+    if (clientError || !client) {
+      console.error('❌ Client introuvable :', clientError)
+      return NextResponse.json({ error: 'Client introuvable' }, { status: 404 })
+    }
+
+    // 🔎 Vérifier que le créneau est valide et dispo
     const { data: availability, error: availabilityError } = await supabase
       .from('availabilities')
       .select('date, coach_id, is_booked')
@@ -63,30 +76,37 @@ export async function POST(req) {
     }
 
     if (availability.is_booked) {
-      console.warn('⚠️ Créneau déjà réservé.')
-      return NextResponse.json({ message: 'Déjà réservé' }, { status: 200 })
+      console.warn('⚠️ Créneau déjà réservé')
+      return NextResponse.json({ message: 'Créneau déjà réservé' }, { status: 200 })
     }
 
     const { coach_id, date } = availability
 
-    const { data: coach } = await supabase
+    // 🔎 Vérifier que le coach existe
+    const { data: coach, error: coachError } = await supabase
       .from('users')
       .select('name, email')
       .eq('id', coach_id)
       .single()
 
-    const { data: client } = await supabase
-      .from('users')
-      .select('name, email')
-      .eq('id', clientId)
-      .single()
+    if (coachError || !coach) {
+      console.error('❌ Coach introuvable :', coachError)
+      return NextResponse.json({ error: 'Coach introuvable' }, { status: 404 })
+    }
 
-    const { data: packageData } = await supabase
+    // 🔎 Vérifier que le package existe
+    const { data: packageData, error: packageError } = await supabase
       .from('packages')
       .select('title')
       .eq('id', packageId)
       .single()
 
+    if (packageError || !packageData) {
+      console.error('❌ Package introuvable :', packageError)
+      return NextResponse.json({ error: 'Offre introuvable' }, { status: 404 })
+    }
+
+    // ✅ Insérer la session
     const { error: insertError } = await supabase.from('sessions').insert({
       coach_id,
       client_id: clientId,
@@ -101,31 +121,31 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Impossible de créer la session' }, { status: 500 })
     }
 
+    // ✅ Marquer le créneau comme réservé
     await supabase
       .from('availabilities')
       .update({ is_booked: true })
       .eq('id', availabilityId)
 
+    // ✅ Envoyer les emails
     try {
-      if (client?.email && coach?.email) {
-        await sendClientConfirmationEmail({
-          to: client.email,
-          clientName: client.name,
-          coachName: coach.name,
-          date,
-          time: new Date(date).toLocaleTimeString(),
-          packageTitle: packageData.title
-        })
+      await sendClientConfirmationEmail({
+        to: client.email,
+        clientName: client.name,
+        coachName: coach.name,
+        date,
+        time: new Date(date).toLocaleTimeString(),
+        packageTitle: packageData.title
+      })
 
-        await sendCoachConfirmationEmail({
-          to: coach.email,
-          coachName: coach.name,
-          clientName: client.name,
-          date,
-          time: new Date(date).toLocaleTimeString(),
-          packageTitle: packageData.title
-        })
-      }
+      await sendCoachConfirmationEmail({
+        to: coach.email,
+        coachName: coach.name,
+        clientName: client.name,
+        date,
+        time: new Date(date).toLocaleTimeString(),
+        packageTitle: packageData.title
+      })
     } catch (emailErr) {
       console.error('❌ Erreur envoi email confirmation :', emailErr)
     }
