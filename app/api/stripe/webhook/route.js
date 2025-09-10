@@ -21,7 +21,6 @@ export async function POST(req) {
   const rawBody = await req.text()
   let event = null
 
-  // Essayer avec les deux secrets (connecté ou principal)
   const secrets = [
     { name: 'CONNECTED', key: secretConnected },
     { name: 'MAIN', key: secretMain }
@@ -38,75 +37,53 @@ export async function POST(req) {
   }
 
   if (!event) {
-    return NextResponse.json({ error: 'Signature invalide pour tous les secrets' }, { status: 400 })
+    return NextResponse.json({ error: 'Signature invalide' }, { status: 400 })
   }
 
   const session = event.data.object
   const metadata = session.metadata || {}
 
-  // 🎯 CAS 1 : Paiement de session client (compte connecté)
+  // === CAS 1 : Paiement de session client ===
   if (
     event.type === 'checkout.session.completed' &&
     metadata.client_id && metadata.package_id && metadata.availability_id
   ) {
     const { client_id: clientId, package_id: packageId, availability_id: availabilityId } = metadata
 
-    // 🔎 Vérifier que le client existe
     const { data: client, error: clientError } = await supabase
       .from('users')
       .select('name, email')
       .eq('id', clientId)
       .single()
 
-    if (clientError || !client) {
-      console.error('❌ Client introuvable :', clientError)
-      return NextResponse.json({ error: 'Client introuvable' }, { status: 404 })
-    }
-
-    // 🔎 Vérifier que le créneau est valide et dispo
     const { data: availability, error: availabilityError } = await supabase
       .from('availabilities')
       .select('date, coach_id, is_booked')
       .eq('id', availabilityId)
       .single()
 
-    if (availabilityError || !availability) {
-      console.error('❌ Créneau non trouvé :', availabilityError)
-      return NextResponse.json({ error: 'Créneau non trouvé' }, { status: 404 })
-    }
-
-    if (availability.is_booked) {
-      console.warn('⚠️ Créneau déjà réservé')
-      return NextResponse.json({ message: 'Créneau déjà réservé' }, { status: 200 })
+    if (availability?.is_booked || clientError || availabilityError || !availability) {
+      return NextResponse.json({ error: 'Erreur données client ou créneau' }, { status: 404 })
     }
 
     const { coach_id, date } = availability
 
-    // 🔎 Vérifier que le coach existe
     const { data: coach, error: coachError } = await supabase
       .from('users')
       .select('name, email')
       .eq('id', coach_id)
       .single()
 
-    if (coachError || !coach) {
-      console.error('❌ Coach introuvable :', coachError)
-      return NextResponse.json({ error: 'Coach introuvable' }, { status: 404 })
-    }
-
-    // 🔎 Vérifier que le package existe
     const { data: packageData, error: packageError } = await supabase
       .from('packages')
       .select('title')
       .eq('id', packageId)
       .single()
 
-    if (packageError || !packageData) {
-      console.error('❌ Package introuvable :', packageError)
-      return NextResponse.json({ error: 'Offre introuvable' }, { status: 404 })
+    if (coachError || packageError || !coach || !packageData) {
+      return NextResponse.json({ error: 'Erreur données coach ou offre' }, { status: 404 })
     }
 
-    // ✅ Insérer la session
     const { error: insertError } = await supabase.from('sessions').insert({
       coach_id,
       client_id: clientId,
@@ -116,44 +93,38 @@ export async function POST(req) {
       statut: 'réservé'
     })
 
-    if (insertError) {
+    if (!insertError) {
+      await supabase.from('availabilities').update({ is_booked: true }).eq('id', availabilityId)
+
+      try {
+        await sendClientConfirmationEmail({
+          to: client.email,
+          clientName: client.name,
+          coachName: coach.name,
+          date,
+          time: new Date(date).toLocaleTimeString('fr-FR', { timeZone: 'Europe/Paris' }),
+          packageTitle: packageData.title
+        })
+
+        await sendCoachConfirmationEmail({
+          to: coach.email,
+          coachName: coach.name,
+          clientName: client.name,
+          date,
+          time: new Date(date).toLocaleTimeString('fr-FR', { timeZone: 'Europe/Paris' }),
+          packageTitle: packageData.title
+        })
+      } catch (emailErr) {
+        console.error('❌ Erreur envoi email confirmation :', emailErr)
+      }
+
+      console.log('✅ Session créée + créneau réservé + emails envoyés')
+    } else {
       console.error('❌ Erreur insertion session :', insertError)
-      return NextResponse.json({ error: 'Impossible de créer la session' }, { status: 500 })
     }
-
-    // ✅ Marquer le créneau comme réservé
-    await supabase
-      .from('availabilities')
-      .update({ is_booked: true })
-      .eq('id', availabilityId)
-
-    // ✅ Envoyer les emails
-    try {
-      await sendClientConfirmationEmail({
-        to: client.email,
-        clientName: client.name,
-        coachName: coach.name,
-        date,
-        time: new Date(date).toLocaleTimeString(),
-        packageTitle: packageData.title
-      })
-
-      await sendCoachConfirmationEmail({
-        to: coach.email,
-        coachName: coach.name,
-        clientName: client.name,
-        date,
-        time: new Date(date).toLocaleTimeString(),
-        packageTitle: packageData.title
-      })
-    } catch (emailErr) {
-      console.error('❌ Erreur envoi email confirmation :', emailErr)
-    }
-
-    console.log('✅ Session créée + créneau réservé + emails envoyés')
   }
 
-  // 🎯 CAS 2 : Paiement abonnement coach (compte principal)
+  // === CAS 2 : Paiement abonnement (compte principal) ===
   if (
     event.type === 'checkout.session.completed' &&
     session.mode === 'subscription'
@@ -173,7 +144,6 @@ export async function POST(req) {
     }
 
     let updateError
-
     if (coachId) {
       ({ error: updateError } = await supabase
         .from('users')
@@ -199,23 +169,35 @@ export async function POST(req) {
     if (updateError) {
       console.error('❌ Erreur MAJ abonnement coach :', updateError)
     } else {
-      console.log(`✅ Abonnement ${subscriptionType} activé pour coach via ${coachId || customerEmail}`)
+      console.log(`✅ Abonnement ${subscriptionType} activé via ${coachId || customerEmail}`)
     }
   }
 
-  // 🎯 CAS 3 : Désabonnement
+  // === CAS 3 : Désabonnement (customer.subscription.deleted) ===
   if (event.type === 'customer.subscription.deleted') {
-    const customerId = event.data.object.customer
+    const subscription = event.data.object
+    const customerId = subscription.customer
 
-    const { error: unsubError } = await supabase
+    let customerEmail = null
+    try {
+      const customer = await stripe.customers.retrieve(customerId)
+      customerEmail = customer?.email || null
+    } catch (err) {
+      console.warn(`⚠️ Impossible de récupérer l'email Stripe pour customer ${customerId}`)
+    }
+
+    const { error: unsubError, count } = await supabase
       .from('users')
       .update({ is_subscribed: false })
-      .eq('stripe_customer_id', customerId)
+      .or(`stripe_customer_id.eq.${customerId},email.eq.${customerEmail}`)
+      .select('*', { count: 'exact' })
 
     if (unsubError) {
       console.error('❌ Erreur désabonnement coach :', unsubError)
+    } else if (count === 0) {
+      console.warn(`⚠️ Aucun utilisateur trouvé à désabonner (customerId: ${customerId}, email: ${customerEmail})`)
     } else {
-      console.log(`🚫 Coach désabonné (customer ${customerId})`)
+      console.log(`🚫 Coach désabonné (customerId: ${customerId}, email: ${customerEmail})`)
     }
   }
 
