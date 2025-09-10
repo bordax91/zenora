@@ -37,10 +37,10 @@ export default function CoachCalendar({ coachId, packageId }) {
     setLoading(false)
   }
 
-  // Regroupement des créneaux par jour
+  // Regrouper les créneaux par date
   const slotsByDate = availabilities.reduce((acc, slot) => {
     const parisDate = DateTime.fromISO(slot.date, { zone: 'utc' }).setZone('Europe/Paris')
-    const dateKey = parisDate.toISODate()
+    const dateKey = parisDate.toISODate() // ex: '2025-09-16'
 
     if (!acc[dateKey]) acc[dateKey] = []
     acc[dateKey].push({
@@ -51,8 +51,12 @@ export default function CoachCalendar({ coachId, packageId }) {
     return acc
   }, {})
 
-  const availableDates = Object.keys(slotsByDate).map(dateStr => new Date(dateStr))
+  // Convertir les dates disponibles en objets Date JS (00:00 heure locale pour éviter le bug des cases bleues)
+  const availableDates = Object.keys(slotsByDate).map(dateStr =>
+    new Date(DateTime.fromISO(dateStr).toFormat('yyyy-MM-ddT00:00:00'))
+  )
 
+  // Créneaux du jour sélectionné
   const selectedSlots = selectedDate
     ? slotsByDate[DateTime.fromJSDate(selectedDate).toISODate()] || []
     : []
@@ -72,7 +76,7 @@ export default function CoachCalendar({ coachId, packageId }) {
           <p className="text-gray-600">Chargement des créneaux...</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Calendrier */}
+            {/* 📅 Calendrier */}
             <div>
               <DayPicker
                 mode="single"
@@ -89,12 +93,13 @@ export default function CoachCalendar({ coachId, packageId }) {
                 }}
                 disabled={{
                   before: new Date(),
-                  day: (date) => !slotsByDate[DateTime.fromJSDate(date).toISODate()]
+                  day: (date) =>
+                    !slotsByDate[DateTime.fromJSDate(date).toISODate()]
                 }}
               />
             </div>
 
-            {/* Créneaux */}
+            {/* ⏰ Créneaux horaires */}
             <div>
               {selectedDate ? (
                 selectedSlots.length > 0 ? (
