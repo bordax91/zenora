@@ -62,19 +62,19 @@ export default function CoachCalendar({ coachId, packageId }) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      <div className="bg-white rounded-xl shadow border p-6">
-        <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
+    <div className="max-w-4xl mx-auto px-2 py-6">
+      <div className="bg-white rounded-lg shadow border p-4">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           📆 Sélectionnez une date et un créneau horaire
         </h3>
 
         {loading ? (
-          <p className="text-gray-600">Chargement des créneaux...</p>
+          <p className="text-gray-600 text-sm">Chargement des créneaux...</p>
         ) : (
-          <div className="flex flex-col md:grid md:grid-cols-2 gap-6">
+          <div className="flex flex-col md:grid md:grid-cols-2 gap-4">
             {/* 📅 Calendrier */}
             <div className="w-full flex justify-center">
-              <div className="w-full max-w-[380px]">
+              <div className="w-full max-w-[340px]">
                 <DayPicker
                   mode="single"
                   selected={selectedDate}
@@ -95,7 +95,7 @@ export default function CoachCalendar({ coachId, packageId }) {
                       return !(dateStr in slotsByDate)
                     }
                   }}
-                  className="w-full"
+                  className="w-full text-sm"
                 />
               </div>
             </div>
@@ -109,17 +109,17 @@ export default function CoachCalendar({ coachId, packageId }) {
                       <button
                         key={slot.id}
                         onClick={() => handleTimeClick(slot.id)}
-                        className="block w-full text-left border border-blue-500 text-blue-600 font-medium py-2 px-4 rounded-lg hover:bg-blue-50 transition"
+                        className="block w-full text-left border border-blue-500 text-blue-600 font-medium py-2 px-3 rounded-md hover:bg-blue-50 transition text-sm"
                       >
                         {slot.time}
                       </button>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500">Aucun créneau disponible ce jour-là.</p>
+                  <p className="text-gray-500 text-sm">Aucun créneau disponible ce jour-là.</p>
                 )
               ) : (
-                <p className="text-gray-500">Veuillez choisir une date.</p>
+                <p className="text-gray-500 text-sm">Veuillez choisir une date.</p>
               )}
             </div>
           </div>
