@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js'
 import { DateTime } from 'luxon'
 import { DayPicker } from 'react-day-picker'
 import 'react-day-picker/dist/style.css'
+import { fr } from 'date-fns/locale'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -31,11 +32,12 @@ export default function CoachCalendar({ coachId, packageId }) {
       .order('date', { ascending: true })
 
     if (!error) setAvailabilities(data || [])
-    else console.error('❌ availabilities:', error)
+    else console.error('❌ Erreur chargement des disponibilités :', error)
 
     setLoading(false)
   }
 
+  // Regroupement des créneaux par jour
   const slotsByDate = availabilities.reduce((acc, slot) => {
     const parisDate = DateTime.fromISO(slot.date, { zone: 'utc' }).setZone('Europe/Paris')
     const dateKey = parisDate.toISODate()
@@ -51,13 +53,13 @@ export default function CoachCalendar({ coachId, packageId }) {
 
   const availableDates = Object.keys(slotsByDate).map(dateStr => new Date(dateStr))
 
-  const handleTimeClick = (slotId) => {
-    window.location.href = `/info-client?availabilityId=${slotId}&package=${packageId}`
-  }
-
   const selectedSlots = selectedDate
     ? slotsByDate[DateTime.fromJSDate(selectedDate).toISODate()] || []
     : []
+
+  const handleTimeClick = (slotId) => {
+    window.location.href = `/info-client?availabilityId=${slotId}&package=${packageId}`
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -70,26 +72,29 @@ export default function CoachCalendar({ coachId, packageId }) {
           <p className="text-gray-600">Chargement des créneaux...</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Calendrier */}
             <div>
               <DayPicker
                 mode="single"
                 selected={selectedDate}
                 onSelect={setSelectedDate}
-                locale="fr"
+                locale={fr}
                 weekStartsOn={1}
                 modifiers={{
                   available: availableDates
                 }}
                 modifiersClassNames={{
-                  available: 'bg-blue-100 text-blue-800 font-semibold'
+                  available: 'bg-blue-100 text-blue-800 font-semibold',
+                  selected: 'bg-blue-500 text-white'
                 }}
                 disabled={{
                   before: new Date(),
-                  day: date => !slotsByDate[DateTime.fromJSDate(date).toISODate()]
+                  day: (date) => !slotsByDate[DateTime.fromJSDate(date).toISODate()]
                 }}
               />
             </div>
 
+            {/* Créneaux */}
             <div>
               {selectedDate ? (
                 selectedSlots.length > 0 ? (
