@@ -130,10 +130,12 @@ export default function AbonnementPage() {
               <span className="text-yellow-600 font-semibold">⏳ Résiliation en attente</span>
             )}
             <ul className="mt-6 space-y-2 text-gray-700">
+              <li>✅ Outil de prospection IA</li>
+              <li>✅ Suivi des ventes et rendez-vous</li>
               <li>✅ Page publique personnalisée</li>
               <li>✅ Prise de RDV avec calendrier</li>
               <li>✅ Paiement sécurisé par Stripe</li>
-              <li>✅ Création d'offres coaching</li>
+              <li>✅ Création d’offres coaching</li>
               <li>✅ Notes sur vos clients</li>
             </ul>
           </div>
@@ -160,12 +162,13 @@ export default function AbonnementPage() {
               <span className="text-yellow-600 font-semibold">⏳ Résiliation en attente</span>
             )}
             <ul className="mt-6 space-y-2 text-gray-700">
-              <li>✅ Toutes les fonctionnalités du Starter</li>
-              <li>🤖 Outil de prospection IA</li>
-              <li>📈 Suivi des ventes et rendez-vous</li>
-              <li>📊 Tableaux de bord avancés</li>
-              <li>🔄 Gestion de plusieurs offres</li>
-              <li>🧠 Suggestions IA pour améliorer vos textes</li>
+              <li>✅ Outil de prospection IA</li>
+              <li>✅ Suivi des ventes et rendez-vous</li>
+              <li>✅ Page publique personnalisée</li>
+              <li>✅ Prise de RDV avec calendrier</li>
+              <li>✅ Paiement sécurisé par Stripe</li>
+              <li>✅ Création d’offres coaching</li>
+              <li>✅ Notes sur vos clients</li>
             </ul>
           </div>
           <div className="mt-6">
