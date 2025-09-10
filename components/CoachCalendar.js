@@ -37,7 +37,6 @@ export default function CoachCalendar({ coachId, packageId }) {
     setLoading(false)
   }
 
-  // Regrouper les créneaux par date
   const slotsByDate = availabilities.reduce((acc, slot) => {
     const parisDate = DateTime.fromISO(slot.date, { zone: 'utc' }).setZone('Europe/Paris')
     const dateKey = parisDate.toISODate()
@@ -51,7 +50,6 @@ export default function CoachCalendar({ coachId, packageId }) {
     return acc
   }, {})
 
-  // Dates disponibles en objets JS Date
   const availableDates = Object.keys(slotsByDate).map((dateStr) => {
     const [year, month, day] = dateStr.split('-').map(Number)
     return new Date(year, month - 1, day)
@@ -77,7 +75,7 @@ export default function CoachCalendar({ coachId, packageId }) {
         ) : (
           <div className="flex flex-col md:grid md:grid-cols-2 gap-6">
             {/* 📅 Calendrier */}
-            <div className="w-full">
+            <div className="flex justify-center md:block">
               <DayPicker
                 mode="single"
                 selected={selectedDate}
@@ -98,7 +96,7 @@ export default function CoachCalendar({ coachId, packageId }) {
                     return !(dateStr in slotsByDate)
                   }
                 }}
-                className="w-full"
+                className="w-full max-w-xs"
               />
             </div>
 
