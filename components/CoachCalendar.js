@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { DateTime } from 'luxon'
+import { DayPicker } from 'react-day-picker'
+import 'react-day-picker/dist/style.css'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -12,6 +14,7 @@ const supabase = createClient(
 export default function CoachCalendar({ coachId, packageId }) {
   const [availabilities, setAvailabilities] = useState([])
   const [loading, setLoading] = useState(true)
+  const [selectedDate, setSelectedDate] = useState(null)
 
   useEffect(() => {
     if (coachId) fetchAvailabilities()
@@ -33,9 +36,9 @@ export default function CoachCalendar({ coachId, packageId }) {
     setLoading(false)
   }
 
-  const groupedDates = availabilities.reduce((acc, slot) => {
+  const slotsByDate = availabilities.reduce((acc, slot) => {
     const parisDate = DateTime.fromISO(slot.date, { zone: 'utc' }).setZone('Europe/Paris')
-    const dateKey = parisDate.toFormat('yyyy-MM-dd')
+    const dateKey = parisDate.toISODate()
 
     if (!acc[dateKey]) acc[dateKey] = []
     acc[dateKey].push({
@@ -46,48 +49,68 @@ export default function CoachCalendar({ coachId, packageId }) {
     return acc
   }, {})
 
-  const sortedDates = Object.keys(groupedDates).sort()
+  const availableDates = Object.keys(slotsByDate).map(dateStr => new Date(dateStr))
 
-  const handleClick = (slotId) => {
-    const target = `/info-client?availabilityId=${slotId}&package=${packageId}`
-    window.location.href = target // 🔁 Toujours rediriger vers /info-client, connecté ou non
+  const handleTimeClick = (slotId) => {
+    window.location.href = `/info-client?availabilityId=${slotId}&package=${packageId}`
   }
+
+  const selectedSlots = selectedDate
+    ? slotsByDate[DateTime.fromJSDate(selectedDate).toISODate()] || []
+    : []
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="bg-white rounded-xl shadow border p-6">
         <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
-          📆 Sélectionnez la date et l'heure
+          📆 Sélectionnez une date et un créneau horaire
         </h3>
 
         {loading ? (
           <p className="text-gray-600">Chargement des créneaux...</p>
-        ) : sortedDates.length === 0 ? (
-          <p className="text-gray-500">Aucune disponibilité pour le moment.</p>
         ) : (
-          <div className="space-y-8">
-            {sortedDates.map((dateStr) => (
-              <div key={dateStr} className="bg-gray-50 p-4 rounded-lg border">
-                <h4 className="text-lg font-semibold mb-4 text-gray-700">
-                  {DateTime.fromISO(dateStr).setLocale('fr').toLocaleString({
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'long'
-                  })}
-                </h4>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {groupedDates[dateStr].map((slot) => (
-                    <button
-                      key={slot.id}
-                      onClick={() => handleClick(slot.id)}
-                      className="border border-blue-500 text-blue-600 font-medium py-2 rounded-lg hover:bg-blue-50 transition"
-                    >
-                      {slot.time}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <DayPicker
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                locale="fr"
+                weekStartsOn={1}
+                modifiers={{
+                  available: availableDates
+                }}
+                modifiersClassNames={{
+                  available: 'bg-blue-100 text-blue-800 font-semibold'
+                }}
+                disabled={{
+                  before: new Date(),
+                  day: date => !slotsByDate[DateTime.fromJSDate(date).toISODate()]
+                }}
+              />
+            </div>
+
+            <div>
+              {selectedDate ? (
+                selectedSlots.length > 0 ? (
+                  <div className="space-y-2">
+                    {selectedSlots.map(slot => (
+                      <button
+                        key={slot.id}
+                        onClick={() => handleTimeClick(slot.id)}
+                        className="block w-full text-left border border-blue-500 text-blue-600 font-medium py-2 px-4 rounded-lg hover:bg-blue-50 transition"
+                      >
+                        {slot.time}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500">Aucun créneau disponible ce jour-là.</p>
+                )
+              ) : (
+                <p className="text-gray-500">Veuillez choisir une date.</p>
+              )}
+            </div>
           </div>
         )}
       </div>
