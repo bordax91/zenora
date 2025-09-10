@@ -8,7 +8,6 @@ export default function AbonnementPage() {
   const [loading, setLoading] = useState(true)
   const [priceLabel, setPriceLabel] = useState(null)
 
-  // ✅ Définir les priceId une seule fois
   const STRIPE_MONTHLY = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_MONTHLY
   const STRIPE_YEARLY = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_YEARLY
   const STRIPE_TEST = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_TEST_MONTHLY
@@ -60,7 +59,7 @@ export default function AbonnementPage() {
   }
 
   const handleUnsubscribe = async () => {
-    const confirmed = confirm("Souhaitez-vous vraiment vous désabonner ?")
+    const confirmed = confirm("Souhaitez-vous vraiment vous désabonner à la fin de la période ?")
     if (!confirmed) return
 
     const res = await fetch('/api/stripe/cancel-subscription', {
@@ -71,10 +70,10 @@ export default function AbonnementPage() {
 
     const result = await res.json()
     if (result.success) {
-      alert('Vous avez été désabonné.')
+      alert('Votre abonnement sera résilié à la fin de la période en cours.')
       location.reload()
     } else {
-      alert('Erreur lors du désabonnement.')
+      alert('Erreur lors de la demande de désabonnement.')
       console.error(result.error)
     }
   }
@@ -108,12 +107,14 @@ export default function AbonnementPage() {
   const now = new Date()
   const trialEnd = user.trial_end ? new Date(user.trial_end) : null
   const isTrialActive = trialEnd && now < trialEnd
+  const isPendingCancel = user.cancel_at_period_end === true
+  const isSubscribed = user.is_subscribed === true
 
   return (
     <div className="max-w-xl mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6 text-center">Abonnement</h1>
 
-      {user.is_subscribed ? (
+      {isSubscribed && !isPendingCancel && (
         <div className="bg-green-100 text-green-800 p-4 rounded-lg mb-6">
           ✅ Vous êtes actuellement abonné(e).
           {priceLabel && <p className="mt-2 font-medium">Plan : {priceLabel}</p>}
@@ -124,17 +125,28 @@ export default function AbonnementPage() {
             Se désabonner
           </button>
         </div>
-      ) : isTrialActive ? (
+      )}
+
+      {isSubscribed && isPendingCancel && (
         <div className="bg-yellow-100 text-yellow-800 p-4 rounded-lg mb-6">
+          ⚠️ Votre abonnement est actif, mais sera résilié à la fin de la période actuelle.
+          {priceLabel && <p className="mt-2 font-medium">Plan : {priceLabel}</p>}
+        </div>
+      )}
+
+      {!isSubscribed && isTrialActive && (
+        <div className="bg-blue-100 text-blue-800 p-4 rounded-lg mb-6">
           ⏳ Vous êtes en période d’essai jusqu’au <strong>{trialEnd.toLocaleDateString()}</strong>.
         </div>
-      ) : (
+      )}
+
+      {!isSubscribed && !isTrialActive && !isPendingCancel && (
         <div className="bg-red-100 text-red-800 p-4 rounded-lg mb-6">
           ❌ Votre période d’essai est terminée. Veuillez souscrire à une offre pour continuer.
         </div>
       )}
 
-      {!user.is_subscribed && (
+      {(!isSubscribed || isPendingCancel) && (
         <div className="flex flex-col gap-4">
           <button
             onClick={() => handleSubscribe(STRIPE_MONTHLY)}
