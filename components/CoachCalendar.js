@@ -62,19 +62,19 @@ export default function CoachCalendar({ coachId, packageId }) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-2 py-6">
-      <div className="bg-white rounded-lg shadow border p-4">
-        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          📆 Sélectionnez une date et un créneau horaire
+    <div className="max-w-md mx-auto px-1 py-4">
+      <div className="bg-white rounded-lg shadow border p-3">
+        <h3 className="text-base font-semibold mb-3 flex items-center gap-2">
+          📅 Sélectionnez une date et un horaire
         </h3>
 
         {loading ? (
-          <p className="text-gray-600 text-sm">Chargement des créneaux...</p>
+          <p className="text-gray-600 text-sm">Chargement...</p>
         ) : (
-          <div className="flex flex-col md:grid md:grid-cols-2 gap-4">
+          <>
             {/* 📅 Calendrier */}
-            <div className="w-full flex justify-center">
-              <div className="w-full max-w-[340px]">
+            <div className="w-full flex justify-center mb-4">
+              <div className="w-full max-w-[320px]">
                 <DayPicker
                   mode="single"
                   selected={selectedDate}
@@ -85,7 +85,7 @@ export default function CoachCalendar({ coachId, packageId }) {
                     available: availableDates
                   }}
                   modifiersClassNames={{
-                    available: 'bg-blue-100 text-blue-800 font-semibold',
+                    available: 'bg-blue-100 text-blue-800 font-medium',
                     selected: 'bg-blue-500 text-white'
                   }}
                   disabled={{
@@ -104,25 +104,25 @@ export default function CoachCalendar({ coachId, packageId }) {
             <div className="w-full">
               {selectedDate ? (
                 selectedSlots.length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     {selectedSlots.map((slot) => (
                       <button
                         key={slot.id}
                         onClick={() => handleTimeClick(slot.id)}
-                        className="block w-full text-left border border-blue-500 text-blue-600 font-medium py-2 px-3 rounded-md hover:bg-blue-50 transition text-sm"
+                        className="block w-full text-left border border-blue-500 text-blue-600 font-medium py-1.5 px-2 rounded-md hover:bg-blue-50 transition text-sm"
                       >
                         {slot.time}
                       </button>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-sm">Aucun créneau disponible ce jour-là.</p>
+                  <p className="text-gray-500 text-sm">Aucun créneau ce jour-là.</p>
                 )
               ) : (
                 <p className="text-gray-500 text-sm">Veuillez choisir une date.</p>
               )}
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>
