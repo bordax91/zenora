@@ -109,7 +109,7 @@ export default function WeeklyAvailability() {
       slots.forEach(({ start_time, end_time }) => {
         toInsertTemplate.push({ coach_id: userId, day_of_week: dayOfWeek, start_time, end_time })
 
-        for (let i = 0; i < 14; i++) {
+        for (let i = 0; i < 30; i++) {
           const currentDay = now.plus({ days: i })
           if (currentDay.weekday % 7 !== dayOfWeek) continue
 

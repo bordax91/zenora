@@ -35,7 +35,7 @@ export async function POST(req) {
     const slots = []
     const nowDate = DateTime.now().setZone('Europe/Paris').startOf('day')
 
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < 30; i++) {
       const currentDate = nowDate.plus({ days: i })
 
       for (const tpl of templates) {
