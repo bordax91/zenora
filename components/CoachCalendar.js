@@ -37,7 +37,7 @@ export default function CoachCalendar({ coachId, packageId }) {
     setLoading(false)
   }
 
-  // Regrouper les créneaux par date (format ISO yyyy-MM-dd)
+  // Regrouper les créneaux par date
   const slotsByDate = availabilities.reduce((acc, slot) => {
     const parisDate = DateTime.fromISO(slot.date, { zone: 'utc' }).setZone('Europe/Paris')
     const dateKey = parisDate.toISODate()
@@ -51,13 +51,12 @@ export default function CoachCalendar({ coachId, packageId }) {
     return acc
   }, {})
 
-  // Convertir les clés du tableau en objets Date JS pour affichage dans le calendrier
+  // Dates disponibles en objets JS Date
   const availableDates = Object.keys(slotsByDate).map((dateStr) => {
     const [year, month, day] = dateStr.split('-').map(Number)
-    return new Date(year, month - 1, day) // JS months start at 0
+    return new Date(year, month - 1, day)
   })
 
-  // Créneaux associés à la date sélectionnée
   const selectedSlots = selectedDate
     ? slotsByDate[DateTime.fromJSDate(selectedDate).toISODate()] || []
     : []
@@ -76,9 +75,9 @@ export default function CoachCalendar({ coachId, packageId }) {
         {loading ? (
           <p className="text-gray-600">Chargement des créneaux...</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="flex flex-col md:grid md:grid-cols-2 gap-6">
             {/* 📅 Calendrier */}
-            <div>
+            <div className="w-full">
               <DayPicker
                 mode="single"
                 selected={selectedDate}
@@ -99,11 +98,12 @@ export default function CoachCalendar({ coachId, packageId }) {
                     return !(dateStr in slotsByDate)
                   }
                 }}
+                className="w-full"
               />
             </div>
 
             {/* ⏰ Créneaux horaires */}
-            <div>
+            <div className="w-full">
               {selectedDate ? (
                 selectedSlots.length > 0 ? (
                   <div className="space-y-2">
