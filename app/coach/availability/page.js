@@ -21,6 +21,8 @@ export default function WeeklyAvailability() {
   const [loading, setLoading] = useState(true)
   const [slotDuration, setSlotDuration] = useState(60)
   const [availabilities, setAvailabilities] = useState([])
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState('')
 
   useEffect(() => {
     const fetchData = async () => {
@@ -54,15 +56,18 @@ export default function WeeklyAvailability() {
         .from('availabilities')
         .select('*')
         .eq('coach_id', user.id)
-        .gte('date', new Date().toISOString())
         .order('date', { ascending: true })
 
-      setAvailabilities(data || [])
+      const futureSlots = (data || []).filter(slot =>
+        DateTime.fromISO(slot.date).setZone('Europe/Paris') > DateTime.now().setZone('Europe/Paris')
+      )
+
+      setAvailabilities(futureSlots)
     }
 
     fetchData()
     fetchAvailabilities()
-  }, [])
+  }, [saving])
 
   const handleTimeChange = (day, index, field, value) => {
     setWeekTemplate(prev => {
@@ -89,6 +94,9 @@ export default function WeeklyAvailability() {
 
   const saveTemplate = async () => {
     if (!userId) return
+    setSaving(true)
+    setMessage('Sauvegarde en cours...')
+
     await supabase.from('availability_template').delete().eq('coach_id', userId)
 
     const toInsertTemplate = []
@@ -109,17 +117,10 @@ export default function WeeklyAvailability() {
           const end = DateTime.fromFormat(end_time, 'HH:mm', { zone: 'Europe/Paris' })
           let cursor = start
 
-          while (cursor < end) {
-            const endSlot = cursor.plus({ minutes: slotDuration })
-            if (endSlot > end) break
-
-            const slotDate = currentDay
-              .set({ hour: cursor.hour, minute: cursor.minute })
-              .toUTC()
-              .toISO()
-
+          while (cursor.plus({ minutes: slotDuration }) <= end) {
+            const slotDate = currentDay.set({ hour: cursor.hour, minute: cursor.minute }).toUTC().toISO()
             toInsertSlots.push({ coach_id: userId, date: slotDate, is_booked: false })
-            cursor = endSlot
+            cursor = cursor.plus({ minutes: slotDuration })
           }
         }
       })
@@ -128,20 +129,25 @@ export default function WeeklyAvailability() {
     const { error: templateError } = await supabase
       .from('availability_template')
       .insert(toInsertTemplate)
-    if (templateError) return alert('Erreur template : ' + templateError.message)
+    if (templateError) {
+      alert('Erreur template : ' + templateError.message)
+      return setSaving(false)
+    }
 
-    await supabase
-      .from('availabilities')
-      .delete()
-      .eq('coach_id', userId)
-      .eq('is_booked', false)
+    const nowUTC = DateTime.now().setZone('Europe/Paris').toUTC().toISO()
+    await supabase.from('availabilities').delete().lt('date', nowUTC).eq('is_booked', false)
 
     const { error: slotError } = await supabase
       .from('availabilities')
       .insert(toInsertSlots)
-    if (slotError) return alert('Erreur créneaux : ' + slotError.message)
+    if (slotError) {
+      alert('Erreur créneaux : ' + slotError.message)
+      return setSaving(false)
+    }
 
-    alert('Planning sauvegardé et créneaux générés ✅\n\n⏳ Pensez à regénérer toutes les 2 semaines !')
+    setMessage('✅ Planning sauvegardé et créneaux générés !')
+    setTimeout(() => setMessage(''), 4000)
+    setSaving(false)
   }
 
   return (
@@ -179,15 +185,17 @@ export default function WeeklyAvailability() {
               <button onClick={() => addTimeSlot(day)} className="text-blue-600 hover:underline text-sm">➕ Ajouter une plage</button>
             </div>
           ))}
-          <button onClick={saveTemplate} className="mt-6 bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">💾 Enregistrer le planning & générer</button>
+          <button disabled={saving} onClick={saveTemplate} className="mt-6 bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">
+            {saving ? '⏳ Sauvegarde...' : '💾 Enregistrer le planning & générer'}
+          </button>
+          {message && <p className="text-green-700 mt-2">{message}</p>}
         </div>
       )}
 
-      {/* 📅 Calendrier des créneaux générés */}
       <div className="mt-16">
         <h2 className="text-xl font-bold mb-4">📆 Créneaux disponibles</h2>
         {availabilities.length === 0 ? (
-          <p className="text-gray-500">Aucun créneau généré pour les 2 prochaines semaines.</p>
+          <p className="text-gray-500">Aucun créneau à venir.</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {Object.entries(
