@@ -10,7 +10,7 @@ export default function InfoClientPage() {
   const packageId = searchParams.get('package')
   const availabilityId = searchParams.get('availabilityId')
 
-  const [mode, setMode] = useState('signup') // ✅ affichage par défaut : formulaire de création
+  const [mode, setMode] = useState('signup')
   const [form, setForm] = useState({
     email: '',
     password: '',
@@ -30,10 +30,10 @@ export default function InfoClientPage() {
     setError(null)
 
     try {
-      let result
+      let authResult
 
       if (mode === 'signup') {
-        result = await supabase.auth.signUp({
+        authResult = await supabase.auth.signUp({
           email: form.email,
           password: form.password,
           options: {
@@ -44,30 +44,32 @@ export default function InfoClientPage() {
           }
         })
       } else {
-        result = await supabase.auth.signInWithPassword({
+        authResult = await supabase.auth.signInWithPassword({
           email: form.email,
           password: form.password
         })
       }
 
-      if (result.error) {
-        setError(result.error.message)
+      if (authResult.error) {
+        setError(authResult.error.message)
         setLoading(false)
         return
       }
 
-      const { data: userData } = await supabase.auth.getUser()
-      const clientId = userData?.user?.id
+      // ⏳ Attendre la session correctement pour récupérer l’ID utilisateur
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
 
-      if (!clientId) {
-        setError("Erreur d'identification du client.")
+      if (sessionError || !sessionData?.session?.user?.id) {
+        setError("Erreur lors de l'identification de la session.")
         setLoading(false)
         return
       }
 
-      // 🔄 Insertion dans table "users" si nouveau client
+      const clientId = sessionData.session.user.id
+
+      // 🔄 Insertion dans la table "users" uniquement si nouveau client
       if (mode === 'signup') {
-        const { data: existingUser } = await supabase
+        const { data: existingUser, error: checkError } = await supabase
           .from('users')
           .select('id')
           .eq('id', clientId)
@@ -92,7 +94,7 @@ export default function InfoClientPage() {
         }
       }
 
-      // 🧾 Création de la session Stripe
+      // 🧾 Créer la session Stripe
       const response = await fetch('/api/checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -106,11 +108,13 @@ export default function InfoClientPage() {
       const data = await response.json()
 
       if (!response.ok || !data?.url) {
-        setError(data.error || 'Erreur lors de la redirection vers Stripe.')
+        console.error('❌ Erreur redirection Stripe :', data?.error)
+        setError(data?.error || 'Erreur lors de la redirection vers Stripe.')
         setLoading(false)
         return
       }
 
+      // ✅ Redirection vers Stripe Checkout
       window.location.href = data.url
 
     } catch (err) {
