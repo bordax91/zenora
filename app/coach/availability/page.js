@@ -109,14 +109,17 @@ export default function WeeklyAvailability() {
           const end = DateTime.fromFormat(end_time, 'HH:mm', { zone: 'Europe/Paris' })
           let cursor = start
 
-          while (cursor.plus({ minutes: slotDuration }) <= end) {
+          while (cursor < end) {
+            const endSlot = cursor.plus({ minutes: slotDuration })
+            if (endSlot > end) break
+
             const slotDate = currentDay
               .set({ hour: cursor.hour, minute: cursor.minute })
               .toUTC()
               .toISO()
 
             toInsertSlots.push({ coach_id: userId, date: slotDate, is_booked: false })
-            cursor = cursor.plus({ minutes: slotDuration })
+            cursor = endSlot
           }
         }
       })
@@ -127,8 +130,11 @@ export default function WeeklyAvailability() {
       .insert(toInsertTemplate)
     if (templateError) return alert('Erreur template : ' + templateError.message)
 
-    const nowUTC = DateTime.now().setZone('Europe/Paris').toUTC().toISO()
-    await supabase.from('availabilities').delete().lt('date', nowUTC).eq('is_booked', false)
+    await supabase
+      .from('availabilities')
+      .delete()
+      .eq('coach_id', userId)
+      .eq('is_booked', false)
 
     const { error: slotError } = await supabase
       .from('availabilities')
