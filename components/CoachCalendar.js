@@ -37,10 +37,10 @@ export default function CoachCalendar({ coachId, packageId }) {
     setLoading(false)
   }
 
-  // Regrouper les créneaux par date
+  // Regrouper les créneaux par date (format ISO yyyy-MM-dd)
   const slotsByDate = availabilities.reduce((acc, slot) => {
     const parisDate = DateTime.fromISO(slot.date, { zone: 'utc' }).setZone('Europe/Paris')
-    const dateKey = parisDate.toISODate() // ex: '2025-09-16'
+    const dateKey = parisDate.toISODate()
 
     if (!acc[dateKey]) acc[dateKey] = []
     acc[dateKey].push({
@@ -51,12 +51,13 @@ export default function CoachCalendar({ coachId, packageId }) {
     return acc
   }, {})
 
-  // Convertir les dates disponibles en objets Date JS (00:00 heure locale pour éviter le bug des cases bleues)
-  const availableDates = Object.keys(slotsByDate).map(dateStr =>
-    new Date(DateTime.fromISO(dateStr).toFormat('yyyy-MM-ddT00:00:00'))
-  )
+  // Convertir les clés du tableau en objets Date JS pour affichage dans le calendrier
+  const availableDates = Object.keys(slotsByDate).map((dateStr) => {
+    const [year, month, day] = dateStr.split('-').map(Number)
+    return new Date(year, month - 1, day) // JS months start at 0
+  })
 
-  // Créneaux du jour sélectionné
+  // Créneaux associés à la date sélectionnée
   const selectedSlots = selectedDate
     ? slotsByDate[DateTime.fromJSDate(selectedDate).toISODate()] || []
     : []
@@ -93,8 +94,10 @@ export default function CoachCalendar({ coachId, packageId }) {
                 }}
                 disabled={{
                   before: new Date(),
-                  day: (date) =>
-                    !slotsByDate[DateTime.fromJSDate(date).toISODate()]
+                  day: (date) => {
+                    const dateStr = DateTime.fromJSDate(date).toISODate()
+                    return !(dateStr in slotsByDate)
+                  }
                 }}
               />
             </div>
@@ -104,7 +107,7 @@ export default function CoachCalendar({ coachId, packageId }) {
               {selectedDate ? (
                 selectedSlots.length > 0 ? (
                   <div className="space-y-2">
-                    {selectedSlots.map(slot => (
+                    {selectedSlots.map((slot) => (
                       <button
                         key={slot.id}
                         onClick={() => handleTimeClick(slot.id)}
