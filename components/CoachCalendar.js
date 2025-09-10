@@ -73,7 +73,7 @@ export default function CoachCalendar({ coachId, packageId }) {
         ) : (
           <div className="flex flex-col md:grid md:grid-cols-2 gap-6">
             {/* 📅 Calendrier */}
-            <div className="w-full flex justify-center md:justify-start">
+            <div className="w-full flex justify-center md:justify-start overflow-x-hidden">
               <DayPicker
                 mode="single"
                 selected={selectedDate}
@@ -94,7 +94,7 @@ export default function CoachCalendar({ coachId, packageId }) {
                     return !(dateStr in slotsByDate)
                   }
                 }}
-                className="w-full min-w-[420px] mx-auto"
+                className="w-full max-w-[360px]"
               />
             </div>
 
