@@ -59,7 +59,27 @@ export async function POST(req) {
       )
     }
 
-    // ✅ Créer la session Stripe
+    // ✅ Vérifier que le client existe vraiment dans Supabase
+    const { data: clientExists, error: clientError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', clientId)
+      .maybeSingle()
+
+    if (clientError || !clientExists) {
+      console.error('❌ Client non trouvé dans Supabase:', clientError)
+      return new Response(JSON.stringify({ error: 'Client introuvable dans la base' }), { status: 404 })
+    }
+
+    // ✅ Créer la session Stripe avec logs
+    const metadata = {
+      client_id: clientId,
+      availability_id: availabilityId,
+      package_id: packageId
+    }
+
+    console.log('✅ Metadata envoyée à Stripe :', metadata)
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -71,14 +91,17 @@ export async function POST(req) {
       mode: 'payment',
       success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/client/dashboard?package=${packageId}`,
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/${packageData.coach.username}`,
-      metadata: {
-        client_id: clientId,
-        availability_id: availabilityId,
-        package_id: packageId // ✅ utile pour le webhook
-      },
+      metadata,
     }, {
       stripeAccount: packageData.coach.stripe_account_id,
     })
+
+    if (!session?.url) {
+      return new Response(
+        JSON.stringify({ error: "Erreur de création de session Stripe." }),
+        { status: 500 }
+      )
+    }
 
     return new Response(JSON.stringify({ url: session.url }), {
       status: 200,
