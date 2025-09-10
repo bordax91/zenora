@@ -40,13 +40,11 @@ export default function CoachCalendar({ coachId, packageId }) {
   const slotsByDate = availabilities.reduce((acc, slot) => {
     const parisDate = DateTime.fromISO(slot.date, { zone: 'utc' }).setZone('Europe/Paris')
     const dateKey = parisDate.toISODate()
-
     if (!acc[dateKey]) acc[dateKey] = []
     acc[dateKey].push({
       id: slot.id,
       time: parisDate.toFormat('HH:mm')
     })
-
     return acc
   }, {})
 
@@ -75,29 +73,31 @@ export default function CoachCalendar({ coachId, packageId }) {
         ) : (
           <div className="flex flex-col md:grid md:grid-cols-2 gap-6">
             {/* 📅 Calendrier */}
-            <div className="flex justify-center md:block">
-              <DayPicker
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                locale={fr}
-                weekStartsOn={1}
-                modifiers={{
-                  available: availableDates
-                }}
-                modifiersClassNames={{
-                  available: 'bg-blue-100 text-blue-800 font-semibold',
-                  selected: 'bg-blue-500 text-white'
-                }}
-                disabled={{
-                  before: new Date(),
-                  day: (date) => {
-                    const dateStr = DateTime.fromJSDate(date).toISODate()
-                    return !(dateStr in slotsByDate)
-                  }
-                }}
-                className="w-full max-w-xs"
-              />
+            <div className="overflow-x-auto md:overflow-visible">
+              <div className="min-w-[340px] max-w-full flex justify-center md:justify-start">
+                <DayPicker
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  locale={fr}
+                  weekStartsOn={1}
+                  modifiers={{
+                    available: availableDates
+                  }}
+                  modifiersClassNames={{
+                    available: 'bg-blue-100 text-blue-800 font-semibold',
+                    selected: 'bg-blue-500 text-white'
+                  }}
+                  disabled={{
+                    before: new Date(),
+                    day: (date) => {
+                      const dateStr = DateTime.fromJSDate(date).toISODate()
+                      return !(dateStr in slotsByDate)
+                    }
+                  }}
+                  className="w-full"
+                />
+              </div>
             </div>
 
             {/* ⏰ Créneaux horaires */}
