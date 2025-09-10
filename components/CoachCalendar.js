@@ -94,7 +94,7 @@ export default function CoachCalendar({ coachId, packageId }) {
                     return !(dateStr in slotsByDate)
                   }
                 }}
-                className="w-full max-w-sm"
+                className="w-full min-w-[420px] mx-auto"
               />
             </div>
 
