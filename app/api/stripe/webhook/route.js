@@ -173,7 +173,7 @@ export async function POST(req) {
     }
   }
 
-  // === CAS 3 : Désabonnement (customer.subscription.deleted) ===
+  // === CAS 3 : Désabonnement définitif (à la fin de la période) ===
   if (event.type === 'customer.subscription.deleted') {
     const subscription = event.data.object
     const customerId = subscription.customer
@@ -188,7 +188,10 @@ export async function POST(req) {
 
     const { error: unsubError, count } = await supabase
       .from('users')
-      .update({ is_subscribed: false })
+      .update({ 
+        is_subscribed: false,              // ✅ Plus d'abonnement
+        cancel_at_period_end: false        // ✅ On remet ce champ à false après expiration
+      })
       .or(`stripe_customer_id.eq.${customerId},email.eq.${customerEmail}`)
       .select('*', { count: 'exact' })
 
