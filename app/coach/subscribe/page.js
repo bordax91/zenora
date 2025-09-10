@@ -10,7 +10,6 @@ export default function AbonnementPage() {
 
   const STRIPE_MONTHLY = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_MONTHLY
   const STRIPE_YEARLY = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_YEARLY
-  const STRIPE_TEST = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_TEST_MONTHLY
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -34,8 +33,6 @@ export default function AbonnementPage() {
             setPriceLabel('Mensuel – 39€/mois')
           } else if (priceId === STRIPE_YEARLY) {
             setPriceLabel('Annuel – 349€/an')
-          } else if (priceId === STRIPE_TEST) {
-            setPriceLabel('Test – 1€/mois')
           } else {
             setPriceLabel('Abonnement actif')
           }
@@ -111,9 +108,10 @@ export default function AbonnementPage() {
   const isSubscribed = user.is_subscribed === true
 
   return (
-    <div className="max-w-xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6 text-center">Abonnement</h1>
+    <div className="max-w-3xl mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-6 text-center">Votre abonnement Zenora</h1>
 
+      {/* ✅ Bloc statut */}
       {isSubscribed && !isPendingCancel && (
         <div className="bg-green-100 text-green-800 p-4 rounded-lg mb-6">
           ✅ Vous êtes actuellement abonné(e).
@@ -146,6 +144,21 @@ export default function AbonnementPage() {
         </div>
       )}
 
+      {/* ✨ Fonctionnalités Zenora */}
+      <div className="bg-white shadow rounded-lg p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-4">Fonctionnalités incluses avec votre abonnement</h2>
+        <ul className="space-y-2 text-gray-700">
+          <li>✅ <strong>Page publique personnalisée</strong> pour présenter vos offres de coaching</li>
+          <li>🤖 <strong>Outil de prospection IA</strong> pour trouver de nouveaux clients automatiquement</li>
+          <li>📈 <strong>Suivi des ventes</strong> et des rendez-vous en temps réel</li>
+          <li>🛍️ <strong>Création d'offres</strong> illimitée avec durée, prix et description</li>
+          <li>📆 <strong>Prise de rendez-vous simplifiée</strong> avec calendrier intelligent</li>
+          <li>📝 <strong>Notes privées</strong> sur vos clients pour mieux les suivre</li>
+          <li>💳 <strong>Paiement sécurisé</strong> via Stripe (vous recevez directement l'argent)</li>
+        </ul>
+      </div>
+
+      {/* 🛒 CTA abonnement */}
       {(!isSubscribed || isPendingCancel) && (
         <div className="flex flex-col gap-4">
           <button
@@ -159,12 +172,6 @@ export default function AbonnementPage() {
             className="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
           >
             📅 S’abonner au plan annuel – 349€/an
-          </button>
-          <button
-            onClick={() => handleSubscribe(STRIPE_TEST)}
-            className="w-full bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition"
-          >
-            🧪 Plan test – 1€/mois
           </button>
         </div>
       )}
