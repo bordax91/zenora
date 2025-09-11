@@ -27,12 +27,6 @@ export default function Home() {
               >
                 🚀 Essai gratuit 7 jours
               </Link>
-              <Link
-                href="/pricing"
-                className="text-blue-600 font-medium underline text-center"
-              >
-                Voir les tarifs
-              </Link>
             </div>
             <div className="text-sm text-gray-500">Sans carte bancaire – sans engagement</div>
           </div>
