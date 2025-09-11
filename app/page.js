@@ -73,7 +73,7 @@ export default function Home() {
       </section>
 
       {/* POUR QUI ? */}
-      <section className="bg-blue-50 py-20 px-6">
+      <section id="pour-qui" className="bg-blue-50 py-20 px-6">
         <div className="max-w-5xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-8 text-gray-800">Pour qui ?</h2>
           <p className="text-lg text-gray-700 mb-6">
@@ -153,7 +153,7 @@ export default function Home() {
       </section>
 
       {/* FAQ */}
-      <section className="bg-blue-50 py-20 px-6">
+      <section id="faq" className="bg-blue-50 py-20 px-6">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl font-bold text-center text-gray-800 mb-10">FAQ</h2>
           <div className="space-y-6 text-left text-gray-700">
