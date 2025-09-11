@@ -15,7 +15,7 @@ export default function Home() {
           {/* Texte */}
           <div className="space-y-6">
             <h1 className="text-5xl font-bold text-gray-800 leading-tight">
-              Gérez votre activité de coaching <span className="text-blue-600">simplement</span>
+              Gérez votre activité <span className="text-blue-600">simplement</span>
             </h1>
             <p className="text-lg text-gray-600">
               Prise de rendez-vous, paiements, page publique personnalisée – tout-en-un.
