@@ -72,6 +72,30 @@ export default function Home() {
         </div>
       </section>
 
+      {/* POUR QUI ? */}
+      <section className="bg-blue-50 py-20 px-6">
+        <div className="max-w-5xl mx-auto text-center">
+          <h2 className="text-3xl font-bold mb-8 text-gray-800">Pour qui ?</h2>
+          <p className="text-lg text-gray-700 mb-6">
+            Zenora est conçu pour <strong>les coachs, thérapeutes, praticiens bien-être</strong> qui veulent une solution simple, efficace et professionnelle pour gérer leur activité.
+          </p>
+          <div className="grid md:grid-cols-2 gap-6 text-left mt-10">
+            <ul className="space-y-3 text-blue-700 font-medium">
+              <li>✅ Outil de prospection IA intégré</li>
+              <li>✅ Suivi des ventes et rendez-vous</li>
+              <li>✅ Page publique personnalisée</li>
+              <li>✅ Prise de rendez-vous avec calendrier</li>
+            </ul>
+            <ul className="space-y-3 text-blue-700 font-medium">
+              <li>✅ Paiement sécurisé par Stripe</li>
+              <li>✅ Création d’offres coaching sur-mesure</li>
+              <li>✅ Historique et notes sur vos clients</li>
+              <li>✅ Simple à utiliser, sans compétences techniques</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
       {/* Visuel page publique */}
       <section className="bg-gray-50 py-20 px-6">
         <div className="max-w-6xl mx-auto text-center">
@@ -123,6 +147,31 @@ export default function Home() {
               />
               <p className="italic text-gray-600">"Enfin une solution qui combine coaching humain et digital sans friction."</p>
               <p className="mt-2 font-semibold text-gray-700">Emma, praticienne holistique</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="bg-blue-50 py-20 px-6">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold text-center text-gray-800 mb-10">FAQ</h2>
+          <div className="space-y-6 text-left text-gray-700">
+            <div>
+              <h3 className="font-semibold mb-1">💡 Est-ce que je dois avoir des compétences techniques ?</h3>
+              <p>Non, Zenora est pensé pour être simple et intuitif. Si vous savez utiliser votre boîte mail, vous saurez utiliser Zenora.</p>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-1">🧠 Peut-on discuter avec un coach IA ?</h3>
+              <p>Oui, en plus de la partie gestion, Zenora propose une IA spécialisée en bien-être mental.</p>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-1">📱 Y a-t-il une application mobile ?</h3>
+              <p>Pas encore. La plateforme est optimisée pour tous les écrans (mobile, tablette, ordinateur).</p>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-1">💬 Y a-t-il un chat pour contacter Zenora ?</h3>
+              <p>Pas de chat pour l’instant, mais vous pouvez nous écrire via la page <Link href="/contact" className="underline text-blue-600">contact</Link>.</p>
             </div>
           </div>
         </div>
