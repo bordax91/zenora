@@ -114,7 +114,7 @@ export default function Header() {
               href="/register"
               className="bg-blue-600 text-white text-sm px-3 py-1.5 rounded-md hover:bg-blue-700 transition font-medium"
             >
-              Essayer
+              Essayer gratuitement
             </Link>
           )}
           <button
