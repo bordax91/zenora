@@ -9,29 +9,20 @@ export default function AuthCallback() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    if (typeof window === 'undefined') return // 🚫 Ne pas exécuter côté serveur
-
-    const search = new URLSearchParams(window.location.search)
-    const code = search.get('code')
-    const oauthError = search.get('error_description') || search.get('error')
-
-    if (oauthError) {
-      setError(oauthError)
-      return
-    }
-
-    if (!code) {
-      setError('Code OAuth manquant.')
-      return
-    }
-
     const run = async () => {
       try {
+        const search = new URLSearchParams(window.location.search)
+        const code = search.get('code')
+        const oauthError = search.get('error_description') || search.get('error')
+        if (oauthError) throw new Error(oauthError)
+
         // 🔄 Échange du code OAuth contre une session Supabase
-        const { error: exchangeErr } = await supabase.auth.exchangeCodeForSession(window.location.href)
-        if (exchangeErr) {
-          console.error('[exchangeCodeForSession error]', exchangeErr)
-          throw exchangeErr
+        if (code) {
+          const { error: exchangeErr } = await supabase.auth.exchangeCodeForSession(window.location.href)
+          if (exchangeErr) {
+            console.error('[exchangeCodeForSession error]', exchangeErr)
+            throw exchangeErr
+          }
         }
 
         // 🔐 Récupérer l'utilisateur connecté
@@ -75,7 +66,7 @@ export default function AuthCallback() {
           throw upsertErr
         }
 
-        // 🧹 Nettoyage + redirection
+        // 🧹 Nettoyage
         const qsRedirect = search.get('redirect') || search.get('next') || ''
         const storedRedirect = localStorage.getItem('pendingRedirect') || ''
         const pick = (path) => (path && path.startsWith('/') && !path.startsWith('//') ? path : null)
@@ -99,8 +90,7 @@ export default function AuthCallback() {
       }
     }
 
-    // Optionnel : délai pour laisser le temps à Supabase de recharger son code_verifier
-    setTimeout(run, 100) // ou 200ms si nécessaire
+    run()
   }, [router])
 
   return (
