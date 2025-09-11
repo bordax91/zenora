@@ -163,7 +163,7 @@ export default function Home() {
             </div>
             <div>
               <h3 className="font-semibold mb-1">❓ Est-ce que je peux me désabonner à tout moment ?</h3>
-              <p>Oui, vous pouvez vous désabonnez à tout moment, c'est vous qui décidez.</p>
+              <p>Oui, vous pouvez vous désabonner à tout moment, c'est vous qui décidez.</p>
             </div>
             <div>
               <h3 className="font-semibold mb-1">📱 Y a-t-il une application mobile ?</h3>
