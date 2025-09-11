@@ -58,7 +58,7 @@ export default function Header() {
   }
 
   return (
-    <header className="w-full bg-white shadow-md sticky top-0 z-50">
+    <header className="w-full bg-white shadow-md sticky top-0 z-50 scroll-smooth">
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
@@ -71,7 +71,6 @@ export default function Header() {
           <Link href="/pricing" className="text-gray-600 hover:text-blue-600 font-medium">Tarifs</Link>
           <Link href="/#pour-qui" className="text-gray-600 hover:text-blue-600 font-medium">Pour qui ?</Link>
           <Link href="/#faq" className="text-gray-600 hover:text-blue-600 font-medium">FAQ</Link>
-
           {userRole && (
             <Link
               href={userRole === 'coach' ? '/coach/dashboard' : '/client/dashboard'}
@@ -98,14 +97,6 @@ export default function Header() {
             </>
           ) : (
             <>
-              {userRole && (
-                <Link
-                  href={userRole === 'coach' ? '/coach/dashboard' : '/client/dashboard'}
-                  className="text-blue-600 font-medium hover:underline"
-                >
-                  Mon espace
-                </Link>
-              )}
               <button
                 onClick={handleLogout}
                 className="text-sm text-red-600 font-semibold hover:underline"
@@ -137,7 +128,6 @@ export default function Header() {
           <Link href="/#faq" className="block text-gray-700 hover:text-blue-600 font-medium">
             FAQ
           </Link>
-
           {userRole && (
             <Link
               href={userRole === 'coach' ? '/coach/dashboard' : '/client/dashboard'}
@@ -146,7 +136,6 @@ export default function Header() {
               Mon espace
             </Link>
           )}
-
           {!isAuthenticated ? (
             <>
               <Link href="/login" className="block text-blue-600 font-medium">
