@@ -59,7 +59,7 @@ export default function Header() {
 
   return (
     <header className="w-full bg-white shadow-md sticky top-0 z-50 scroll-smooth">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between relative">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
           <Image src="/logo.png" alt="Zenora" width={40} height={40} />
@@ -106,6 +106,18 @@ export default function Header() {
             </>
           )}
         </div>
+
+        {/* Bouton mobile fixé en haut à droite */}
+        {!isAuthenticated && (
+          <div className="md:hidden absolute top-4 right-4">
+            <Link
+              href="/register"
+              className="bg-blue-600 text-white px-3 py-1.5 text-sm rounded-full shadow-md hover:bg-blue-700 transition font-medium"
+            >
+              Essayer
+            </Link>
+          </div>
+        )}
 
         {/* Burger menu mobile */}
         <button
