@@ -54,7 +54,7 @@ export default function Home() {
       {/* Bénéfices principaux */}
       <section className="py-20 px-6 bg-white">
         <div className="max-w-6xl mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-12 text-gray-800">Pensé pour les coachs modernes</h2>
+          <h2 className="text-3xl font-bold mb-12 text-gray-800">Pensé pour les indépendants modernes</h2>
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-blue-50 p-6 rounded-xl shadow">
               <h3 className="text-xl font-semibold text-blue-700 mb-2">📅 Prise de rendez-vous</h3>
