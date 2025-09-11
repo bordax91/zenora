@@ -162,8 +162,8 @@ export default function Home() {
               <p>Non, Zenora est pensé pour être simple et intuitif. Si vous savez utiliser votre boîte mail, vous saurez utiliser Zenora.</p>
             </div>
             <div>
-              <h3 className="font-semibold mb-1">🧠 Peut-on discuter avec un coach IA ?</h3>
-              <p>Oui, en plus de la partie gestion, Zenora propose une IA spécialisée en bien-être mental.</p>
+              <h3 className="font-semibold mb-1">❓ Est-ce que je peux me désabonner à tout moment ?</h3>
+              <p>Oui, vous pouvez vous désabonnez à tout moment, c'est vous qui décidez.</p>
             </div>
             <div>
               <h3 className="font-semibold mb-1">📱 Y a-t-il une application mobile ?</h3>
