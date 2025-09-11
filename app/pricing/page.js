@@ -14,7 +14,7 @@ export default function TarifsPage() {
     const fetchProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        window.location.href = '/login'
+        setLoading(false)
         return
       }
 
@@ -32,6 +32,11 @@ export default function TarifsPage() {
   }, [])
 
   const handleSubscribe = async (priceId) => {
+    if (!user) {
+      window.location.href = '/register' // ou '/login' si tu préfères
+      return
+    }
+
     try {
       const res = await fetch('/api/stripe/subscribe', {
         method: 'POST',
@@ -83,7 +88,6 @@ export default function TarifsPage() {
               <button
                 onClick={() => handleSubscribe(STRIPE_MONTHLY)}
                 className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-                disabled={!user}
               >
                 Choisir ce plan
               </button>
@@ -105,7 +109,6 @@ export default function TarifsPage() {
               <button
                 onClick={() => handleSubscribe(STRIPE_YEARLY)}
                 className="w-full bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition"
-                disabled={!user}
               >
                 Choisir ce plan
               </button>
