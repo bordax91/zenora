@@ -77,7 +77,7 @@ export default function Home() {
         <div className="max-w-5xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-8 text-gray-800">Pour qui ?</h2>
           <p className="text-lg text-gray-700 mb-6">
-            Zenora est conçu pour <strong>les coachs, thérapeutes, praticiens bien-être, freelances</strong> qui veulent une solution simple, efficace et professionnelle pour gérer leur activité.
+            Zenora est conçu pour <strong>les coachs, thérapeutes, praticiens, freelances</strong> qui veulent une solution simple, efficace et professionnelle pour gérer leur activité.
           </p>
           <div className="grid md:grid-cols-2 gap-6 text-left mt-10">
             <ul className="space-y-3 text-blue-700 font-medium">
