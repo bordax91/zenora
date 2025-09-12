@@ -8,27 +8,25 @@ export default function AuthCallback() {
 
   useEffect(() => {
     const run = async () => {
-      const url = new URL(window.location.href)
-      const search = new URLSearchParams(url.search)
-
-      const oauthError = search.get('error_description') || search.get('error')
-      const code = search.get('code')
-      const state = search.get('state')
-
-      // ⛔ Erreur OAuth dans l’URL
-      if (oauthError) {
-        console.error('[OAuth ERROR]', oauthError)
-        setError(oauthError)
-        return
-      }
-
-      // ⛔ Si code ou state manquant, on attend
-      if (!code || !state) {
-        return
-      }
-
       try {
-        // 🌐 Échange du code OAuth pour obtenir une session Supabase
+        const url = new URL(window.location.href)
+        const search = new URLSearchParams(url.search)
+
+        const oauthError = search.get('error_description') || search.get('error')
+        const code = search.get('code')
+        const state = search.get('state')
+
+        // ⛔ Erreur OAuth détectée
+        if (oauthError) {
+          console.error('[OAuth ERROR]', oauthError)
+          setError(oauthError)
+          return
+        }
+
+        // ⛔ On attend que code + state soient présents
+        if (!code || !state) return
+
+        // 🌐 Échange du code OAuth contre une session Supabase
         const { error: exchangeErr } = await supabase.auth.exchangeCodeForSession(window.location.href)
         if (exchangeErr) {
           console.error('[exchangeCodeForSession error]', exchangeErr)
@@ -43,13 +41,13 @@ export default function AuthCallback() {
 
         const user = userData.user
 
-        // 🎯 Récupération du rôle depuis localStorage (stocké lors du clic Google)
+        // 🎯 Récupération du rôle depuis localStorage
         const role = localStorage.getItem('pendingRole') || 'client'
 
         // 🔐 Mise à jour du metadata côté Supabase
         await supabase.auth.updateUser({ data: { role } })
 
-        // 🗓️ Définir les dates d’essai gratuit (7 jours)
+        // 🗓️ Dates d’essai gratuit (7 jours)
         const trialStart = new Date()
         const trialEnd = new Date(trialStart)
         trialEnd.setDate(trialStart.getDate() + 7)

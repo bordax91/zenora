@@ -24,6 +24,7 @@ export default function RegisterPageInner() {
     try {
       const role = 'coach'
 
+      // 🔐 Création du compte email/password
       const { data, error: signErr } = await supabase.auth.signUp({
         email,
         password,
@@ -33,14 +34,16 @@ export default function RegisterPageInner() {
 
       const user = data?.user
       if (!user) {
-        setInfo("Compte créé. Vérifiez votre boîte mail pour confirmer votre adresse, puis reconnectez‑vous.")
+        setInfo("Compte créé. Vérifiez votre boîte mail pour confirmer votre adresse, puis reconnectez-vous.")
         return
       }
 
+      // 🗓️ Dates d’essai gratuit (7 jours)
       const trialStart = new Date()
-      const trialEnd = new Date()
+      const trialEnd = new Date(trialStart)
       trialEnd.setDate(trialStart.getDate() + 7)
 
+      // 💾 Ajout ou mise à jour dans la table `users`
       const { error: upsertErr } = await supabase
         .from('users')
         .upsert(
@@ -56,6 +59,7 @@ export default function RegisterPageInner() {
         )
       if (upsertErr) throw upsertErr
 
+      // 📧 Email de bienvenue
       await fetch('/api/emails/send-welcome-coach-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -65,6 +69,7 @@ export default function RegisterPageInner() {
       localStorage.setItem('isLoggedIn', 'true')
       router.replace('/coach/onboarding')
     } catch (err) {
+      console.error('[register error]', err)
       setError(err?.message || 'Une erreur est survenue.')
     } finally {
       setLoading(false)
@@ -75,17 +80,17 @@ export default function RegisterPageInner() {
     try {
       const role = 'coach'
       const trialStart = new Date()
-      const trialEnd = new Date()
+      const trialEnd = new Date(trialStart)
       trialEnd.setDate(trialStart.getDate() + 7)
 
-      // 🔐 On stocke les infos dans localStorage AVANT redirection
+      // 🔐 Stocker rôle, dates et redirect avant OAuth
       localStorage.setItem('pendingRole', role)
       localStorage.setItem('pendingTrialStart', trialStart.toISOString())
       localStorage.setItem('pendingTrialEnd', trialEnd.toISOString())
       localStorage.setItem('pendingRedirect', '/coach/onboarding')
 
+      // Redirection vers Supabase OAuth
       const redirectTo = `${window.location.origin}/auth/callback`
-
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
