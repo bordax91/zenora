@@ -25,6 +25,8 @@ export default function RegisterPageInner() {
 
     try {
       const role = 'coach'
+
+      // 🔐 Création du compte avec email/password
       const { data, error: signErr } = await supabase.auth.signUp({
         email,
         password,
@@ -38,10 +40,12 @@ export default function RegisterPageInner() {
         return
       }
 
+      // 🗓️ Dates d’essai gratuit
       const trialStart = new Date()
       const trialEnd = new Date()
       trialEnd.setDate(trialStart.getDate() + 7)
 
+      // 🔄 Ajout à la table 'users'
       const { error: upsertErr } = await supabase
         .from('users')
         .upsert(
@@ -57,7 +61,7 @@ export default function RegisterPageInner() {
         )
       if (upsertErr) throw upsertErr
 
-      // ✅ Appel au serveur pour envoyer l'email de bienvenue
+      // 📧 Envoi email de bienvenue
       await fetch('/api/emails/send-welcome-coach-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -79,12 +83,14 @@ export default function RegisterPageInner() {
     const trialEnd = new Date()
     trialEnd.setDate(trialStart.getDate() + 7)
 
+    // 🔐 Stocker dans localStorage les infos utiles
     localStorage.setItem('pendingRole', role)
     localStorage.setItem('pendingTrialStart', trialStart.toISOString())
     localStorage.setItem('pendingTrialEnd', trialEnd.toISOString())
     localStorage.setItem('pendingRedirect', '/coach/onboarding')
 
-    const redirectTo = `${window.location.origin}/auth/callback?redirect=/coach/onboarding`
+    // ✅ Ne surtout pas ajouter ?redirect=... ici
+    const redirectTo = `${window.location.origin}/auth/callback`
 
     await supabase.auth.signInWithOAuth({
       provider: 'google',
