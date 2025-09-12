@@ -15,8 +15,6 @@ export default function RegisterPageInner() {
   const [error, setError] = useState(null)
   const [info, setInfo] = useState(null)
 
-  const resolveRedirect = () => '/coach/onboarding'
-
   const handleRegister = async (e) => {
     e.preventDefault()
     setError(null)
@@ -65,7 +63,7 @@ export default function RegisterPageInner() {
       })
 
       localStorage.setItem('isLoggedIn', 'true')
-      router.replace(resolveRedirect())
+      router.replace('/coach/onboarding')
     } catch (err) {
       setError(err?.message || 'Une erreur est survenue.')
     } finally {
@@ -74,34 +72,44 @@ export default function RegisterPageInner() {
   }
 
   const handleGoogleSignup = async () => {
-    const role = 'coach'
-    const trialStart = new Date()
-    const trialEnd = new Date()
-    trialEnd.setDate(trialStart.getDate() + 7)
+    try {
+      const role = 'coach'
+      const trialStart = new Date()
+      const trialEnd = new Date()
+      trialEnd.setDate(trialStart.getDate() + 7)
 
-    localStorage.setItem('pendingRole', role)
-    localStorage.setItem('pendingTrialStart', trialStart.toISOString())
-    localStorage.setItem('pendingTrialEnd', trialEnd.toISOString())
-    localStorage.setItem('pendingRedirect', '/coach/onboarding')
+      // 🔐 On stocke les infos dans localStorage AVANT redirection
+      localStorage.setItem('pendingRole', role)
+      localStorage.setItem('pendingTrialStart', trialStart.toISOString())
+      localStorage.setItem('pendingTrialEnd', trialEnd.toISOString())
+      localStorage.setItem('pendingRedirect', '/coach/onboarding')
 
-    const redirectTo = `${window.location.origin}/auth/callback`
+      const redirectTo = `${window.location.origin}/auth/callback`
 
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo, // ✅ CORRECTION PRINCIPALE
-        queryParams: { prompt: 'select_account' },
-      },
-    })
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+          queryParams: { prompt: 'select_account' },
+        },
+      })
 
-    if (error) {
-      console.error('Erreur OAuth Google :', error.message)
-      return
-    }
+      if (error) {
+        console.error('Erreur OAuth Google :', error.message)
+        setError('Erreur avec la connexion Google. Veuillez réessayer.')
+        return
+      }
 
-    // ✅ Redirection manuelle
-    if (data?.url) {
-      window.location.href = data.url
+      if (data?.url) {
+        console.log('🔁 Redirection vers Google OAuth :', data.url)
+        window.location.href = data.url
+      } else {
+        console.error('❌ URL de redirection manquante dans la réponse Supabase.')
+        setError("La redirection vers Google n'a pas pu être lancée.")
+      }
+    } catch (err) {
+      console.error('Erreur générale OAuth Google:', err)
+      setError('Erreur inattendue avec Google.')
     }
   }
 
