@@ -41,20 +41,8 @@ export default function AuthCallback() {
 
         const user = userData.user
 
-        // 🎯 Lecture du rôle et de la redirection depuis localStorage ou state
-        let role = localStorage.getItem('pendingRole') || 'client'
-        let redirectTo = localStorage.getItem('pendingRedirect') || (role === 'coach' ? '/coach/onboarding' : '/client/dashboard')
-
-        // ✅ Si state est présent et encodé en JSON (optionnel)
-        if (state) {
-          try {
-            const decodedState = JSON.parse(atob(state.split('.')[1])) // si JWT
-            role = decodedState.role || role
-            redirectTo = decodedState.redirect || redirectTo
-          } catch (err) {
-            console.warn('State non décodable, utilisation de localStorage :', err)
-          }
-        }
+        // 🎯 Récupération du rôle depuis localStorage
+        const role = localStorage.getItem('pendingRole') || 'client'
 
         // 🔐 Mise à jour du metadata côté Supabase
         await supabase.auth.updateUser({ data: { role } })
@@ -84,6 +72,11 @@ export default function AuthCallback() {
           throw upsertErr
         }
 
+        // ✅ Détermination de la redirection
+        const storedRedirect = localStorage.getItem('pendingRedirect')
+        const pick = (path) => path?.startsWith('/') && !path.startsWith('//') ? path : null
+        const redirectTo = pick(storedRedirect) || (role === 'coach' ? '/coach/onboarding' : '/client/dashboard')
+
         // 🧹 Nettoyage du localStorage
         localStorage.removeItem('pendingRole')
         localStorage.removeItem('pendingRedirect')
@@ -93,7 +86,7 @@ export default function AuthCallback() {
 
         console.log('✅ Redirection vers :', redirectTo)
 
-        // 🚀 Redirection manuelle
+        // 🚀 Redirection manuelle (plus fiable que router.replace dans ce contexte)
         window.location.replace(redirectTo)
 
       } catch (e) {
