@@ -1,11 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 
 export default function AuthCallback() {
-  const router = useRouter()
   const [error, setError] = useState(null)
 
   useEffect(() => {
@@ -17,26 +15,27 @@ export default function AuthCallback() {
       const code = search.get('code')
       const state = search.get('state')
 
-      // ⛔ Erreur OAuth dans URL
+      // ⛔ Erreur OAuth dans l’URL
       if (oauthError) {
+        console.error('[OAuth ERROR]', oauthError)
         setError(oauthError)
         return
       }
 
-      // ⛔ Pas encore de code dans l’URL (évite d’appeler trop tôt)
+      // ⛔ Si code ou state manquant, on attend
       if (!code || !state) {
         return
       }
 
       try {
-        // 🌐 Échange du code OAuth contre une session Supabase
+        // 🌐 Échange du code contre une session Supabase
         const { error: exchangeErr } = await supabase.auth.exchangeCodeForSession(window.location.href)
         if (exchangeErr) {
           console.error('[exchangeCodeForSession error]', exchangeErr)
           throw exchangeErr
         }
 
-        // 👤 Récupération de l'utilisateur connecté
+        // 👤 Récupération de l’utilisateur connecté
         const { data: userData, error: userErr } = await supabase.auth.getUser()
         if (userErr || !userData?.user) {
           throw new Error('Impossible de récupérer l’utilisateur.')
@@ -44,18 +43,18 @@ export default function AuthCallback() {
 
         const user = userData.user
 
-        // ✅ On récupère le rôle depuis localStorage, pas depuis user_metadata
+        // 🎯 Récupération du rôle depuis localStorage
         const role = localStorage.getItem('pendingRole') || 'client'
 
-        // 🔐 On force la mise à jour du metadata côté Supabase
+        // 🔐 Mise à jour du metadata
         await supabase.auth.updateUser({ data: { role } })
 
-        // 🗓️ Dates d’essai gratuit (7 jours)
+        // 🗓️ Définir les dates d’essai gratuit (7 jours)
         const trialStart = new Date()
-        const trialEnd = new Date(trialStart)
+        const trialEnd = new Date()
         trialEnd.setDate(trialStart.getDate() + 7)
 
-        // 💾 Insertion dans la table `users`
+        // 💾 Enregistrement ou mise à jour dans la table Supabase `users`
         const { error: upsertErr } = await supabase
           .from('users')
           .upsert(
@@ -75,7 +74,7 @@ export default function AuthCallback() {
           throw upsertErr
         }
 
-        // ✅ Redirection en fonction du rôle
+        // ✅ Détermination de la redirection
         const storedRedirect = localStorage.getItem('pendingRedirect')
         const pick = (path) => path?.startsWith('/') && !path.startsWith('//') ? path : null
 
@@ -91,7 +90,9 @@ export default function AuthCallback() {
         localStorage.setItem('isLoggedIn', 'true')
 
         console.log('✅ Redirection vers :', redirectTo)
-        router.replace(redirectTo)
+
+        // 🚀 Redirection manuelle (plus fiable que router.replace dans ce contexte)
+        window.location.replace(redirectTo)
 
       } catch (e) {
         console.error('[auth/callback ERROR]', e)
@@ -100,7 +101,7 @@ export default function AuthCallback() {
     }
 
     run()
-  }, [router])
+  }, [])
 
   return (
     <div className="min-h-screen flex items-center justify-center text-gray-600 text-center px-4">
