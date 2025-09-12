@@ -36,7 +36,11 @@ export default function AuthCallback() {
 
         // 🌐 Échange du code OAuth contre une session Supabase
         console.log('🔑 [AuthCallback] Tentative échange code → session Supabase...')
-        const { error: exchangeErr } = await supabase.auth.exchangeCodeForSession(window.location.href)
+        const { data: sessionData, error: exchangeErr } =
+          await supabase.auth.exchangeCodeForSession(window.location.href)
+
+        console.log('📌 Résultat exchangeCodeForSession :', { sessionData, exchangeErr })
+
         if (exchangeErr) {
           console.error('❌ [exchangeCodeForSession error]', exchangeErr)
           throw exchangeErr
