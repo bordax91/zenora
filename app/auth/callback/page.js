@@ -10,16 +10,26 @@ export default function AuthCallback() {
 
   useEffect(() => {
     const run = async () => {
-      const search = new URLSearchParams(window.location.search)
-      const oauthError = search.get('error_description') || search.get('error')
+      const url = new URL(window.location.href)
+      const search = new URLSearchParams(url.search)
 
+      const oauthError = search.get('error_description') || search.get('error')
+      const code = search.get('code')
+      const state = search.get('state')
+
+      // ⛔ Erreur OAuth dans URL
       if (oauthError) {
         setError(oauthError)
         return
       }
 
+      // ⛔ Pas encore de code dans l’URL (évite d’appeler trop tôt)
+      if (!code || !state) {
+        return
+      }
+
       try {
-        // 🌐 Échange le code d'auth avec Supabase pour obtenir une session
+        // 🌐 Échange le code OAuth pour une session Supabase
         const { error: exchangeErr } = await supabase.auth.exchangeCodeForSession(window.location.href)
         if (exchangeErr) {
           console.error('[exchangeCodeForSession error]', exchangeErr)
@@ -34,7 +44,7 @@ export default function AuthCallback() {
 
         const user = userData.user
 
-        // 🔐 Récupération ou définition du rôle depuis localStorage
+        // 🔐 Rôle depuis localStorage ou user_metadata
         let role = user.user_metadata?.role
         if (!role) {
           role = localStorage.getItem('pendingRole') || 'client'
@@ -46,7 +56,7 @@ export default function AuthCallback() {
         const trialEnd = new Date(trialStart)
         trialEnd.setDate(trialStart.getDate() + 7)
 
-        // 💾 Upsert dans la table "users"
+        // 💾 Enregistrement en base
         const { error: upsertErr } = await supabase
           .from('users')
           .upsert(
@@ -66,7 +76,7 @@ export default function AuthCallback() {
           throw upsertErr
         }
 
-        // 🧹 Nettoyage localStorage
+        // 🧹 Redirection propre
         const storedRedirect = localStorage.getItem('pendingRedirect') || ''
         const pick = (path) => path?.startsWith('/') && !path.startsWith('//') ? path : null
         const redirectTo =
