@@ -11,23 +11,15 @@ export default function AuthCallback() {
   useEffect(() => {
     const run = async () => {
       const search = new URLSearchParams(window.location.search)
-      const code = search.get('code')
       const oauthError = search.get('error_description') || search.get('error')
 
-      // ✅ Gestion d’erreur OAuth dans l’URL
       if (oauthError) {
         setError(oauthError)
         return
       }
 
-      // ✅ Sécurité : vérifier que le code est présent
-      if (!code) {
-        setError('Code OAuth manquant. Veuillez réessayer.')
-        return
-      }
-
       try {
-        // 🔁 Échange du code contre une session Supabase
+        // 🌐 Échange le code d'auth avec Supabase pour obtenir une session
         const { error: exchangeErr } = await supabase.auth.exchangeCodeForSession(window.location.href)
         if (exchangeErr) {
           console.error('[exchangeCodeForSession error]', exchangeErr)
@@ -37,25 +29,24 @@ export default function AuthCallback() {
         // 👤 Récupération de l'utilisateur connecté
         const { data: userData, error: userErr } = await supabase.auth.getUser()
         if (userErr || !userData?.user) {
-          console.error('[getUser error]', userErr)
-          throw new Error('Erreur de connexion. Veuillez réessayer.')
+          throw new Error('Impossible de récupérer l’utilisateur.')
         }
 
         const user = userData.user
 
-        // 📌 Récupérer ou définir le rôle depuis localStorage si non défini
+        // 🔐 Récupération ou définition du rôle depuis localStorage
         let role = user.user_metadata?.role
         if (!role) {
           role = localStorage.getItem('pendingRole') || 'client'
           await supabase.auth.updateUser({ data: { role } })
         }
 
-        // 🗓️ Dates d’essai gratuit (7 jours)
+        // 🗓️ Définir les dates d’essai gratuit (7 jours)
         const trialStart = new Date()
         const trialEnd = new Date(trialStart)
         trialEnd.setDate(trialStart.getDate() + 7)
 
-        // 🧾 Enregistrement ou mise à jour dans la table "users"
+        // 💾 Upsert dans la table "users"
         const { error: upsertErr } = await supabase
           .from('users')
           .upsert(
@@ -75,12 +66,13 @@ export default function AuthCallback() {
           throw upsertErr
         }
 
-        // ✅ Redirection propre
+        // 🧹 Nettoyage localStorage
         const storedRedirect = localStorage.getItem('pendingRedirect') || ''
         const pick = (path) => path?.startsWith('/') && !path.startsWith('//') ? path : null
-        const redirectTo = pick(storedRedirect) || (role === 'coach' ? '/coach/dashboard' : '/client/dashboard')
+        const redirectTo =
+          pick(storedRedirect) ||
+          (role === 'coach' ? '/coach/onboarding' : '/client/dashboard')
 
-        // 🧹 Nettoyage localStorage
         localStorage.removeItem('pendingRole')
         localStorage.removeItem('pendingRedirect')
         localStorage.removeItem('pendingTrialStart')
