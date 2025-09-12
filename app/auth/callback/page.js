@@ -28,7 +28,7 @@ export default function AuthCallback() {
       }
 
       try {
-        // 🌐 Échange du code contre une session Supabase
+        // 🌐 Échange du code OAuth pour obtenir une session Supabase
         const { error: exchangeErr } = await supabase.auth.exchangeCodeForSession(window.location.href)
         if (exchangeErr) {
           console.error('[exchangeCodeForSession error]', exchangeErr)
@@ -43,18 +43,18 @@ export default function AuthCallback() {
 
         const user = userData.user
 
-        // 🎯 Récupération du rôle depuis localStorage
+        // 🎯 Récupération du rôle depuis localStorage (stocké lors du clic Google)
         const role = localStorage.getItem('pendingRole') || 'client'
 
-        // 🔐 Mise à jour du metadata
+        // 🔐 Mise à jour du metadata côté Supabase
         await supabase.auth.updateUser({ data: { role } })
 
         // 🗓️ Définir les dates d’essai gratuit (7 jours)
         const trialStart = new Date()
-        const trialEnd = new Date()
+        const trialEnd = new Date(trialStart)
         trialEnd.setDate(trialStart.getDate() + 7)
 
-        // 💾 Enregistrement ou mise à jour dans la table Supabase `users`
+        // 💾 Upsert dans la table `users`
         const { error: upsertErr } = await supabase
           .from('users')
           .upsert(
@@ -77,10 +77,7 @@ export default function AuthCallback() {
         // ✅ Détermination de la redirection
         const storedRedirect = localStorage.getItem('pendingRedirect')
         const pick = (path) => path?.startsWith('/') && !path.startsWith('//') ? path : null
-
-        const redirectTo =
-          pick(storedRedirect) ||
-          (role === 'coach' ? '/coach/onboarding' : '/client/dashboard')
+        const redirectTo = pick(storedRedirect) || (role === 'coach' ? '/coach/onboarding' : '/client/dashboard')
 
         // 🧹 Nettoyage du localStorage
         localStorage.removeItem('pendingRole')
@@ -91,7 +88,7 @@ export default function AuthCallback() {
 
         console.log('✅ Redirection vers :', redirectTo)
 
-        // 🚀 Redirection manuelle (plus fiable que router.replace dans ce contexte)
+        // 🚀 Redirection manuelle
         window.location.replace(redirectTo)
 
       } catch (e) {
