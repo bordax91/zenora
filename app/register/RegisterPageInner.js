@@ -84,9 +84,12 @@ export default function RegisterPageInner() {
     localStorage.setItem('pendingTrialEnd', trialEnd.toISOString())
     localStorage.setItem('pendingRedirect', '/coach/onboarding')
 
+    const redirectTo = `${window.location.origin}/auth/callback`
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
+        redirectTo, // ✅ CORRECTION PRINCIPALE
         queryParams: { prompt: 'select_account' },
       },
     })
@@ -96,7 +99,7 @@ export default function RegisterPageInner() {
       return
     }
 
-    // ✅ Redirection vers l’URL fournie par Supabase (NE PAS utiliser /auth/callback manuellement)
+    // ✅ Redirection manuelle
     if (data?.url) {
       window.location.href = data.url
     }
