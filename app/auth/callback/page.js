@@ -10,19 +10,28 @@ export default function AuthCallback() {
 
   useEffect(() => {
     const run = async () => {
-      try {
-        const search = new URLSearchParams(window.location.search)
-        const code = search.get('code')
-        const oauthError = search.get('error_description') || search.get('error')
-        if (oauthError) throw new Error(oauthError)
+      const search = new URLSearchParams(window.location.search)
+      const code = search.get('code')
+      const oauthError = search.get('error_description') || search.get('error')
 
+      // ✅ Cas d'erreur dans l'URL
+      if (oauthError) {
+        setError(oauthError)
+        return
+      }
+
+      // ✅ Code manquant → on affiche un message propre
+      if (!code) {
+        setError('Code OAuth manquant. Veuillez réessayer.')
+        return
+      }
+
+      try {
         // 🔄 Échange du code OAuth contre une session Supabase
-        if (code) {
-          const { error: exchangeErr } = await supabase.auth.exchangeCodeForSession(window.location.href)
-          if (exchangeErr) {
-            console.error('[exchangeCodeForSession error]', exchangeErr)
-            throw exchangeErr
-          }
+        const { error: exchangeErr } = await supabase.auth.exchangeCodeForSession(window.location.href)
+        if (exchangeErr) {
+          console.error('[exchangeCodeForSession error]', exchangeErr)
+          throw exchangeErr
         }
 
         // 🔐 Récupérer l'utilisateur connecté
