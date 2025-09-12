@@ -88,11 +88,11 @@ export default function RegisterPageInner() {
       localStorage.setItem('pendingTrialEnd', trialEnd.toISOString())
       localStorage.setItem('pendingRedirect', '/coach/onboarding')
 
-      const redirectTo = `${window.location.origin}/auth/callback`
+      // ⚠️ IMPORTANT : utiliser exactement l’URL whitelistée dans Supabase
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo,
+          redirectTo: 'https://zenoraapp.com/auth/callback',
           queryParams: { prompt: 'select_account' },
         },
       })

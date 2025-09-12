@@ -23,7 +23,7 @@ export default function AuthCallback() {
           return
         }
 
-        // ⛔ On attend que code + state soient présents
+        // ⛔ Pas de code/state → inutile de continuer
         if (!code || !state) return
 
         // 🌐 Échange du code OAuth contre une session Supabase
@@ -33,26 +33,26 @@ export default function AuthCallback() {
           throw exchangeErr
         }
 
-        // 👤 Récupération de l’utilisateur connecté
+        // 👤 Récupération de l’utilisateur
         const { data: userData, error: userErr } = await supabase.auth.getUser()
         if (userErr || !userData?.user) {
-          throw new Error('Impossible de récupérer l’utilisateur.')
+          throw new Error("Impossible de récupérer l’utilisateur.")
         }
 
         const user = userData.user
 
-        // 🎯 Récupération du rôle depuis localStorage
+        // 🎯 Rôle depuis localStorage (ou fallback client)
         const role = localStorage.getItem('pendingRole') || 'client'
 
-        // 🔐 Mise à jour du metadata côté Supabase
+        // 🔐 Mise à jour metadata côté Supabase
         await supabase.auth.updateUser({ data: { role } })
 
-        // 🗓️ Dates d’essai gratuit (7 jours)
+        // 🗓️ Période d’essai gratuite (7 jours)
         const trialStart = new Date()
         const trialEnd = new Date(trialStart)
         trialEnd.setDate(trialStart.getDate() + 7)
 
-        // 💾 Upsert dans la table `users`
+        // 💾 Insertion/màj dans `users`
         const { error: upsertErr } = await supabase
           .from('users')
           .upsert(
@@ -74,10 +74,12 @@ export default function AuthCallback() {
 
         // ✅ Détermination de la redirection
         const storedRedirect = localStorage.getItem('pendingRedirect')
-        const pick = (path) => path?.startsWith('/') && !path.startsWith('//') ? path : null
-        const redirectTo = pick(storedRedirect) || (role === 'coach' ? '/coach/onboarding' : '/client/dashboard')
+        const isSafePath = (path) => path?.startsWith('/') && !path.startsWith('//')
+        const redirectTo =
+          (storedRedirect && isSafePath(storedRedirect) && storedRedirect) ||
+          (role === 'coach' ? '/coach/onboarding' : '/client/dashboard')
 
-        // 🧹 Nettoyage du localStorage
+        // 🧹 Nettoyage localStorage
         localStorage.removeItem('pendingRole')
         localStorage.removeItem('pendingRedirect')
         localStorage.removeItem('pendingTrialStart')
@@ -86,9 +88,8 @@ export default function AuthCallback() {
 
         console.log('✅ Redirection vers :', redirectTo)
 
-        // 🚀 Redirection manuelle (plus fiable que router.replace dans ce contexte)
+        // 🚀 Redirection manuelle
         window.location.replace(redirectTo)
-
       } catch (e) {
         console.error('[auth/callback ERROR]', e)
         setError(e?.message || 'Erreur de connexion. Veuillez réessayer.')
