@@ -8,7 +8,6 @@ import { supabase } from '@/lib/supabase/client'
 
 export default function RegisterPageInner() {
   const router = useRouter()
-
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -24,7 +23,7 @@ export default function RegisterPageInner() {
     try {
       const role = 'coach'
 
-      // 🔐 Création du compte email/password
+      // Création du compte email/password
       const { data, error: signErr } = await supabase.auth.signUp({
         email,
         password,
@@ -38,12 +37,12 @@ export default function RegisterPageInner() {
         return
       }
 
-      // 🗓️ Dates d’essai gratuit (7 jours)
+      // Dates d’essai gratuit (7 jours)
       const trialStart = new Date()
       const trialEnd = new Date(trialStart)
       trialEnd.setDate(trialStart.getDate() + 7)
 
-      // 💾 Ajout ou mise à jour dans la table `users`
+      // Ajout ou mise à jour dans la table `users`
       const { error: upsertErr } = await supabase
         .from('users')
         .upsert(
@@ -59,7 +58,7 @@ export default function RegisterPageInner() {
         )
       if (upsertErr) throw upsertErr
 
-      // 📧 Email de bienvenue
+      // Email de bienvenue
       await fetch('/api/emails/send-welcome-coach-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -83,13 +82,12 @@ export default function RegisterPageInner() {
       const trialEnd = new Date(trialStart)
       trialEnd.setDate(trialStart.getDate() + 7)
 
-      // 🔐 Stocker rôle, dates et redirect avant OAuth
+      // Stockage avant redirection
       localStorage.setItem('pendingRole', role)
       localStorage.setItem('pendingTrialStart', trialStart.toISOString())
       localStorage.setItem('pendingTrialEnd', trialEnd.toISOString())
       localStorage.setItem('pendingRedirect', '/coach/onboarding')
 
-      // Redirection vers Supabase OAuth
       const redirectTo = `${window.location.origin}/auth/callback`
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
