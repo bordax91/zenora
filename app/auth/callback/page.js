@@ -29,7 +29,7 @@ export default function AuthCallback() {
       }
 
       try {
-        // 🌐 Échange le code OAuth pour une session Supabase
+        // 🌐 Échange du code OAuth contre une session Supabase
         const { error: exchangeErr } = await supabase.auth.exchangeCodeForSession(window.location.href)
         if (exchangeErr) {
           console.error('[exchangeCodeForSession error]', exchangeErr)
@@ -44,19 +44,18 @@ export default function AuthCallback() {
 
         const user = userData.user
 
-        // 🔐 Rôle depuis localStorage ou user_metadata
-        let role = user.user_metadata?.role
-        if (!role) {
-          role = localStorage.getItem('pendingRole') || 'client'
-          await supabase.auth.updateUser({ data: { role } })
-        }
+        // ✅ On récupère le rôle depuis localStorage, pas depuis user_metadata
+        const role = localStorage.getItem('pendingRole') || 'client'
 
-        // 🗓️ Définir les dates d’essai gratuit (7 jours)
+        // 🔐 On force la mise à jour du metadata côté Supabase
+        await supabase.auth.updateUser({ data: { role } })
+
+        // 🗓️ Dates d’essai gratuit (7 jours)
         const trialStart = new Date()
         const trialEnd = new Date(trialStart)
         trialEnd.setDate(trialStart.getDate() + 7)
 
-        // 💾 Enregistrement en base
+        // 💾 Insertion dans la table `users`
         const { error: upsertErr } = await supabase
           .from('users')
           .upsert(
@@ -76,13 +75,15 @@ export default function AuthCallback() {
           throw upsertErr
         }
 
-        // 🧹 Redirection propre
-        const storedRedirect = localStorage.getItem('pendingRedirect') || ''
+        // ✅ Redirection en fonction du rôle
+        const storedRedirect = localStorage.getItem('pendingRedirect')
         const pick = (path) => path?.startsWith('/') && !path.startsWith('//') ? path : null
+
         const redirectTo =
           pick(storedRedirect) ||
           (role === 'coach' ? '/coach/onboarding' : '/client/dashboard')
 
+        // 🧹 Nettoyage du localStorage
         localStorage.removeItem('pendingRole')
         localStorage.removeItem('pendingRedirect')
         localStorage.removeItem('pendingTrialStart')
