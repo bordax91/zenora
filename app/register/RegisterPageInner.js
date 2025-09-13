@@ -14,6 +14,9 @@ export default function RegisterPageInner() {
   const [error, setError] = useState(null)
   const [info, setInfo] = useState(null)
 
+  // --------------------------
+  // 📌 Signup email/password
+  // --------------------------
   const handleRegister = async (e) => {
     e.preventDefault()
     setError(null)
@@ -33,7 +36,9 @@ export default function RegisterPageInner() {
 
       const user = data?.user
       if (!user) {
-        setInfo("Compte créé. Vérifiez votre boîte mail pour confirmer votre adresse, puis reconnectez-vous.")
+        setInfo(
+          "Compte créé. Vérifiez votre boîte mail pour confirmer votre adresse, puis reconnectez-vous."
+        )
         return
       }
 
@@ -42,23 +47,21 @@ export default function RegisterPageInner() {
       const trialEnd = new Date(trialStart)
       trialEnd.setDate(trialStart.getDate() + 7)
 
-      // Ajout ou mise à jour dans la table `users`
-      const { error: upsertErr } = await supabase
-        .from('users')
-        .upsert(
-          {
-            id: user.id,
-            email: user.email,
-            role,
-            trial_start: trialStart.toISOString(),
-            trial_end: trialEnd.toISOString(),
-            is_subscribed: false,
-          },
-          { onConflict: 'id' }
-        )
+      // Ajout/màj dans la table `users`
+      const { error: upsertErr } = await supabase.from('users').upsert(
+        {
+          id: user.id,
+          email: user.email,
+          role,
+          trial_start: trialStart.toISOString(),
+          trial_end: trialEnd.toISOString(),
+          is_subscribed: false,
+        },
+        { onConflict: 'id' }
+      )
       if (upsertErr) throw upsertErr
 
-      // Email de bienvenue
+      // Envoi email de bienvenue
       await fetch('/api/emails/send-welcome-coach-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -75,6 +78,9 @@ export default function RegisterPageInner() {
     }
   }
 
+  // --------------------------
+  // 📌 Signup Google OAuth
+  // --------------------------
   const handleGoogleSignup = async () => {
     try {
       const role = 'coach'
@@ -88,11 +94,14 @@ export default function RegisterPageInner() {
       localStorage.setItem('pendingTrialEnd', trialEnd.toISOString())
       localStorage.setItem('pendingRedirect', '/coach/onboarding')
 
-      // ⚠️ IMPORTANT : utiliser exactement l’URL whitelistée dans Supabase
+      // ⚠️ IMPORTANT : utiliser exactement l’URL whitelistée dans Supabase + Google
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'https://zenoraapp.com/auth/callback',
+          redirectTo:
+            process.env.NODE_ENV === 'development'
+              ? 'http://localhost:3000/auth/callback'
+              : 'https://zenoraapp.com/auth/callback',
           queryParams: { prompt: 'select_account' },
         },
       })
@@ -116,11 +125,18 @@ export default function RegisterPageInner() {
     }
   }
 
+  // --------------------------
+  // 📌 Render
+  // --------------------------
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white px-4">
       <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-lg">
+        {/* Logo */}
         <div className="flex justify-center mb-6">
-          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition">
+          <Link
+            href="/"
+            className="flex items-center gap-2 hover:opacity-80 transition"
+          >
             <Image src="/logo.png" alt="Zenora Logo" width={40} height={40} />
             <span className="text-lg font-semibold text-gray-800">Zenora</span>
           </Link>
@@ -130,9 +146,15 @@ export default function RegisterPageInner() {
           Créer un compte Coach
         </h1>
 
+        {/* Formulaire */}
         <form onSubmit={handleRegister} className="space-y-6">
           <div>
-            <label htmlFor="email" className="block text-gray-600 mb-1">Adresse email</label>
+            <label
+              htmlFor="email"
+              className="block text-gray-600 mb-1"
+            >
+              Adresse email
+            </label>
             <input
               id="email"
               type="email"
@@ -146,7 +168,12 @@ export default function RegisterPageInner() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-gray-600 mb-1">Mot de passe</label>
+            <label
+              htmlFor="password"
+              className="block text-gray-600 mb-1"
+            >
+              Mot de passe
+            </label>
             <input
               id="password"
               type="password"
@@ -171,12 +198,14 @@ export default function RegisterPageInner() {
           </button>
         </form>
 
+        {/* OU */}
         <div className="flex items-center my-6">
           <div className="flex-grow h-px bg-gray-300" />
           <span className="mx-4 text-sm text-gray-400">ou</span>
           <div className="flex-grow h-px bg-gray-300" />
         </div>
 
+        {/* Bouton Google */}
         <button
           onClick={handleGoogleSignup}
           className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition"
@@ -186,7 +215,10 @@ export default function RegisterPageInner() {
 
         <p className="text-center text-gray-600 text-sm mt-6">
           Déjà inscrit ?{' '}
-          <Link href="/login?redirect=/coach/onboarding" className="text-blue-600 font-semibold hover:underline">
+          <Link
+            href="/login?redirect=/coach/onboarding"
+            className="text-blue-600 font-semibold hover:underline"
+          >
             Se connecter
           </Link>
         </p>
