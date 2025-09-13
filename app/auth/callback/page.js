@@ -1,41 +1,33 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { supabase } from '@/lib/supabase/supabase' // ton fichier
+import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase/client'
 
 export default function AuthCallback() {
-  const router = useRouter()
-  const params = useSearchParams()
   const [error, setError] = useState(null)
+  const router = useRouter()
 
   useEffect(() => {
     const run = async () => {
       try {
-        const code = params.get('code')
-        if (!code) {
-          setError('Aucun code reçu dans le callback.')
-          return
+        console.log('🔄 [AuthCallback] Tentative récupération session...')
+
+        // 👤 Récupération directe de l’utilisateur (PKCE géré par Supabase)
+        const { data: { user }, error } = await supabase.auth.getUser()
+        if (error || !user) {
+          throw error || new Error("Impossible de récupérer l’utilisateur.")
         }
 
-        // 🔑 Échange du code OAuth → session Supabase
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+        console.log('✅ Utilisateur récupéré :', user)
 
-        if (error) {
-          console.error('Erreur échange code → session:', error)
-          setError(error.message)
-          return
-        }
-
-        console.log('✅ Session récupérée :', data)
-
-        // Récupère le rôle stocké (si défini)
+        // 🎯 Rôle depuis localStorage (ou par défaut client)
         const role = localStorage.getItem('pendingRole') || 'client'
         const redirectTo =
           localStorage.getItem('pendingRedirect') ||
           (role === 'coach' ? '/coach/onboarding' : '/client/dashboard')
 
-        // Nettoyage du localStorage
+        // Nettoyage localStorage
         localStorage.removeItem('pendingRole')
         localStorage.removeItem('pendingRedirect')
         localStorage.removeItem('pendingTrialStart')
@@ -45,13 +37,13 @@ export default function AuthCallback() {
         // 🚀 Redirection finale
         router.replace(redirectTo)
       } catch (err) {
-        console.error('Callback error:', err)
-        setError(err.message || 'Erreur inattendue lors du callback.')
+        console.error('❌ [AuthCallback ERROR]', err)
+        setError(err.message || 'Erreur de connexion. Veuillez réessayer.')
       }
     }
 
     run()
-  }, [params, router])
+  }, [router])
 
   return (
     <div className="min-h-screen flex items-center justify-center text-gray-600 text-center">
