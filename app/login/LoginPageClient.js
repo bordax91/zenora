@@ -139,10 +139,12 @@ export default function LoginPageClient() {
           <div className="flex-grow h-px bg-gray-300" />
         </div>
 
+        {/* Bouton Google officiel */}
         <button
           onClick={handleGoogleLogin}
-          className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition"
+          className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-3 text-gray-700 font-medium hover:bg-gray-50 transition"
         >
+          <img src="/google-icon.svg" alt="Google" className="w-5 h-5" />
           Se connecter avec Google
         </button>
 
