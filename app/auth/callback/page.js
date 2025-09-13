@@ -27,15 +27,10 @@ export default function AuthCallback() {
           user.user_metadata?.role ||                   // si déjà en metadata
           'coach'                                       // par défaut Google → coach
 
-        // 🚀 Redirection après login
-        const redirectTo =
-          localStorage.getItem('pendingRedirect') ||
-          (role === 'coach' ? '/coach/onboarding' : '/client/dashboard')
-
         // 🔍 Vérifier si l'utilisateur existe déjà dans la table
         const { data: existingUser, error: fetchErr } = await supabase
           .from('users')
-          .select('id, trial_start, trial_end, is_subscribed')
+          .select('id, trial_start, trial_end, is_subscribed, username')
           .eq('id', user.id)
           .maybeSingle()
 
@@ -92,6 +87,17 @@ export default function AuthCallback() {
         localStorage.setItem('isLoggedIn', 'true')
 
         // 🚀 Redirection finale
+        let redirectTo
+        if (role === 'coach') {
+          if (!existingUser?.username) {
+            redirectTo = '/coach/onboarding' // première connexion coach
+          } else {
+            redirectTo = '/coach/dashboard' // connexions suivantes coach
+          }
+        } else {
+          redirectTo = '/client/dashboard'
+        }
+
         router.replace(redirectTo)
       } catch (err) {
         console.error('❌ [AuthCallback ERROR]', err)
