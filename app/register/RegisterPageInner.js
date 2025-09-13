@@ -138,7 +138,7 @@ export default function RegisterPageInner() {
         </div>
 
         <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
-          Créer un compte Coach
+          Créer votre compte
         </h1>
 
         {/* Formulaire email/password */}
