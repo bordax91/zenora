@@ -94,7 +94,6 @@ export default function RegisterPageInner() {
       localStorage.setItem('pendingTrialEnd', trialEnd.toISOString())
       localStorage.setItem('pendingRedirect', '/coach/onboarding')
 
-      // ⚠️ IMPORTANT : URL whitelistée dans Supabase + Google
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -112,13 +111,8 @@ export default function RegisterPageInner() {
         return
       }
 
-      // Si tout est ok → redirection vers Google
       if (data?.url) {
-        console.log('🔁 Redirection vers Google OAuth :', data.url)
         window.location.href = data.url
-      } else {
-        console.error('❌ URL de redirection manquante dans la réponse Supabase.')
-        setError("La redirection vers Google n'a pas pu être lancée.")
       }
     } catch (err) {
       console.error('Erreur générale OAuth Google:', err)
@@ -203,9 +197,10 @@ export default function RegisterPageInner() {
         {/* Bouton Google */}
         <button
           onClick={handleGoogleSignup}
-          className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition"
+          className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-3 text-gray-700 font-medium hover:bg-gray-50 transition"
         >
-          S’inscrire avec Google
+          <img src="/google-icon.svg" alt="Google" className="w-5 h-5" />
+          Créer mon compte avec Google
         </button>
 
         <p className="text-center text-gray-600 text-sm mt-6">
