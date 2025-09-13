@@ -97,7 +97,7 @@ export default function CoachOnboardingPage() {
 
   return (
     <div className="max-w-xl mx-auto mt-12 bg-white p-8 rounded-xl shadow">
-      <h1 className="text-2xl font-bold mb-6">🧑‍🏫 Créez votre profil de coach</h1>
+      <h1 className="text-2xl font-bold mb-6">🧑‍🏫 Créez votre profil</h1>
 
       {error && <p className="text-red-500 mb-4">{error}</p>}
 
