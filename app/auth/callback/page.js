@@ -23,9 +23,9 @@ export default function AuthCallback() {
 
         // 🎯 Détermination du rôle
         const role =
-          localStorage.getItem('pendingRole') ||
-          user.user_metadata?.role ||
-          'client'
+          localStorage.getItem('pendingRole') ||         // si défini via register
+          user.user_metadata?.role ||                   // si déjà en metadata
+          'coach'                                       // par défaut Google → coach
 
         // 🚀 Redirection après login
         const redirectTo =
@@ -35,7 +35,7 @@ export default function AuthCallback() {
         // 🔍 Vérifier si l'utilisateur existe déjà dans la table
         const { data: existingUser, error: fetchErr } = await supabase
           .from('users')
-          .select('id, trial_start, trial_end')
+          .select('id, trial_start, trial_end, is_subscribed')
           .eq('id', user.id)
           .maybeSingle()
 
