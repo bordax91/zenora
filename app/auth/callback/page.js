@@ -10,17 +10,13 @@ export default function AuthCallback() {
     const run = async () => {
       try {
         console.log('🔄 [AuthCallback] Début du process...')
+        console.log('📌 URL actuelle :', window.location.href)
 
-        // ✅ Restaure le code_verifier si perdu (Google OAuth reset parfois le sessionStorage)
-        const localVerifier = localStorage.getItem('code_verifier')
-        if (localVerifier) {
-          sessionStorage.setItem('supabase.auth.token#code_verifier', localVerifier)
-          console.log('🔑 code_verifier restauré depuis localStorage')
-        }
-
-        // 🔑 Échange du code OAuth → session Supabase
+        // 🔑 Échange direct du code OAuth → session Supabase
         const { data: sessionData, error: exchangeErr } =
-          await supabase.auth.exchangeCodeForSession(window.location.href)
+          await supabase.auth.exchangeCodeForSession({
+            currentUrl: window.location.href,
+          })
 
         if (exchangeErr) {
           console.error('❌ [exchangeCodeForSession error]', exchangeErr)
@@ -32,6 +28,7 @@ export default function AuthCallback() {
         // 👤 Récupération de l’utilisateur
         const { data: userData, error: userErr } = await supabase.auth.getUser()
         if (userErr || !userData?.user) {
+          console.error('❌ [getUser error]', userErr)
           throw new Error("Impossible de récupérer l’utilisateur.")
         }
 
@@ -40,28 +37,33 @@ export default function AuthCallback() {
 
         // 🎯 Rôle depuis localStorage (ou fallback client)
         const role = localStorage.getItem('pendingRole') || 'client'
+        console.log('🎯 Rôle choisi :', role)
 
         // 🗓️ Période d’essai gratuite (7 jours)
         const trialStart = new Date()
         const trialEnd = new Date(trialStart)
         trialEnd.setDate(trialStart.getDate() + 7)
 
-        // 💾 Insertion/màj dans `users`
-        const { error: upsertErr } = await supabase
-          .from('users')
-          .upsert(
-            {
-              id: user.id,
-              email: user.email,
-              role,
-              trial_start: trialStart.toISOString(),
-              trial_end: trialEnd.toISOString(),
-              is_subscribed: false,
-            },
-            { onConflict: 'id' }
-          )
+        console.log('🗓️ Période d’essai :', trialStart.toISOString(), '→', trialEnd.toISOString())
 
-        if (upsertErr) throw upsertErr
+        // 💾 Insertion/màj dans `users`
+        const { error: upsertErr } = await supabase.from('users').upsert(
+          {
+            id: user.id,
+            email: user.email,
+            role,
+            trial_start: trialStart.toISOString(),
+            trial_end: trialEnd.toISOString(),
+            is_subscribed: false,
+          },
+          { onConflict: 'id' }
+        )
+
+        if (upsertErr) {
+          console.error('❌ [upsert error]', upsertErr)
+          throw upsertErr
+        }
+
         console.log('✅ Utilisateur inséré/mis à jour dans users')
 
         // 🚀 Redirection après login
@@ -69,12 +71,13 @@ export default function AuthCallback() {
         const redirectTo =
           storedRedirect || (role === 'coach' ? '/coach/onboarding' : '/client/dashboard')
 
+        console.log('➡️ Redirection vers :', redirectTo)
+
         // Nettoyage localStorage
         localStorage.removeItem('pendingRole')
         localStorage.removeItem('pendingRedirect')
         localStorage.removeItem('pendingTrialStart')
         localStorage.removeItem('pendingTrialEnd')
-        localStorage.removeItem('code_verifier') // 👈 on le supprime après usage
         localStorage.setItem('isLoggedIn', 'true')
 
         window.location.replace(redirectTo)
