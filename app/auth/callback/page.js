@@ -11,7 +11,14 @@ export default function AuthCallback() {
       try {
         console.log('🔄 [AuthCallback] Début du process...')
 
-        // 🔑 Échange direct du code OAuth → session Supabase
+        // ✅ Restaure le code_verifier si perdu (Google OAuth reset parfois le sessionStorage)
+        const localVerifier = localStorage.getItem('code_verifier')
+        if (localVerifier) {
+          sessionStorage.setItem('supabase.auth.token#code_verifier', localVerifier)
+          console.log('🔑 code_verifier restauré depuis localStorage')
+        }
+
+        // 🔑 Échange du code OAuth → session Supabase
         const { data: sessionData, error: exchangeErr } =
           await supabase.auth.exchangeCodeForSession(window.location.href)
 
@@ -55,7 +62,6 @@ export default function AuthCallback() {
           )
 
         if (upsertErr) throw upsertErr
-
         console.log('✅ Utilisateur inséré/mis à jour dans users')
 
         // 🚀 Redirection après login
@@ -68,6 +74,7 @@ export default function AuthCallback() {
         localStorage.removeItem('pendingRedirect')
         localStorage.removeItem('pendingTrialStart')
         localStorage.removeItem('pendingTrialEnd')
+        localStorage.removeItem('code_verifier') // 👈 on le supprime après usage
         localStorage.setItem('isLoggedIn', 'true')
 
         window.location.replace(redirectTo)

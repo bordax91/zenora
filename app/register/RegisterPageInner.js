@@ -47,7 +47,7 @@ export default function RegisterPageInner() {
       const trialEnd = new Date(trialStart)
       trialEnd.setDate(trialStart.getDate() + 7)
 
-      // Ajout/màj dans la table `users`
+      // Ajout/mise à jour dans la table `users`
       const { error: upsertErr } = await supabase.from('users').upsert(
         {
           id: user.id,
@@ -88,13 +88,13 @@ export default function RegisterPageInner() {
       const trialEnd = new Date(trialStart)
       trialEnd.setDate(trialStart.getDate() + 7)
 
-      // Stockage avant redirection
+      // Stockage avant redirection OAuth
       localStorage.setItem('pendingRole', role)
       localStorage.setItem('pendingTrialStart', trialStart.toISOString())
       localStorage.setItem('pendingTrialEnd', trialEnd.toISOString())
       localStorage.setItem('pendingRedirect', '/coach/onboarding')
 
-      // ⚠️ IMPORTANT : utiliser exactement l’URL whitelistée dans Supabase + Google
+      // ⚠️ IMPORTANT : URL whitelistée dans Supabase + Google
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -112,6 +112,7 @@ export default function RegisterPageInner() {
         return
       }
 
+      // Si tout est ok → redirection vers Google
       if (data?.url) {
         console.log('🔁 Redirection vers Google OAuth :', data.url)
         window.location.href = data.url
@@ -146,13 +147,10 @@ export default function RegisterPageInner() {
           Créer un compte Coach
         </h1>
 
-        {/* Formulaire */}
+        {/* Formulaire email/password */}
         <form onSubmit={handleRegister} className="space-y-6">
           <div>
-            <label
-              htmlFor="email"
-              className="block text-gray-600 mb-1"
-            >
+            <label htmlFor="email" className="block text-gray-600 mb-1">
               Adresse email
             </label>
             <input
@@ -168,10 +166,7 @@ export default function RegisterPageInner() {
           </div>
 
           <div>
-            <label
-              htmlFor="password"
-              className="block text-gray-600 mb-1"
-            >
+            <label htmlFor="password" className="block text-gray-600 mb-1">
               Mot de passe
             </label>
             <input
@@ -198,7 +193,7 @@ export default function RegisterPageInner() {
           </button>
         </form>
 
-        {/* OU */}
+        {/* Séparateur */}
         <div className="flex items-center my-6">
           <div className="flex-grow h-px bg-gray-300" />
           <span className="mx-4 text-sm text-gray-400">ou</span>
