@@ -1,89 +1,60 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase/client'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { supabase } from '@/lib/supabase/supabase' // ton fichier
 
 export default function AuthCallback() {
+  const router = useRouter()
+  const params = useSearchParams()
   const [error, setError] = useState(null)
 
   useEffect(() => {
     const run = async () => {
       try {
-        console.log('🔄 [AuthCallback] Démarrage...')
-
-        // 1. Échanger le code contre une session Supabase
-        const { data: sessionData, error: exchangeErr } =
-          await supabase.auth.exchangeCodeForSession(window.location.href)
-
-        if (exchangeErr) {
-          console.error('❌ [exchangeCodeForSession]', exchangeErr)
-          throw exchangeErr
+        const code = params.get('code')
+        if (!code) {
+          setError('Aucun code reçu dans le callback.')
+          return
         }
 
-        console.log('✅ Session récupérée :', sessionData)
+        // 🔑 Échange du code OAuth → session Supabase
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
-        // 2. Récupération utilisateur
-        const { data: userData, error: userErr } = await supabase.auth.getUser()
-        if (userErr || !userData?.user) {
-          throw new Error("Impossible de récupérer l’utilisateur.")
+        if (error) {
+          console.error('Erreur échange code → session:', error)
+          setError(error.message)
+          return
         }
 
-        const user = userData.user
-        console.log('👤 Utilisateur connecté :', user)
+        console.log('✅ Session récupérée :', data)
 
-        // 3. Récupérer rôle et infos trial depuis localStorage
+        // Récupère le rôle stocké (si défini)
         const role = localStorage.getItem('pendingRole') || 'client'
-        const trialStart =
-          localStorage.getItem('pendingTrialStart') || new Date().toISOString()
-        const trialEnd =
-          localStorage.getItem('pendingTrialEnd') ||
-          new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-
-        // 4. Upsert dans `users`
-        const { error: upsertErr } = await supabase.from('users').upsert(
-          {
-            id: user.id,
-            email: user.email,
-            role,
-            trial_start: trialStart,
-            trial_end: trialEnd,
-            is_subscribed: false,
-          },
-          { onConflict: 'id' }
-        )
-
-        if (upsertErr) {
-          console.error('❌ [users upsert]', upsertErr)
-          throw upsertErr
-        }
-
-        console.log('✅ Utilisateur ajouté/mis à jour en DB')
-
-        // 5. Déterminer la redirection
-        const storedRedirect = localStorage.getItem('pendingRedirect')
         const redirectTo =
-          storedRedirect || (role === 'coach' ? '/coach/onboarding' : '/client/dashboard')
+          localStorage.getItem('pendingRedirect') ||
+          (role === 'coach' ? '/coach/onboarding' : '/client/dashboard')
 
-        // Nettoyage
+        // Nettoyage du localStorage
         localStorage.removeItem('pendingRole')
         localStorage.removeItem('pendingRedirect')
         localStorage.removeItem('pendingTrialStart')
         localStorage.removeItem('pendingTrialEnd')
         localStorage.setItem('isLoggedIn', 'true')
 
-        // 6. Redirection
-        window.location.replace(redirectTo)
-      } catch (e) {
-        console.error('❌ [AuthCallback ERROR]', e)
-        setError(e?.message || 'Erreur de connexion.')
+        // 🚀 Redirection finale
+        router.replace(redirectTo)
+      } catch (err) {
+        console.error('Callback error:', err)
+        setError(err.message || 'Erreur inattendue lors du callback.')
       }
     }
 
     run()
-  }, [])
+  }, [params, router])
 
   return (
-    <div className="min-h-screen flex items-center justify-center text-gray-600 text-center px-4">
+    <div className="min-h-screen flex items-center justify-center text-gray-600 text-center">
       {error || 'Connexion en cours...'}
     </div>
   )
