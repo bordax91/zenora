@@ -13,7 +13,7 @@ export default function AuthCallback() {
       try {
         console.log('🔄 [AuthCallback] Tentative récupération session...')
 
-        // 👤 Récupération utilisateur via PKCE
+        // 👤 Récupération utilisateur via Supabase
         const { data: { user }, error } = await supabase.auth.getUser()
         if (error || !user) {
           throw error || new Error("Impossible de récupérer l’utilisateur.")
@@ -21,13 +21,38 @@ export default function AuthCallback() {
 
         console.log('✅ Utilisateur récupéré :', user)
 
-        // 🎯 Récup rôle et essai depuis localStorage
-        const role = localStorage.getItem('pendingRole') || 'client'
-        const trialStart = localStorage.getItem('pendingTrialStart')
-        const trialEnd = localStorage.getItem('pendingTrialEnd')
+        // 🎯 Détermination du rôle
+        const role =
+          localStorage.getItem('pendingRole') ||
+          user.user_metadata?.role ||
+          'client'
+
+        // 🚀 Redirection après login
         const redirectTo =
           localStorage.getItem('pendingRedirect') ||
           (role === 'coach' ? '/coach/onboarding' : '/client/dashboard')
+
+        // 🔍 Vérifier si l'utilisateur existe déjà dans la table
+        const { data: existingUser, error: fetchErr } = await supabase
+          .from('users')
+          .select('id, trial_start, trial_end')
+          .eq('id', user.id)
+          .maybeSingle()
+
+        if (fetchErr) throw fetchErr
+
+        let trialStart = existingUser?.trial_start
+        let trialEnd = existingUser?.trial_end
+
+        // Si aucun essai enregistré → créer période de 7 jours
+        if (!trialStart || !trialEnd) {
+          trialStart =
+            localStorage.getItem('pendingTrialStart') ||
+            new Date().toISOString()
+          trialEnd =
+            localStorage.getItem('pendingTrialEnd') ||
+            new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        }
 
         // ⚡ Upsert dans la table `users`
         const { error: upsertErr } = await supabase.from('users').upsert(
@@ -35,28 +60,31 @@ export default function AuthCallback() {
             id: user.id,
             email: user.email,
             role,
-            trial_start: trialStart || new Date().toISOString(),
-            trial_end:
-              trialEnd ||
-              new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-            is_subscribed: false,
+            trial_start: trialStart,
+            trial_end: trialEnd,
+            is_subscribed: existingUser?.is_subscribed || false,
           },
           { onConflict: 'id' }
         )
         if (upsertErr) throw upsertErr
 
-        // 📧 Email de bienvenue
-        try {
-          await fetch('/api/emails/send-welcome-coach-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ to: user.email }),
-          })
-        } catch (err) {
-          console.warn('⚠️ Envoi email échoué (non bloquant)', err)
+        console.log('✅ Utilisateur inséré/mis à jour dans users')
+
+        // 📧 Envoi email de bienvenue uniquement pour les coachs nouveaux
+        if (role === 'coach' && !existingUser) {
+          try {
+            await fetch('/api/emails/send-welcome-coach-email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ to: user.email }),
+            })
+            console.log('📧 Email de bienvenue envoyé')
+          } catch (err) {
+            console.warn('⚠️ Envoi email échoué (non bloquant)', err)
+          }
         }
 
-        // ✅ Nettoyage localStorage
+        // ✅ Nettoyage du localStorage
         localStorage.removeItem('pendingRole')
         localStorage.removeItem('pendingRedirect')
         localStorage.removeItem('pendingTrialStart')
