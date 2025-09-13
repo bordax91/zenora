@@ -12,11 +12,9 @@ export default function AuthCallback() {
         console.log('🔄 [AuthCallback] Début du process...')
         console.log('📌 URL actuelle :', window.location.href)
 
-        // 🔑 Échange direct du code OAuth → session Supabase
+        // ✅ Ici il faut passer une STRING, pas un objet
         const { data: sessionData, error: exchangeErr } =
-          await supabase.auth.exchangeCodeForSession({
-            currentUrl: window.location.href,
-          })
+          await supabase.auth.exchangeCodeForSession(window.location.href)
 
         if (exchangeErr) {
           console.error('❌ [exchangeCodeForSession error]', exchangeErr)
@@ -25,28 +23,23 @@ export default function AuthCallback() {
 
         console.log('✅ Session échangée avec succès !', sessionData)
 
-        // 👤 Récupération de l’utilisateur
+        // 👤 Récupération utilisateur
         const { data: userData, error: userErr } = await supabase.auth.getUser()
-        if (userErr || !userData?.user) {
-          console.error('❌ [getUser error]', userErr)
-          throw new Error("Impossible de récupérer l’utilisateur.")
-        }
+        if (userErr || !userData?.user) throw new Error("Impossible de récupérer l’utilisateur.")
 
         const user = userData.user
         console.log('👤 Utilisateur récupéré :', user)
 
-        // 🎯 Rôle depuis localStorage (ou fallback client)
+        // 🎯 Rôle
         const role = localStorage.getItem('pendingRole') || 'client'
         console.log('🎯 Rôle choisi :', role)
 
-        // 🗓️ Période d’essai gratuite (7 jours)
+        // 🗓️ Période d’essai gratuite
         const trialStart = new Date()
         const trialEnd = new Date(trialStart)
         trialEnd.setDate(trialStart.getDate() + 7)
 
-        console.log('🗓️ Période d’essai :', trialStart.toISOString(), '→', trialEnd.toISOString())
-
-        // 💾 Insertion/màj dans `users`
+        // 💾 Upsert dans la table `users`
         const { error: upsertErr } = await supabase.from('users').upsert(
           {
             id: user.id,
@@ -59,19 +52,13 @@ export default function AuthCallback() {
           { onConflict: 'id' }
         )
 
-        if (upsertErr) {
-          console.error('❌ [upsert error]', upsertErr)
-          throw upsertErr
-        }
-
+        if (upsertErr) throw upsertErr
         console.log('✅ Utilisateur inséré/mis à jour dans users')
 
-        // 🚀 Redirection après login
+        // 🚀 Redirection
         const storedRedirect = localStorage.getItem('pendingRedirect')
         const redirectTo =
           storedRedirect || (role === 'coach' ? '/coach/onboarding' : '/client/dashboard')
-
-        console.log('➡️ Redirection vers :', redirectTo)
 
         // Nettoyage localStorage
         localStorage.removeItem('pendingRole')
@@ -80,6 +67,7 @@ export default function AuthCallback() {
         localStorage.removeItem('pendingTrialEnd')
         localStorage.setItem('isLoggedIn', 'true')
 
+        console.log('➡️ Redirection vers :', redirectTo)
         window.location.replace(redirectTo)
       } catch (e) {
         console.error('❌ [auth/callback ERROR]', e)
