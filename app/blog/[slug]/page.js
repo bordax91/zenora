@@ -4,6 +4,7 @@ import matter from "gray-matter"
 import { notFound } from "next/navigation"
 import { remark } from "remark"
 import html from "remark-html"
+import Link from "next/link"
 import Header from "@/components/Header"
 
 // 📂 Dossier où sont stockés tes articles
@@ -14,18 +15,26 @@ export default async function BlogPostPage({ params }) {
   const filePath = path.join(postsDir, `${slug}.mdx`)
 
   // ⚡ Vérifier si le fichier existe
-  if (!fs.existsSync(filePath)) {
-    notFound()
-  }
+  if (!fs.existsSync(filePath)) notFound()
 
   // 📝 Lire contenu de l'article
   const fileContent = fs.readFileSync(filePath, "utf-8")
   const { data, content } = matter(fileContent)
 
+  // 🧹 Retirer le 1er H1 si présent (évite le doublon avec le titre du hero)
+  let markdownBody = content
+  const trimmed = markdownBody.trimStart()
+  const firstLine = trimmed.split("\n")[0]?.trim() || ""
+  if (firstLine.startsWith("#")) {
+    const mdTitle = firstLine.replace(/^#\s+/, "").trim()
+    const fmTitle = String(data.title || "").trim()
+    if (!fmTitle || mdTitle.toLowerCase() === fmTitle.toLowerCase()) {
+      markdownBody = trimmed.replace(/^#\s+.*\n+/, "")
+    }
+  }
+
   // 🔄 Convertir le markdown en HTML
-  const processedContent = await remark()
-    .use(html)
-    .process(content)
+  const processedContent = await remark().use(html).process(markdownBody)
   const contentHtml = processedContent.toString()
 
   return (
@@ -38,7 +47,11 @@ export default async function BlogPostPage({ params }) {
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl font-bold text-gray-800 mb-4">{data.title}</h1>
           <p className="text-sm text-gray-500">
-            {data.date ? new Date(data.date).toLocaleDateString("fr-FR") : ""}
+            {data.date && (
+              <time dateTime={data.date}>
+                {new Date(data.date).toLocaleDateString("fr-FR")}
+              </time>
+            )}
           </p>
         </div>
       </section>
@@ -58,15 +71,10 @@ export default async function BlogPostPage({ params }) {
         <div className="flex flex-col items-center gap-2">
           <p>Zenora © 2025 — Tous droits réservés</p>
           <div className="flex gap-4 text-blue-500">
-            <a href="/mentions-legales" className="hover:underline">
-              Mentions légales
-            </a>
-            <a href="/politique-confidentialite" className="hover:underline">
-              Politique de confidentialité
-            </a>
-            <a href="/contact" className="hover:underline">
-              Contact
-            </a>
+            <Link href="/blog" className="hover:underline">Blog</Link>
+            <Link href="/mentions-legales" className="hover:underline">Mentions légales</Link>
+            <Link href="/politique-confidentialite" className="hover:underline">Politique de confidentialité</Link>
+            <Link href="/contact" className="hover:underline">Contact</Link>
           </div>
         </div>
       </footer>
