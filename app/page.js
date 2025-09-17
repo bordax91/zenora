@@ -179,6 +179,7 @@ export default function Home() {
             <Link href="/mentions-legales" className="hover:underline">Mentions légales</Link>
             <Link href="/politique-confidentialite" className="hover:underline">Politique de confidentialité</Link>
             <Link href="/contact" className="hover:underline">Contact</Link>
+            <Link href="/blog" className="hover:underline">Blog</Link>
           </div>
         </div>
       </footer>
