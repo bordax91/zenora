@@ -1,36 +1,60 @@
-// app/blog/page.jsx
-import Link from 'next/link';
-
-const articles = [
-  {
-    slug: 'comment-gerer-le-stress',
-    title: 'Comment gérer le stress au quotidien ?',
-    date: '2025-05-27',
-    preview: 'Découvrez des conseils simples pour mieux gérer le stress au quotidien...'
-  },
-  {
-    slug: 'retrouver-le-sommeil',
-    title: '5 astuces pour retrouver le sommeil naturellement',
-    date: '2025-05-24',
-    preview: 'Améliorez votre sommeil grâce à ces 5 conseils faciles à appliquer...'
-  },
-];
+import fs from "fs"
+import path from "path"
+import matter from "gray-matter"
+import Link from "next/link"
+import Header from "@/components/Header"
 
 export default function BlogPage() {
+  // 📂 Dossier où sont stockés tes articles
+  const postsDir = path.join(process.cwd(), "content/blog")
+
+  // 📑 Lire tous les fichiers .mdx
+  const files = fs.readdirSync(postsDir)
+
+  // 📝 Récupérer les métadonnées (frontmatter)
+  const posts = files.map((filename) => {
+    const filePath = path.join(postsDir, filename)
+    const fileContent = fs.readFileSync(filePath, "utf-8")
+    const { data } = matter(fileContent) // data = frontmatter
+
+    return {
+      slug: filename.replace(".mdx", ""),
+      title: data.title || "Sans titre",
+      date: data.date || null,
+      description: data.description || "",
+    }
+  })
+
+  // Trier par date décroissante
+  posts.sort((a, b) => new Date(b.date) - new Date(a.date))
+
   return (
-    <main className="max-w-3xl mx-auto p-6">
-      <h1 className="text-4xl font-bold mb-8">Nos articles</h1>
-      <ul className="space-y-6">
-        {articles.map(article => (
-          <li key={article.slug} className="border-b pb-4">
-            <Link href={`/blog/${article.slug}`} className="block">
-              <h2 className="text-2xl font-semibold text-blue-700 hover:underline">{article.title}</h2>
-              <p className="text-gray-500 text-sm">{article.date}</p>
-              <p className="mt-2 text-gray-700">{article.preview}</p>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </main>
-  );
+    <>
+      <Header /> {/* ✅ Ajout du header */}
+      <div className="max-w-3xl mx-auto p-6">
+        <h1 className="text-3xl font-bold mb-6">📰 Blog Zenora</h1>
+
+        {posts.length === 0 && (
+          <p className="text-gray-600">Aucun article publié pour le moment.</p>
+        )}
+
+        <ul className="space-y-6">
+          {posts.map((post) => (
+            <li key={post.slug} className="border-b pb-4">
+              <Link
+                href={`/blog/${post.slug}`}
+                className="text-2xl font-semibold text-indigo-600 hover:underline"
+              >
+                {post.title}
+              </Link>
+              <p className="text-sm text-gray-500">
+                {post.date ? new Date(post.date).toLocaleDateString("fr-FR") : ""}
+              </p>
+              <p className="mt-2 text-gray-700">{post.description}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </>
+  )
 }
