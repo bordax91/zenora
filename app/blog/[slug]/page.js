@@ -29,18 +29,47 @@ export default async function BlogPostPage({ params }) {
   const contentHtml = processedContent.toString()
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
+    <div className="min-h-screen flex flex-col bg-white">
+      {/* Header */}
       <Header />
 
-      <article className="prose prose-lg prose-indigo max-w-none">
-        <h1>{data.title}</h1>
-        <p className="text-sm text-gray-500">
-          {data.date ? new Date(data.date).toLocaleDateString("fr-FR") : ""}
-        </p>
+      {/* Hero Section avec titre */}
+      <section className="bg-gradient-to-br from-blue-50 to-white py-16 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-4xl font-bold text-gray-800 mb-4">{data.title}</h1>
+          <p className="text-sm text-gray-500">
+            {data.date ? new Date(data.date).toLocaleDateString("fr-FR") : ""}
+          </p>
+        </div>
+      </section>
 
-        {/* ✅ Ici on insère le contenu markdown converti en HTML */}
-        <div dangerouslySetInnerHTML={{ __html: contentHtml }} />
-      </article>
+      {/* Contenu de l'article */}
+      <section className="py-12 px-6 flex-1">
+        <div className="max-w-3xl mx-auto">
+          <article
+            className="prose prose-lg prose-indigo max-w-none text-gray-800"
+            dangerouslySetInnerHTML={{ __html: contentHtml }}
+          />
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-white text-center py-6 text-gray-500 text-sm border-t">
+        <div className="flex flex-col items-center gap-2">
+          <p>Zenora © 2025 — Tous droits réservés</p>
+          <div className="flex gap-4 text-blue-500">
+            <a href="/mentions-legales" className="hover:underline">
+              Mentions légales
+            </a>
+            <a href="/politique-confidentialite" className="hover:underline">
+              Politique de confidentialité
+            </a>
+            <a href="/contact" className="hover:underline">
+              Contact
+            </a>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
