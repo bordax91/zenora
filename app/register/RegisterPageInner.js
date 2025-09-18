@@ -68,6 +68,11 @@ export default function RegisterPageInner() {
         body: JSON.stringify({ to: email }),
       })
 
+      // ✅ Event Pixel Facebook
+      if (typeof window !== 'undefined' && window.fbq) {
+        window.fbq('track', 'CompleteRegistration')
+      }
+
       localStorage.setItem('isLoggedIn', 'true')
       router.replace('/coach/onboarding')
     } catch (err) {
@@ -112,6 +117,10 @@ export default function RegisterPageInner() {
       }
 
       if (data?.url) {
+        // ✅ Event Pixel Facebook (Google OAuth déclenché)
+        if (typeof window !== 'undefined' && window.fbq) {
+          window.fbq('track', 'CompleteRegistration')
+        }
         window.location.href = data.url
       }
     } catch (err) {
