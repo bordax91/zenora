@@ -68,9 +68,12 @@ export default function RegisterPageInner() {
         body: JSON.stringify({ to: email }),
       })
 
-      // ✅ Event Pixel Facebook
+      // ✅ Event Pixel Facebook avec value et currency
       if (typeof window !== 'undefined' && window.fbq) {
-        window.fbq('track', 'CompleteRegistration')
+        window.fbq('track', 'CompleteRegistration', {
+          value: 0.00,      // gratuit → mettre 0
+          currency: 'EUR'   // devise ISO
+        })
       }
 
       localStorage.setItem('isLoggedIn', 'true')
@@ -119,7 +122,10 @@ export default function RegisterPageInner() {
       if (data?.url) {
         // ✅ Event Pixel Facebook (Google OAuth déclenché)
         if (typeof window !== 'undefined' && window.fbq) {
-          window.fbq('track', 'CompleteRegistration')
+          window.fbq('track', 'CompleteRegistration', {
+            value: 0.00,
+            currency: 'EUR'
+          })
         }
         window.location.href = data.url
       }
