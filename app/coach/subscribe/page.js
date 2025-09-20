@@ -29,9 +29,9 @@ export default function AbonnementPage() {
         if (subscriptions?.data?.length) {
           const priceId = subscriptions.data[0]?.items?.data[0]?.price?.id
           if (priceId === STRIPE_MONTHLY) {
-            setPriceLabel('Mensuel – 39€/mois')
+            setPriceLabel('Mensuel – 29€/mois')
           } else if (priceId === STRIPE_YEARLY) {
-            setPriceLabel('Annuel – 349€/an')
+            setPriceLabel('Annuel – 290€/an')
           } else {
             setPriceLabel('Abonnement actif')
           }

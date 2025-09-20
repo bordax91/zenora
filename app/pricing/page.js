@@ -75,7 +75,7 @@ export default function TarifsPage() {
             {/* Plan Mensuel */}
             <div className="border p-6 rounded-2xl shadow hover:shadow-lg transition">
               <h2 className="text-2xl font-semibold mb-2">Plan Mensuel</h2>
-              <p className="text-gray-600 mb-4">💳 39€/mois, sans engagement</p>
+              <p className="text-gray-600 mb-4">💳 29€/mois, sans engagement</p>
               <ul className="text-sm text-gray-700 space-y-1 mb-4">
                 <li>🤖 Outil de prospection IA</li>
                 <li>📈 Suivi des ventes et rendez-vous</li>
@@ -96,7 +96,7 @@ export default function TarifsPage() {
             {/* Plan Annuel */}
             <div className="border p-6 rounded-2xl shadow hover:shadow-lg transition bg-gray-50 border-2 border-indigo-500">
               <h2 className="text-2xl font-semibold mb-2">Plan Annuel</h2>
-              <p className="text-gray-600 mb-4">📅 349€/an (soit 2 mois offerts)</p>
+              <p className="text-gray-600 mb-4">📅 290€/an (soit 2 mois offerts)</p>
               <ul className="text-sm text-gray-700 space-y-1 mb-4">
                 <li>🤖 Outil de prospection IA</li>
                 <li>📈 Suivi des ventes et rendez-vous</li>
