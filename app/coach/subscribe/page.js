@@ -122,11 +122,11 @@ export default function AbonnementPage() {
           <div>
             <h2 className="text-2xl font-bold mb-2">Starter</h2>
             <p className="text-gray-600 mb-4">Idéal pour les coachs qui démarrent</p>
-            <p className="text-3xl font-bold">39€<span className="text-base font-normal">/mois</span></p>
-            {priceLabel?.includes("39") && isSubscribed && (
+            <p className="text-3xl font-bold">29€<span className="text-base font-normal">/mois</span></p>
+            {priceLabel?.includes("29") && isSubscribed && (
               <span className="text-green-700 font-semibold">✅ Abonnement actif</span>
             )}
-            {priceLabel?.includes("39") && isPendingCancel && (
+            {priceLabel?.includes("29") && isPendingCancel && (
               <span className="text-yellow-600 font-semibold">⏳ Résiliation en attente</span>
             )}
             <ul className="mt-6 space-y-2 text-gray-700">
@@ -154,11 +154,11 @@ export default function AbonnementPage() {
           <div>
             <h2 className="text-2xl font-bold mb-2">Premium</h2>
             <p className="text-gray-600 mb-4">Accès complet à toutes les fonctionnalités</p>
-            <p className="text-3xl font-bold">349€<span className="text-base font-normal">/an</span></p>
-            {priceLabel?.includes("349") && isSubscribed && (
+            <p className="text-3xl font-bold">290€<span className="text-base font-normal">/an</span></p>
+            {priceLabel?.includes("290") && isSubscribed && (
               <span className="text-green-700 font-semibold">✅ Abonnement actif</span>
             )}
-            {priceLabel?.includes("349") && isPendingCancel && (
+            {priceLabel?.includes("290") && isPendingCancel && (
               <span className="text-yellow-600 font-semibold">⏳ Résiliation en attente</span>
             )}
             <ul className="mt-6 space-y-2 text-gray-700">
