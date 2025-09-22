@@ -21,6 +21,13 @@ export default function CoachOnboardingPage() {
     setLoading(true)
     setError('')
 
+    // Vérification format username (regex identique à ta contrainte SQL)
+    if (!/^[a-z0-9_-]+$/.test(username)) {
+      setError("Le nom d'utilisateur doit contenir uniquement des minuscules, chiffres, tirets (-) ou underscores (_).")
+      setLoading(false)
+      return
+    }
+
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (!user || authError) {
       setError("Utilisateur non connecté.")
@@ -118,11 +125,13 @@ export default function CoachOnboardingPage() {
           <input
             type="text"
             value={username}
-            onChange={e => setUsername(e.target.value)}
+            onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))} // force règles
             className="w-full border px-4 py-2 rounded"
             placeholder="Ex : sarahcoach"
           />
           <p className="text-sm text-gray-500 mt-1">
+            ✅ Seulement lettres minuscules, chiffres, tirets (-) et underscores (_).  
+            ❌ Pas d'espaces ni majuscules.  
             Votre profil sera accessible via : <strong>zenoraapp.com/votre-username</strong>
           </p>
         </div>
