@@ -68,7 +68,7 @@ export default function RegisterPageInner() {
         body: JSON.stringify({ to: email }),
       })
 
-      // ✅ Event Pixel Facebook (client)
+      // ✅ Event Pixel Facebook (on garde tel quel)
       if (typeof window !== 'undefined' && window.fbq) {
         window.fbq('track', 'CompleteRegistration', {
           value: 0.0,
@@ -76,23 +76,21 @@ export default function RegisterPageInner() {
         })
       }
 
-      // ✅ Event TikTok Pixel (client)
+      // ✅ Event TikTok Pixel (corrigé → pas de value/currency pour éviter l’erreur)
       if (typeof window !== 'undefined' && window.ttq) {
         window.ttq.track('CompleteRegistration', {
-          value: 0.0,
-          currency: 'EUR',
           content_name: 'Inscription coach',
         })
       }
 
-      // ✅ Event TikTok API (serveur)
+      // ✅ Event TikTok API (serveur → corrigé)
       await fetch('/api/tiktok/track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           event: 'CompleteRegistration',
           userData: { email },
-          customData: { value: 0, currency: 'EUR', content_name: 'Inscription coach' },
+          customData: { content_name: 'Inscription coach' }, // sans value/currency
         }),
       })
 
@@ -151,8 +149,6 @@ export default function RegisterPageInner() {
         // ✅ TikTok Pixel
         if (typeof window !== 'undefined' && window.ttq) {
           window.ttq.track('CompleteRegistration', {
-            value: 0.0,
-            currency: 'EUR',
             content_name: 'Inscription coach',
           })
         }
@@ -164,7 +160,7 @@ export default function RegisterPageInner() {
           body: JSON.stringify({
             event: 'CompleteRegistration',
             userData: { email },
-            customData: { value: 0, currency: 'EUR', content_name: 'Inscription coach' },
+            customData: { content_name: 'Inscription coach' },
           }),
         })
 
