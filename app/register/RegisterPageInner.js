@@ -68,13 +68,33 @@ export default function RegisterPageInner() {
         body: JSON.stringify({ to: email }),
       })
 
-      // ✅ Event Pixel Facebook avec value et currency
+      // ✅ Event Pixel Facebook (client)
       if (typeof window !== 'undefined' && window.fbq) {
         window.fbq('track', 'CompleteRegistration', {
-          value: 0.00,      // gratuit → mettre 0
-          currency: 'EUR'   // devise ISO
+          value: 0.0,
+          currency: 'EUR',
         })
       }
+
+      // ✅ Event TikTok Pixel (client)
+      if (typeof window !== 'undefined' && window.ttq) {
+        window.ttq.track('CompleteRegistration', {
+          value: 0.0,
+          currency: 'EUR',
+          content_name: 'Inscription coach',
+        })
+      }
+
+      // ✅ Event TikTok API (serveur)
+      await fetch('/api/tiktok/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'CompleteRegistration',
+          userData: { email },
+          customData: { value: 0, currency: 'EUR', content_name: 'Inscription coach' },
+        }),
+      })
 
       localStorage.setItem('isLoggedIn', 'true')
       router.replace('/coach/onboarding')
@@ -120,13 +140,34 @@ export default function RegisterPageInner() {
       }
 
       if (data?.url) {
-        // ✅ Event Pixel Facebook (Google OAuth déclenché)
+        // ✅ Facebook Pixel
         if (typeof window !== 'undefined' && window.fbq) {
           window.fbq('track', 'CompleteRegistration', {
-            value: 0.00,
-            currency: 'EUR'
+            value: 0.0,
+            currency: 'EUR',
           })
         }
+
+        // ✅ TikTok Pixel
+        if (typeof window !== 'undefined' && window.ttq) {
+          window.ttq.track('CompleteRegistration', {
+            value: 0.0,
+            currency: 'EUR',
+            content_name: 'Inscription coach',
+          })
+        }
+
+        // ✅ TikTok API
+        await fetch('/api/tiktok/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: 'CompleteRegistration',
+            userData: { email },
+            customData: { value: 0, currency: 'EUR', content_name: 'Inscription coach' },
+          }),
+        })
+
         window.location.href = data.url
       }
     } catch (err) {
