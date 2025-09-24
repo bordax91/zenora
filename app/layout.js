@@ -30,7 +30,7 @@ export default function RootLayout({ children }) {
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 
-        {/* Facebook Pixel */}
+        {/* -------------------- Facebook Pixel -------------------- */}
         <Script
           id="facebook-pixel"
           strategy="afterInteractive"
@@ -55,10 +55,11 @@ export default function RootLayout({ children }) {
             width="1"
             style={{ display: 'none' }}
             src="https://www.facebook.com/tr?id=613243461182951&ev=PageView&noscript=1"
+            alt=""
           />
         </noscript>
 
-        {/* TikTok Pixel */}
+        {/* -------------------- TikTok Pixel -------------------- */}
         <Script
           id="tiktok-pixel"
           strategy="afterInteractive"
@@ -66,7 +67,7 @@ export default function RootLayout({ children }) {
             __html: `
               !function (w, d, t) {
                 w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];
-                ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"],
+                ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"];
                 ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};
                 for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);
                 ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e};
@@ -78,12 +79,21 @@ export default function RootLayout({ children }) {
                   n.type="text/javascript",n.async=!0,n.src=r+"?sdkid="+e+"&lib="+t;
                   e=document.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)
                 };
-                ttq.load('D393M9RC77U5QJRHV9UG');
+                ttq.load('D393M9RC77U5QJRHV9UG'); // Ton Pixel TikTok
                 ttq.page();
               }(window, document, 'ttq');
             `,
           }}
         />
+        <noscript>
+          <img
+            height="1"
+            width="1"
+            style={{ display: 'none' }}
+            src="https://analytics.tiktok.com/i18n/pixel/events.js?sdkid=D393M9RC77U5QJRHV9UG&ev=PageView&noscript=1"
+            alt=""
+          />
+        </noscript>
       </head>
 
       <body>
