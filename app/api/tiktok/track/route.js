@@ -9,7 +9,7 @@ export async function POST(req) {
       return new Response(JSON.stringify({ error: "Event manquant" }), { status: 400 })
     }
 
-    // Hash SHA256 de l’email si présent
+    // Hash email
     let hashedEmail
     if (userData?.email) {
       hashedEmail = crypto
@@ -18,39 +18,32 @@ export async function POST(req) {
         .digest("hex")
     }
 
-    // Nettoyer customData (supprimer value = 0 et currency inutiles)
+    // Nettoyer customData
     let cleanCustomData = { ...customData }
     if (cleanCustomData?.value === 0) {
       delete cleanCustomData.value
       delete cleanCustomData.currency
     }
 
-    // Préparer payload TikTok
+    // Payload TikTok
     const payload = {
-      pixel_code: process.env.TIKTOK_PIXEL_ID, // ex: D393M9RC77U5QJRHV9UG
-      event, // ⚠️ doit être un event standard ex: "CompleteRegistration"
-      event_id: crypto.randomUUID(), // ID unique pour dédupliquer
-      timestamp: new Date().toISOString(), // ISO 8601
+      pixel_code: process.env.TIKTOK_PIXEL_ID,
+      event, // ex: "CompleteRegistration"
+      event_id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
       context: {
         page: {
           url: "https://zenoraapp.com",
           referrer: ""
         },
-        user: {}
+        user: hashedEmail ? { email: [hashedEmail] } : {},
+        ip: req.headers.get("x-forwarded-for") || "0.0.0.0",
+        user_agent: req.headers.get("user-agent") || ""
       },
       properties: cleanCustomData
     }
 
-    // Ajouter email hashé si dispo
-    if (hashedEmail) {
-      payload.context.user.email = [hashedEmail]
-    }
-
-    // Ajouter IP et user agent (niveau racine)
-    payload.ip = req.headers.get("x-forwarded-for") || "0.0.0.0"
-    payload.user_agent = req.headers.get("user-agent") || ""
-
-    // Envoi vers TikTok
+    // Envoi API TikTok
     const res = await fetch("https://business-api.tiktok.com/open_api/v1.3/event/track/", {
       method: "POST",
       headers: {
