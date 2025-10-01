@@ -1,5 +1,5 @@
 import './globals.css'
-import { Analytics } from '@vercel/analytics/next'
+import { Analytics } from '@vercel/analytics/react'
 import Script from 'next/script'
 import CookieBanner from '@/components/CookieBanner'
 import { UserProvider } from '@/lib/supabase/user-context'
