@@ -68,7 +68,7 @@ export default function RegisterPageInner() {
         body: JSON.stringify({ to: email }),
       })
 
-      // ✅ Event Pixel Facebook
+      // ✅ Facebook Pixel
       if (typeof window !== 'undefined' && window.fbq) {
         window.fbq('track', 'CompleteRegistration', {
           value: 0.0,
@@ -76,14 +76,14 @@ export default function RegisterPageInner() {
         })
       }
 
-      // ✅ Event TikTok Pixel
+      // ✅ TikTok Pixel
       if (typeof window !== 'undefined' && window.ttq) {
         window.ttq.track('CompleteRegistration', {
           content_name: 'Inscription coach',
         })
       }
 
-      // ✅ Event TikTok API (serveur)
+      // ✅ TikTok API (serveur)
       await fetch('/api/tiktok/track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -94,12 +94,22 @@ export default function RegisterPageInner() {
         }),
       })
 
-      // ✅ Event Reddit Pixel
+      // ✅ Reddit Pixel (client)
       if (typeof window !== 'undefined' && window.rdt) {
         window.rdt('track', 'SignUp', {
           conversionId: 'signup_' + Date.now(),
         })
       }
+
+      // ✅ Reddit Conversions API (serveur)
+      await fetch('/api/reddit/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'SignUp',
+          email,
+        }),
+      })
 
       localStorage.setItem('isLoggedIn', 'true')
       router.replace('/coach/onboarding')
@@ -171,12 +181,22 @@ export default function RegisterPageInner() {
           }),
         })
 
-        // ✅ Event Reddit Pixel
+        // ✅ Reddit Pixel (client)
         if (typeof window !== 'undefined' && window.rdt) {
           window.rdt('track', 'SignUp', {
             conversionId: 'signup_' + Date.now(),
           })
         }
+
+        // ✅ Reddit Conversions API (serveur)
+        await fetch('/api/reddit/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: 'SignUp',
+            email,
+          }),
+        })
 
         window.location.href = data.url
       }
