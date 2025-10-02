@@ -15,10 +15,10 @@ export default function Home() {
           {/* Texte */}
           <div className="space-y-6">
             <h1 className="text-5xl font-bold text-gray-800 leading-tight">
-              Gérez votre activité <span className="text-blue-600">simplement</span>
+              Coachs, thérapeutes & freelances : <span className="text-blue-600">moins d’administratif, plus de clients</span>
             </h1>
             <p className="text-lg text-gray-600">
-              Prise de rendez-vous, paiements, page publique personnalisée – tout-en-un.
+              Automatisez vos rendez-vous, paiements et suivi clients — tout en gardant l’humain au centre.
             </p>
             <div className="flex gap-4 flex-col sm:flex-row">
               <Link
